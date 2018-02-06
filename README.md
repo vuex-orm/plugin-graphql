@@ -6,6 +6,20 @@
 
 Vuex-ORM Plugin to sync the data against a GraphQL API via Apollo
 
+
+## Usage
+
+```bash
+yarn add @vuex-orm/apollo
+```
+
+or
+
+```bash
+npm install --save @vuex-orm/apollo
+```
+
+
 ## Contribution
 
 ```bash
