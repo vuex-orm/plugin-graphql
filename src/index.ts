@@ -24,15 +24,14 @@ interface Filter extends Object {
 }
 
 interface ORMModel {
-  entity: string
-  fields(): any
+  entity: string;
+  fields (): any;
 }
 
 interface Field {
-  related: ORMModel
-  parent: ORMModel
+  related: ORMModel;
+  parent: ORMModel;
 }
-
 
 /**
  * Own model class with some helpers
@@ -43,12 +42,11 @@ class Model {
   private readonly baseModel: ORMModel;
   private readonly fields: Map<string, Field> = new Map<string, Field>();
 
-  public constructor(baseModel: ORMModel) {
+  public constructor (baseModel: ORMModel) {
     this.baseModel = baseModel;
 
     this.singularName = inflection.singularize(this.baseModel.entity);
     this.pluralName = inflection.pluralize(this.baseModel.entity);
-
 
     const fields = this.baseModel.fields();
 
@@ -57,11 +55,10 @@ class Model {
     });
   }
 
-
   /**
    * @returns {Array<string>} field names which should be queried
    */
-  public getQueryFields(): Array<string> {
+  public getQueryFields (): Array<string> {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
@@ -75,11 +72,10 @@ class Model {
     return fields;
   }
 
-
   /**
    * @returns {Map<string, Field>} all relations of the model which should be queried
    */
-  public getRelations(): Map<string, Field> {
+  public getRelations (): Map<string, Field> {
     const relations = new Map<string, Field>();
 
     this.fields.forEach((field: Field, name: string) => {
@@ -92,7 +88,6 @@ class Model {
   }
 }
 
-
 /**
  * Plugin class
  */
@@ -104,28 +99,13 @@ export default class VuexORMApollo {
   private readonly database: any;
   private readonly models: Map<string, Model> = new Map();
 
-
-  /**
-   * The install method will be called when the plugin should be installed. We create a new instance of the Plugin class
-   * here.
-   *
-   * @param components
-   * @param options
-   * @returns {VuexORMApollo}
-   */
-  public static install(components: any, options: any): VuexORMApollo {
-    return new VuexORMApollo(components, options);
-  }
-
-
-
   /**
    * Constructor
    *
    * @param components
    * @param options
    */
-  public constructor(components: any, options: any) {
+  public constructor (components: any, options: any) {
     this.components = components;
     this.options = options;
     this.database = options.database;
@@ -144,17 +124,27 @@ export default class VuexORMApollo {
     });
   }
 
+  /**
+   * The install method will be called when the plugin should be installed. We create a new instance of the Plugin class
+   * here.
+   *
+   * @param components
+   * @param options
+   * @returns {VuexORMApollo}
+   */
+  public static install (components: any, options: any): VuexORMApollo {
+    return new VuexORMApollo(components, options);
+  }
 
   /**
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
-  private collectModels() {
+  private collectModels () {
     this.database.entities.forEach((entity: any) => {
       const model = new Model(entity.model as ORMModel);
       this.models.set(model.singularName, model);
     });
   }
-
 
   /**
    * This method will setup the fetch action for all entities.
@@ -162,7 +152,6 @@ export default class VuexORMApollo {
   private setupFetch () {
     this.components.subActions.fetch = this.fetch.bind(this);
   }
-
 
   /**
    * Will be called, when dispatch('entities/something/fetch') is called.
@@ -172,7 +161,7 @@ export default class VuexORMApollo {
    * @param {any} dispatch
    * @returns {Promise<void>}
    */
-  private async fetch({ filter, state, dispatch}: FetchParams) {
+  private async fetch ({ filter, state, dispatch }: FetchParams) {
     // Ignore empty filters
     if (filter && Object.keys(filter).length === 0) filter = undefined;
 
@@ -183,7 +172,6 @@ export default class VuexORMApollo {
     // Insert incoming data into the store
     this.storeData(data, dispatch);
   }
-
 
   /**
    * Transforms a set of incoming data to the format vuex-orm requires.
@@ -217,14 +205,13 @@ export default class VuexORMApollo {
     return result;
   }
 
-
   /**
    *
    * @param {Model} model
    * @param {Model} rootModel
    * @returns {Array<String>}
    */
-  private buildRelationsQuery(model: Model, rootModel?: Model) {
+  private buildRelationsQuery (model: Model, rootModel?: Model) {
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
@@ -237,7 +224,6 @@ export default class VuexORMApollo {
     return relationQueries;
   }
 
-
   /**
    * Builds a field for the GraphQL query and a specific model
    * @param {Model} rootModel
@@ -246,7 +232,7 @@ export default class VuexORMApollo {
    * @param {Filter} filter
    * @returns {string}
    */
-  private buildField(modelName: string, multiple: boolean = true, filter?: Filter, rootModel?: Model): string {
+  private buildField (modelName: string, multiple: boolean = true, filter?: Filter, rootModel?: Model): string {
     const model = this.getModel(modelName);
     let params: string = '';
 
@@ -269,7 +255,6 @@ export default class VuexORMApollo {
     }
   }
 
-
   /**
    * Create a GraphQL query for the given model and filter options.
    *
@@ -277,25 +262,23 @@ export default class VuexORMApollo {
    * @param {Filter} filter
    * @returns {any}
    */
-  private buildQuery(modelName: string, filter?: Filter): any {
+  private buildQuery (modelName: string, filter?: Filter): any {
     const multiple = !(filter && filter.id);
     const query = `{ ${this.buildField(modelName, multiple, filter)} }`;
     return gql(query);
   }
-
 
   /**
    * Sends a query to the GraphQL API via apollo
    * @param query
    * @returns {Promise<Data>}
    */
-  private async apolloRequest(query: any): Promise<Data> {
-    const response = await (this.apolloClient as ApolloClient<any>).query({ query });
+  private async apolloRequest (query: any): Promise<Data> {
+    const response = await (this.apolloClient).query({ query });
 
     // Transform incoming data into something useful
     return this.transformIncomingData(response.data);
   }
-
 
   /**
    * Saves incoming data into the store.
@@ -303,12 +286,11 @@ export default class VuexORMApollo {
    * @param {Data} data
    * @param {Function} dispatch
    */
-  private storeData(data: Data, dispatch: Function) {
+  private storeData (data: Data, dispatch: Function) {
     Object.keys(data).forEach((key) => {
       dispatch('insert', { data: data[key] });
     });
   }
-
 
   /**
    * Returns a model by name
@@ -316,7 +298,7 @@ export default class VuexORMApollo {
    * @param {string} modelName
    * @returns {Model}
    */
-  private getModel(modelName: string): Model {
+  private getModel (modelName: string): Model {
     const model = this.models.get(inflection.singularize(modelName));
     if (!model) throw new Error(`No such model ${modelName}!`);
     return model;

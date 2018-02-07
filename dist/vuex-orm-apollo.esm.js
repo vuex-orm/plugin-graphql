@@ -8118,7 +8118,6 @@ var Model = /** @class */ (function () {
         this.fields.forEach(function (field, name) {
             if (field.constructor.name !== 'Attr') {
                 relations.set(name, field);
-                console.log('adding relation', name);
             }
         });
         return relations;
@@ -8251,13 +8250,11 @@ var VuexORMApollo = /** @class */ (function () {
         var _this = this;
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            console.log('procesing relation', name);
             if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
                 var multiple = field.constructor.name !== 'BelongsTo';
                 relationQueries.push(_this.buildField(name, multiple, undefined, rootModel || model));
             }
         });
-        console.log('relationQueries', relationQueries);
         return relationQueries;
     };
     /**
@@ -8292,7 +8289,6 @@ var VuexORMApollo = /** @class */ (function () {
     VuexORMApollo.prototype.buildQuery = function (modelName, filter) {
         var multiple = !(filter && filter.id);
         var query = "{ " + this.buildField(modelName, multiple, filter) + " }";
-        console.log('query', query);
         return src(query);
     };
     /**
@@ -8305,7 +8301,7 @@ var VuexORMApollo = /** @class */ (function () {
             var response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.apolloClient.query({ query: query })];
+                    case 0: return [4 /*yield*/, (this.apolloClient).query({ query: query })];
                     case 1:
                         response = _a.sent();
                         // Transform incoming data into something useful
