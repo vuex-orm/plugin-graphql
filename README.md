@@ -50,6 +50,18 @@ In your component:
 ```
 
 
+## Roadmap
+
+- [x] Setup apollo integration
+- [x] Implement fetch action
+- [ ] Make sure the reactivity works
+- [ ] Tests
+- [ ] Docs & document schema expectations
+- [ ] Deletions & persist
+- [ ] Subscriptions
+
+
+
 ## Contribution
 
 ```bash
