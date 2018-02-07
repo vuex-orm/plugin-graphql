@@ -1956,13 +1956,6 @@ exports.Observable = Observable;
 
 var zenObservable$2 = zenObservable.Observable;
 
-
-
-var Observable = Object.freeze({
-	default: zenObservable$2,
-	__moduleExports: zenObservable$2
-});
-
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -2185,7 +2178,7 @@ var Observable$1 = (function (_super) {
         return this;
     };
     return Observable$$1;
-}(Observable));
+}(zenObservable$2));
 
 var __extends$2 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -2614,7 +2607,7 @@ var DedupLink = (function (_super) {
         if (!this.inFlightRequestObservables.get(key)) {
             var singleObserver_1 = forward(operation);
             var subscription_1;
-            var sharedObserver = new Observable(function (observer) {
+            var sharedObserver = new zenObservable$2(function (observer) {
                 var prev = _this.subscribers.get(key);
                 if (!prev)
                     prev = { next: [], error: [], complete: [] };
@@ -4098,7 +4091,7 @@ var createHttpLink = function (linkOptions) {
     if (!uri)
         uri = '/graphql';
     return new ApolloLink(function (operation) {
-        return new Observable(function (observer) {
+        return new zenObservable$2(function (observer) {
             var _a = operation.getContext(), headers = _a.headers, credentials = _a.credentials, _b = _a.fetchOptions, fetchOptions = _b === void 0 ? {} : _b, contextURI = _a.uri, _c = _a.http, httpOptions = _c === void 0 ? {} : _c;
             var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
             var http = __assign$7({}, defaultHttpOptions, httpOptions);
