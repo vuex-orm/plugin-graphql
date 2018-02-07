@@ -4,19 +4,49 @@
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 [![License](https://img.shields.io/npm/l/@vuex-orm/core.svg)](https://github.com/vuex-orm/vuex-orm/blob/master/LICENSE.md)
 
-Vuex-ORM Plugin to sync the data against a GraphQL API via Apollo
+This Vuex-ORM plugin let's you sync the data against a GraphQL API via Apollo.
 
 
 ## Usage
 
 ```bash
-yarn add @vuex-orm/apollo
+yarn add @vuex-orm/plugin-apollo
 ```
 
 or
 
 ```bash
-npm install --save @vuex-orm/apollo
+npm install --save @vuex-orm/plugin-apollo
+```
+
+Add this after registering your models to the database:
+
+```javascript
+import installVuexORMApollo from '@vuex-orm/plugin-apollo';
+VuexORM.use(installVuexORMApollo, { database: database });
+```
+
+In your component:
+
+```vue
+<template>
+    <ul>
+        <li v-for="user in users" :key="user.name">{{contract.name}}</li>
+    </ul>
+</template>
+
+
+<script>
+    export default {
+        computed: {
+            users: () => store.getters['entities/users/all']()
+        },
+        
+        created() {
+            this.$store.dispatch('entities/users/fetch');
+        }
+    }
+</script>
 ```
 
 
