@@ -5181,6 +5181,2870 @@ var InMemoryCache = (function (_super) {
     return InMemoryCache;
 }(ApolloCache));
 
+var invariant_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = invariant;
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function invariant(condition, message) {
+  /* istanbul ignore else */
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+});
+
+unwrapExports(invariant_1);
+
+var source = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Source = undefined;
+
+
+
+var _invariant2 = _interopRequireDefault(invariant_1);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } } /**
+                                                                                                                                                           * Copyright (c) 2015-present, Facebook, Inc.
+                                                                                                                                                           *
+                                                                                                                                                           * This source code is licensed under the MIT license found in the
+                                                                                                                                                           * LICENSE file in the root directory of this source tree.
+                                                                                                                                                           *
+                                                                                                                                                           * 
+                                                                                                                                                           */
+
+/**
+ * A representation of source input to GraphQL.
+ * `name` and `locationOffset` are optional. They are useful for clients who
+ * store GraphQL documents in source files; for example, if the GraphQL input
+ * starts at line 40 in a file named Foo.graphql, it might be useful for name to
+ * be "Foo.graphql" and location to be `{ line: 40, column: 0 }`.
+ * line and column in locationOffset are 1-indexed
+ */
+var Source = exports.Source = function Source(body, name, locationOffset) {
+  _classCallCheck(this, Source);
+
+  this.body = body;
+  this.name = name || 'GraphQL request';
+  this.locationOffset = locationOffset || { line: 1, column: 1 };
+  !(this.locationOffset.line > 0) ? (0, _invariant2.default)(0, 'line in locationOffset is 1-indexed and must be positive') : void 0;
+  !(this.locationOffset.column > 0) ? (0, _invariant2.default)(0, 'column in locationOffset is 1-indexed and must be positive') : void 0;
+};
+});
+
+unwrapExports(source);
+var source_1 = source.Source;
+
+var location = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.getLocation = getLocation;
+
+
+/**
+ * Takes a Source and a UTF-8 character offset, and returns the corresponding
+ * line and column as a SourceLocation.
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function getLocation(source, position) {
+  var lineRegexp = /\r\n|[\n\r]/g;
+  var line = 1;
+  var column = position + 1;
+  var match = void 0;
+  while ((match = lineRegexp.exec(source.body)) && match.index < position) {
+    line += 1;
+    column = position + 1 - (match.index + match[0].length);
+  }
+  return { line: line, column: column };
+}
+
+/**
+ * Represents a location in a Source.
+ */
+});
+
+unwrapExports(location);
+var location_1 = location.getLocation;
+
+var printError_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.printError = printError;
+
+
+
+/**
+ * Prints a GraphQLError to a string, representing useful location information
+ * about the error's position in the source.
+ */
+function printError(error) {
+  var printedLocations = [];
+  if (error.nodes) {
+    error.nodes.forEach(function (node) {
+      if (node.loc) {
+        printedLocations.push(highlightSourceAtLocation(node.loc.source, (0, location.getLocation)(node.loc.source, node.loc.start)));
+      }
+    });
+  } else if (error.source && error.locations) {
+    var source = error.source;
+    error.locations.forEach(function (location$$1) {
+      printedLocations.push(highlightSourceAtLocation(source, location$$1));
+    });
+  }
+  return printedLocations.length === 0 ? error.message : [error.message].concat(printedLocations).join('\n\n') + '\n';
+}
+
+/**
+ * Render a helpful description of the location of the error in the GraphQL
+ * Source document.
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function highlightSourceAtLocation(source, location$$1) {
+  var line = location$$1.line;
+  var lineOffset = source.locationOffset.line - 1;
+  var columnOffset = getColumnOffset(source, location$$1);
+  var contextLine = line + lineOffset;
+  var contextColumn = location$$1.column + columnOffset;
+  var prevLineNum = (contextLine - 1).toString();
+  var lineNum = contextLine.toString();
+  var nextLineNum = (contextLine + 1).toString();
+  var padLen = nextLineNum.length;
+  var lines = source.body.split(/\r\n|[\n\r]/g);
+  lines[0] = whitespace(source.locationOffset.column - 1) + lines[0];
+  var outputLines = [source.name + ' (' + contextLine + ':' + contextColumn + ')', line >= 2 && lpad(padLen, prevLineNum) + ': ' + lines[line - 2], lpad(padLen, lineNum) + ': ' + lines[line - 1], whitespace(2 + padLen + contextColumn - 1) + '^', line < lines.length && lpad(padLen, nextLineNum) + ': ' + lines[line]];
+  return outputLines.filter(Boolean).join('\n');
+}
+
+function getColumnOffset(source, location$$1) {
+  return location$$1.line === 1 ? source.locationOffset.column - 1 : 0;
+}
+
+function whitespace(len) {
+  return Array(len + 1).join(' ');
+}
+
+function lpad(len, str) {
+  return whitespace(len - str.length) + str;
+}
+});
+
+unwrapExports(printError_1);
+var printError_2 = printError_1.printError;
+
+var GraphQLError_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.GraphQLError = GraphQLError;
+
+
+
+
+
+/**
+ * A GraphQLError describes an Error found during the parse, validate, or
+ * execute phases of performing a GraphQL operation. In addition to a message
+ * and stack trace, it also includes information about the locations in a
+ * GraphQL document and/or execution result that correspond to the Error.
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function GraphQLError( // eslint-disable-line no-redeclare
+message, nodes, source, positions, path, originalError, extensions) {
+  // Compute list of blame nodes.
+  var _nodes = Array.isArray(nodes) ? nodes.length !== 0 ? nodes : undefined : nodes ? [nodes] : undefined;
+
+  // Compute locations in the source for the given nodes/positions.
+  var _source = source;
+  if (!_source && _nodes) {
+    var node = _nodes[0];
+    _source = node && node.loc && node.loc.source;
+  }
+
+  var _positions = positions;
+  if (!_positions && _nodes) {
+    _positions = _nodes.reduce(function (list, node) {
+      if (node.loc) {
+        list.push(node.loc.start);
+      }
+      return list;
+    }, []);
+  }
+  if (_positions && _positions.length === 0) {
+    _positions = undefined;
+  }
+
+  var _locations = void 0;
+  if (positions && source) {
+    var providedSource = source;
+    _locations = positions.map(function (pos) {
+      return (0, location.getLocation)(providedSource, pos);
+    });
+  } else if (_nodes) {
+    _locations = _nodes.reduce(function (list, node) {
+      if (node.loc) {
+        list.push((0, location.getLocation)(node.loc.source, node.loc.start));
+      }
+      return list;
+    }, []);
+  }
+
+  Object.defineProperties(this, {
+    message: {
+      value: message,
+      // By being enumerable, JSON.stringify will include `message` in the
+      // resulting output. This ensures that the simplest possible GraphQL
+      // service adheres to the spec.
+      enumerable: true,
+      writable: true
+    },
+    locations: {
+      // Coercing falsey values to undefined ensures they will not be included
+      // in JSON.stringify() when not provided.
+      value: _locations || undefined,
+      // By being enumerable, JSON.stringify will include `locations` in the
+      // resulting output. This ensures that the simplest possible GraphQL
+      // service adheres to the spec.
+      enumerable: true
+    },
+    path: {
+      // Coercing falsey values to undefined ensures they will not be included
+      // in JSON.stringify() when not provided.
+      value: path || undefined,
+      // By being enumerable, JSON.stringify will include `path` in the
+      // resulting output. This ensures that the simplest possible GraphQL
+      // service adheres to the spec.
+      enumerable: true
+    },
+    nodes: {
+      value: _nodes || undefined
+    },
+    source: {
+      value: _source || undefined
+    },
+    positions: {
+      value: _positions || undefined
+    },
+    originalError: {
+      value: originalError
+    },
+    extensions: {
+      value: extensions || originalError && originalError.extensions
+    }
+  });
+
+  // Include (non-enumerable) stack trace.
+  if (originalError && originalError.stack) {
+    Object.defineProperty(this, 'stack', {
+      value: originalError.stack,
+      writable: true,
+      configurable: true
+    });
+  } else if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, GraphQLError);
+  } else {
+    Object.defineProperty(this, 'stack', {
+      value: Error().stack,
+      writable: true,
+      configurable: true
+    });
+  }
+}
+
+GraphQLError.prototype = Object.create(Error.prototype, {
+  constructor: { value: GraphQLError },
+  name: { value: 'GraphQLError' },
+  toString: {
+    value: function toString() {
+      return (0, printError_1.printError)(this);
+    }
+  }
+});
+});
+
+unwrapExports(GraphQLError_1);
+var GraphQLError_2 = GraphQLError_1.GraphQLError;
+
+var syntaxError_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.syntaxError = syntaxError;
+
+
+
+/**
+ * Produces a GraphQLError representing a syntax error, containing useful
+ * descriptive information about the syntax error's position in the source.
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function syntaxError(source, position, description) {
+  return new GraphQLError_1.GraphQLError('Syntax Error: ' + description, undefined, source, [position]);
+}
+});
+
+unwrapExports(syntaxError_1);
+var syntaxError_2 = syntaxError_1.syntaxError;
+
+var locatedError_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.locatedError = locatedError;
+
+
+
+/**
+ * Given an arbitrary Error, presumably thrown while attempting to execute a
+ * GraphQL operation, produce a new GraphQLError aware of the location in the
+ * document responsible for the original Error.
+ */
+function locatedError(originalError, nodes, path) {
+  // Note: this uses a brand-check to support GraphQL errors originating from
+  // other contexts.
+  if (originalError && Array.isArray(originalError.path)) {
+    return originalError;
+  }
+
+  return new GraphQLError_1.GraphQLError(originalError && originalError.message, originalError && originalError.nodes || nodes, originalError && originalError.source, originalError && originalError.positions, path, originalError);
+} /**
+   * Copyright (c) 2015-present, Facebook, Inc.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *
+   * 
+   */
+});
+
+unwrapExports(locatedError_1);
+var locatedError_2 = locatedError_1.locatedError;
+
+var formatError_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; /**
+                                                                                                                                                                                                                                                                   * Copyright (c) 2015-present, Facebook, Inc.
+                                                                                                                                                                                                                                                                   *
+                                                                                                                                                                                                                                                                   * This source code is licensed under the MIT license found in the
+                                                                                                                                                                                                                                                                   * LICENSE file in the root directory of this source tree.
+                                                                                                                                                                                                                                                                   *
+                                                                                                                                                                                                                                                                   * 
+                                                                                                                                                                                                                                                                   */
+
+exports.formatError = formatError;
+
+
+
+var _invariant2 = _interopRequireDefault(invariant_1);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Given a GraphQLError, format it according to the rules described by the
+ * Response Format, Errors section of the GraphQL Specification.
+ */
+function formatError(error) {
+  !error ? (0, _invariant2.default)(0, 'Received null or undefined error.') : void 0;
+  return _extends({}, error.extensions, {
+    message: error.message || 'An unknown error occurred.',
+    locations: error.locations,
+    path: error.path
+  });
+}
+});
+
+unwrapExports(formatError_1);
+var formatError_2 = formatError_1.formatError;
+
+var error = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+
+
+Object.defineProperty(exports, 'GraphQLError', {
+  enumerable: true,
+  get: function get() {
+    return GraphQLError_1.GraphQLError;
+  }
+});
+
+
+
+Object.defineProperty(exports, 'syntaxError', {
+  enumerable: true,
+  get: function get() {
+    return syntaxError_1.syntaxError;
+  }
+});
+
+
+
+Object.defineProperty(exports, 'locatedError', {
+  enumerable: true,
+  get: function get() {
+    return locatedError_1.locatedError;
+  }
+});
+
+
+
+Object.defineProperty(exports, 'printError', {
+  enumerable: true,
+  get: function get() {
+    return printError_1.printError;
+  }
+});
+
+
+
+Object.defineProperty(exports, 'formatError', {
+  enumerable: true,
+  get: function get() {
+    return formatError_1.formatError;
+  }
+});
+});
+
+unwrapExports(error);
+
+var blockStringValue_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = blockStringValue;
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+/**
+ * Produces the value of a block string from its parsed raw value, similar to
+ * Coffeescript's block string, Python's docstring trim or Ruby's strip_heredoc.
+ *
+ * This implements the GraphQL spec's BlockStringValue() static algorithm.
+ */
+function blockStringValue(rawString) {
+  // Expand a block string's raw value into independent lines.
+  var lines = rawString.split(/\r\n|[\n\r]/g);
+
+  // Remove common indentation from all lines but first.
+  var commonIndent = null;
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i];
+    var indent = leadingWhitespace(line);
+    if (indent < line.length && (commonIndent === null || indent < commonIndent)) {
+      commonIndent = indent;
+      if (commonIndent === 0) {
+        break;
+      }
+    }
+  }
+
+  if (commonIndent) {
+    for (var _i = 1; _i < lines.length; _i++) {
+      lines[_i] = lines[_i].slice(commonIndent);
+    }
+  }
+
+  // Remove leading and trailing blank lines.
+  while (lines.length > 0 && isBlank(lines[0])) {
+    lines.shift();
+  }
+  while (lines.length > 0 && isBlank(lines[lines.length - 1])) {
+    lines.pop();
+  }
+
+  // Return a string of the lines joined with U+000A.
+  return lines.join('\n');
+}
+
+function leadingWhitespace(str) {
+  var i = 0;
+  while (i < str.length && (str[i] === ' ' || str[i] === '\t')) {
+    i++;
+  }
+  return i;
+}
+
+function isBlank(str) {
+  return leadingWhitespace(str) === str.length;
+}
+});
+
+unwrapExports(blockStringValue_1);
+
+var lexer = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TokenKind = undefined;
+exports.createLexer = createLexer;
+exports.getTokenDesc = getTokenDesc;
+
+
+
+
+
+var _blockStringValue2 = _interopRequireDefault(blockStringValue_1);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Given a Source object, this returns a Lexer for that source.
+ * A Lexer is a stateful stream generator in that every time
+ * it is advanced, it returns the next token in the Source. Assuming the
+ * source lexes, the final Token emitted by the lexer will be of kind
+ * EOF, after which the lexer will repeatedly return the same EOF token
+ * whenever called.
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function createLexer(source, options) {
+  var startOfFileToken = new Tok(SOF, 0, 0, 0, 0, null);
+  var lexer = {
+    source: source,
+    options: options,
+    lastToken: startOfFileToken,
+    token: startOfFileToken,
+    line: 1,
+    lineStart: 0,
+    advance: advanceLexer,
+    lookahead: lookahead
+  };
+  return lexer;
+}
+
+function advanceLexer() {
+  this.lastToken = this.token;
+  var token = this.token = this.lookahead();
+  return token;
+}
+
+function lookahead() {
+  var token = this.token;
+  if (token.kind !== EOF) {
+    do {
+      // Note: next is only mutable during parsing, so we cast to allow this.
+      token = token.next || (token.next = readToken(this, token));
+    } while (token.kind === COMMENT);
+  }
+  return token;
+}
+
+/**
+ * The return type of createLexer.
+ */
+
+
+// Each kind of token.
+var SOF = '<SOF>';
+var EOF = '<EOF>';
+var BANG = '!';
+var DOLLAR = '$';
+var PAREN_L = '(';
+var PAREN_R = ')';
+var SPREAD = '...';
+var COLON = ':';
+var EQUALS = '=';
+var AT = '@';
+var BRACKET_L = '[';
+var BRACKET_R = ']';
+var BRACE_L = '{';
+var PIPE = '|';
+var BRACE_R = '}';
+var NAME = 'Name';
+var INT = 'Int';
+var FLOAT = 'Float';
+var STRING = 'String';
+var BLOCK_STRING = 'BlockString';
+var COMMENT = 'Comment';
+
+/**
+ * An exported enum describing the different kinds of tokens that the
+ * lexer emits.
+ */
+var TokenKind = exports.TokenKind = {
+  SOF: SOF,
+  EOF: EOF,
+  BANG: BANG,
+  DOLLAR: DOLLAR,
+  PAREN_L: PAREN_L,
+  PAREN_R: PAREN_R,
+  SPREAD: SPREAD,
+  COLON: COLON,
+  EQUALS: EQUALS,
+  AT: AT,
+  BRACKET_L: BRACKET_L,
+  BRACKET_R: BRACKET_R,
+  BRACE_L: BRACE_L,
+  PIPE: PIPE,
+  BRACE_R: BRACE_R,
+  NAME: NAME,
+  INT: INT,
+  FLOAT: FLOAT,
+  STRING: STRING,
+  BLOCK_STRING: BLOCK_STRING,
+  COMMENT: COMMENT
+};
+
+/**
+ * A helper function to describe a token as a string for debugging
+ */
+function getTokenDesc(token) {
+  var value = token.value;
+  return value ? token.kind + ' "' + value + '"' : token.kind;
+}
+
+var charCodeAt = String.prototype.charCodeAt;
+var slice = String.prototype.slice;
+
+/**
+ * Helper function for constructing the Token object.
+ */
+function Tok(kind, start, end, line, column, prev, value) {
+  this.kind = kind;
+  this.start = start;
+  this.end = end;
+  this.line = line;
+  this.column = column;
+  this.value = value;
+  this.prev = prev;
+  this.next = null;
+}
+
+// Print a simplified form when appearing in JSON/util.inspect.
+Tok.prototype.toJSON = Tok.prototype.inspect = function toJSON() {
+  return {
+    kind: this.kind,
+    value: this.value,
+    line: this.line,
+    column: this.column
+  };
+};
+
+function printCharCode(code) {
+  return (
+    // NaN/undefined represents access beyond the end of the file.
+    isNaN(code) ? EOF : // Trust JSON for ASCII.
+    code < 0x007f ? JSON.stringify(String.fromCharCode(code)) : // Otherwise print the escaped form.
+    '"\\u' + ('00' + code.toString(16).toUpperCase()).slice(-4) + '"'
+  );
+}
+
+/**
+ * Gets the next token from the source starting at the given position.
+ *
+ * This skips over whitespace and comments until it finds the next lexable
+ * token, then lexes punctuators immediately or calls the appropriate helper
+ * function for more complicated tokens.
+ */
+function readToken(lexer, prev) {
+  var source = lexer.source;
+  var body = source.body;
+  var bodyLength = body.length;
+
+  var position = positionAfterWhitespace(body, prev.end, lexer);
+  var line = lexer.line;
+  var col = 1 + position - lexer.lineStart;
+
+  if (position >= bodyLength) {
+    return new Tok(EOF, bodyLength, bodyLength, line, col, prev);
+  }
+
+  var code = charCodeAt.call(body, position);
+
+  // SourceCharacter
+  if (code < 0x0020 && code !== 0x0009 && code !== 0x000a && code !== 0x000d) {
+    throw (0, error.syntaxError)(source, position, 'Cannot contain the invalid character ' + printCharCode(code) + '.');
+  }
+
+  switch (code) {
+    // !
+    case 33:
+      return new Tok(BANG, position, position + 1, line, col, prev);
+    // #
+    case 35:
+      return readComment(source, position, line, col, prev);
+    // $
+    case 36:
+      return new Tok(DOLLAR, position, position + 1, line, col, prev);
+    // (
+    case 40:
+      return new Tok(PAREN_L, position, position + 1, line, col, prev);
+    // )
+    case 41:
+      return new Tok(PAREN_R, position, position + 1, line, col, prev);
+    // .
+    case 46:
+      if (charCodeAt.call(body, position + 1) === 46 && charCodeAt.call(body, position + 2) === 46) {
+        return new Tok(SPREAD, position, position + 3, line, col, prev);
+      }
+      break;
+    // :
+    case 58:
+      return new Tok(COLON, position, position + 1, line, col, prev);
+    // =
+    case 61:
+      return new Tok(EQUALS, position, position + 1, line, col, prev);
+    // @
+    case 64:
+      return new Tok(AT, position, position + 1, line, col, prev);
+    // [
+    case 91:
+      return new Tok(BRACKET_L, position, position + 1, line, col, prev);
+    // ]
+    case 93:
+      return new Tok(BRACKET_R, position, position + 1, line, col, prev);
+    // {
+    case 123:
+      return new Tok(BRACE_L, position, position + 1, line, col, prev);
+    // |
+    case 124:
+      return new Tok(PIPE, position, position + 1, line, col, prev);
+    // }
+    case 125:
+      return new Tok(BRACE_R, position, position + 1, line, col, prev);
+    // A-Z _ a-z
+    case 65:
+    case 66:
+    case 67:
+    case 68:
+    case 69:
+    case 70:
+    case 71:
+    case 72:
+    case 73:
+    case 74:
+    case 75:
+    case 76:
+    case 77:
+    case 78:
+    case 79:
+    case 80:
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+    case 90:
+    case 95:
+    case 97:
+    case 98:
+    case 99:
+    case 100:
+    case 101:
+    case 102:
+    case 103:
+    case 104:
+    case 105:
+    case 106:
+    case 107:
+    case 108:
+    case 109:
+    case 110:
+    case 111:
+    case 112:
+    case 113:
+    case 114:
+    case 115:
+    case 116:
+    case 117:
+    case 118:
+    case 119:
+    case 120:
+    case 121:
+    case 122:
+      return readName(source, position, line, col, prev);
+    // - 0-9
+    case 45:
+    case 48:
+    case 49:
+    case 50:
+    case 51:
+    case 52:
+    case 53:
+    case 54:
+    case 55:
+    case 56:
+    case 57:
+      return readNumber(source, position, code, line, col, prev);
+    // "
+    case 34:
+      if (charCodeAt.call(body, position + 1) === 34 && charCodeAt.call(body, position + 2) === 34) {
+        return readBlockString(source, position, line, col, prev);
+      }
+      return readString(source, position, line, col, prev);
+  }
+
+  throw (0, error.syntaxError)(source, position, unexpectedCharacterMessage(code));
+}
+
+/**
+ * Report a message that an unexpected character was encountered.
+ */
+function unexpectedCharacterMessage(code) {
+  if (code === 39) {
+    // '
+    return "Unexpected single quote character ('), did you mean to use " + 'a double quote (")?';
+  }
+
+  return 'Cannot parse the unexpected character ' + printCharCode(code) + '.';
+}
+
+/**
+ * Reads from body starting at startPosition until it finds a non-whitespace
+ * or commented character, then returns the position of that character for
+ * lexing.
+ */
+function positionAfterWhitespace(body, startPosition, lexer) {
+  var bodyLength = body.length;
+  var position = startPosition;
+  while (position < bodyLength) {
+    var code = charCodeAt.call(body, position);
+    // tab | space | comma | BOM
+    if (code === 9 || code === 32 || code === 44 || code === 0xfeff) {
+      ++position;
+    } else if (code === 10) {
+      // new line
+      ++position;
+      ++lexer.line;
+      lexer.lineStart = position;
+    } else if (code === 13) {
+      // carriage return
+      if (charCodeAt.call(body, position + 1) === 10) {
+        position += 2;
+      } else {
+        ++position;
+      }
+      ++lexer.line;
+      lexer.lineStart = position;
+    } else {
+      break;
+    }
+  }
+  return position;
+}
+
+/**
+ * Reads a comment token from the source file.
+ *
+ * #[\u0009\u0020-\uFFFF]*
+ */
+function readComment(source, start, line, col, prev) {
+  var body = source.body;
+  var code = void 0;
+  var position = start;
+
+  do {
+    code = charCodeAt.call(body, ++position);
+  } while (code !== null && (
+  // SourceCharacter but not LineTerminator
+  code > 0x001f || code === 0x0009));
+
+  return new Tok(COMMENT, start, position, line, col, prev, slice.call(body, start + 1, position));
+}
+
+/**
+ * Reads a number token from the source file, either a float
+ * or an int depending on whether a decimal point appears.
+ *
+ * Int:   -?(0|[1-9][0-9]*)
+ * Float: -?(0|[1-9][0-9]*)(\.[0-9]+)?((E|e)(+|-)?[0-9]+)?
+ */
+function readNumber(source, start, firstCode, line, col, prev) {
+  var body = source.body;
+  var code = firstCode;
+  var position = start;
+  var isFloat = false;
+
+  if (code === 45) {
+    // -
+    code = charCodeAt.call(body, ++position);
+  }
+
+  if (code === 48) {
+    // 0
+    code = charCodeAt.call(body, ++position);
+    if (code >= 48 && code <= 57) {
+      throw (0, error.syntaxError)(source, position, 'Invalid number, unexpected digit after 0: ' + printCharCode(code) + '.');
+    }
+  } else {
+    position = readDigits(source, position, code);
+    code = charCodeAt.call(body, position);
+  }
+
+  if (code === 46) {
+    // .
+    isFloat = true;
+
+    code = charCodeAt.call(body, ++position);
+    position = readDigits(source, position, code);
+    code = charCodeAt.call(body, position);
+  }
+
+  if (code === 69 || code === 101) {
+    // E e
+    isFloat = true;
+
+    code = charCodeAt.call(body, ++position);
+    if (code === 43 || code === 45) {
+      // + -
+      code = charCodeAt.call(body, ++position);
+    }
+    position = readDigits(source, position, code);
+  }
+
+  return new Tok(isFloat ? FLOAT : INT, start, position, line, col, prev, slice.call(body, start, position));
+}
+
+/**
+ * Returns the new position in the source after reading digits.
+ */
+function readDigits(source, start, firstCode) {
+  var body = source.body;
+  var position = start;
+  var code = firstCode;
+  if (code >= 48 && code <= 57) {
+    // 0 - 9
+    do {
+      code = charCodeAt.call(body, ++position);
+    } while (code >= 48 && code <= 57); // 0 - 9
+    return position;
+  }
+  throw (0, error.syntaxError)(source, position, 'Invalid number, expected digit but got: ' + printCharCode(code) + '.');
+}
+
+/**
+ * Reads a string token from the source file.
+ *
+ * "([^"\\\u000A\u000D]|(\\(u[0-9a-fA-F]{4}|["\\/bfnrt])))*"
+ */
+function readString(source, start, line, col, prev) {
+  var body = source.body;
+  var position = start + 1;
+  var chunkStart = position;
+  var code = 0;
+  var value = '';
+
+  while (position < body.length && (code = charCodeAt.call(body, position)) !== null &&
+  // not LineTerminator
+  code !== 0x000a && code !== 0x000d) {
+    // Closing Quote (")
+    if (code === 34) {
+      value += slice.call(body, chunkStart, position);
+      return new Tok(STRING, start, position + 1, line, col, prev, value);
+    }
+
+    // SourceCharacter
+    if (code < 0x0020 && code !== 0x0009) {
+      throw (0, error.syntaxError)(source, position, 'Invalid character within String: ' + printCharCode(code) + '.');
+    }
+
+    ++position;
+    if (code === 92) {
+      // \
+      value += slice.call(body, chunkStart, position - 1);
+      code = charCodeAt.call(body, position);
+      switch (code) {
+        case 34:
+          value += '"';
+          break;
+        case 47:
+          value += '/';
+          break;
+        case 92:
+          value += '\\';
+          break;
+        case 98:
+          value += '\b';
+          break;
+        case 102:
+          value += '\f';
+          break;
+        case 110:
+          value += '\n';
+          break;
+        case 114:
+          value += '\r';
+          break;
+        case 116:
+          value += '\t';
+          break;
+        case 117:
+          // u
+          var charCode = uniCharCode(charCodeAt.call(body, position + 1), charCodeAt.call(body, position + 2), charCodeAt.call(body, position + 3), charCodeAt.call(body, position + 4));
+          if (charCode < 0) {
+            throw (0, error.syntaxError)(source, position, 'Invalid character escape sequence: ' + ('\\u' + body.slice(position + 1, position + 5) + '.'));
+          }
+          value += String.fromCharCode(charCode);
+          position += 4;
+          break;
+        default:
+          throw (0, error.syntaxError)(source, position, 'Invalid character escape sequence: \\' + String.fromCharCode(code) + '.');
+      }
+      ++position;
+      chunkStart = position;
+    }
+  }
+
+  throw (0, error.syntaxError)(source, position, 'Unterminated string.');
+}
+
+/**
+ * Reads a block string token from the source file.
+ *
+ * """("?"?(\\"""|\\(?!=""")|[^"\\]))*"""
+ */
+function readBlockString(source, start, line, col, prev) {
+  var body = source.body;
+  var position = start + 3;
+  var chunkStart = position;
+  var code = 0;
+  var rawValue = '';
+
+  while (position < body.length && (code = charCodeAt.call(body, position)) !== null) {
+    // Closing Triple-Quote (""")
+    if (code === 34 && charCodeAt.call(body, position + 1) === 34 && charCodeAt.call(body, position + 2) === 34) {
+      rawValue += slice.call(body, chunkStart, position);
+      return new Tok(BLOCK_STRING, start, position + 3, line, col, prev, (0, _blockStringValue2.default)(rawValue));
+    }
+
+    // SourceCharacter
+    if (code < 0x0020 && code !== 0x0009 && code !== 0x000a && code !== 0x000d) {
+      throw (0, error.syntaxError)(source, position, 'Invalid character within String: ' + printCharCode(code) + '.');
+    }
+
+    // Escape Triple-Quote (\""")
+    if (code === 92 && charCodeAt.call(body, position + 1) === 34 && charCodeAt.call(body, position + 2) === 34 && charCodeAt.call(body, position + 3) === 34) {
+      rawValue += slice.call(body, chunkStart, position) + '"""';
+      position += 4;
+      chunkStart = position;
+    } else {
+      ++position;
+    }
+  }
+
+  throw (0, error.syntaxError)(source, position, 'Unterminated string.');
+}
+
+/**
+ * Converts four hexidecimal chars to the integer that the
+ * string represents. For example, uniCharCode('0','0','0','f')
+ * will return 15, and uniCharCode('0','0','f','f') returns 255.
+ *
+ * Returns a negative number on error, if a char was invalid.
+ *
+ * This is implemented by noting that char2hex() returns -1 on error,
+ * which means the result of ORing the char2hex() will also be negative.
+ */
+function uniCharCode(a, b, c, d) {
+  return char2hex(a) << 12 | char2hex(b) << 8 | char2hex(c) << 4 | char2hex(d);
+}
+
+/**
+ * Converts a hex character to its integer value.
+ * '0' becomes 0, '9' becomes 9
+ * 'A' becomes 10, 'F' becomes 15
+ * 'a' becomes 10, 'f' becomes 15
+ *
+ * Returns -1 on error.
+ */
+function char2hex(a) {
+  return a >= 48 && a <= 57 ? a - 48 // 0-9
+  : a >= 65 && a <= 70 ? a - 55 // A-F
+  : a >= 97 && a <= 102 ? a - 87 // a-f
+  : -1;
+}
+
+/**
+ * Reads an alphanumeric + underscore name from the source.
+ *
+ * [_A-Za-z][_0-9A-Za-z]*
+ */
+function readName(source, position, line, col, prev) {
+  var body = source.body;
+  var bodyLength = body.length;
+  var end = position + 1;
+  var code = 0;
+  while (end !== bodyLength && (code = charCodeAt.call(body, end)) !== null && (code === 95 || // _
+  code >= 48 && code <= 57 || // 0-9
+  code >= 65 && code <= 90 || // A-Z
+  code >= 97 && code <= 122) // a-z
+  ) {
+    ++end;
+  }
+  return new Tok(NAME, position, end, line, col, prev, slice.call(body, position, end));
+}
+});
+
+unwrapExports(lexer);
+var lexer_1 = lexer.TokenKind;
+var lexer_2 = lexer.createLexer;
+var lexer_3 = lexer.getTokenDesc;
+
+var kinds = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+// Name
+
+var NAME = exports.NAME = 'Name';
+
+// Document
+
+var DOCUMENT = exports.DOCUMENT = 'Document';
+var OPERATION_DEFINITION = exports.OPERATION_DEFINITION = 'OperationDefinition';
+var VARIABLE_DEFINITION = exports.VARIABLE_DEFINITION = 'VariableDefinition';
+var VARIABLE = exports.VARIABLE = 'Variable';
+var SELECTION_SET = exports.SELECTION_SET = 'SelectionSet';
+var FIELD = exports.FIELD = 'Field';
+var ARGUMENT = exports.ARGUMENT = 'Argument';
+
+// Fragments
+
+var FRAGMENT_SPREAD = exports.FRAGMENT_SPREAD = 'FragmentSpread';
+var INLINE_FRAGMENT = exports.INLINE_FRAGMENT = 'InlineFragment';
+var FRAGMENT_DEFINITION = exports.FRAGMENT_DEFINITION = 'FragmentDefinition';
+
+// Values
+
+var INT = exports.INT = 'IntValue';
+var FLOAT = exports.FLOAT = 'FloatValue';
+var STRING = exports.STRING = 'StringValue';
+var BOOLEAN = exports.BOOLEAN = 'BooleanValue';
+var NULL = exports.NULL = 'NullValue';
+var ENUM = exports.ENUM = 'EnumValue';
+var LIST = exports.LIST = 'ListValue';
+var OBJECT = exports.OBJECT = 'ObjectValue';
+var OBJECT_FIELD = exports.OBJECT_FIELD = 'ObjectField';
+
+// Directives
+
+var DIRECTIVE = exports.DIRECTIVE = 'Directive';
+
+// Types
+
+var NAMED_TYPE = exports.NAMED_TYPE = 'NamedType';
+var LIST_TYPE = exports.LIST_TYPE = 'ListType';
+var NON_NULL_TYPE = exports.NON_NULL_TYPE = 'NonNullType';
+
+// Type System Definitions
+
+var SCHEMA_DEFINITION = exports.SCHEMA_DEFINITION = 'SchemaDefinition';
+var OPERATION_TYPE_DEFINITION = exports.OPERATION_TYPE_DEFINITION = 'OperationTypeDefinition';
+
+// Type Definitions
+
+var SCALAR_TYPE_DEFINITION = exports.SCALAR_TYPE_DEFINITION = 'ScalarTypeDefinition';
+var OBJECT_TYPE_DEFINITION = exports.OBJECT_TYPE_DEFINITION = 'ObjectTypeDefinition';
+var FIELD_DEFINITION = exports.FIELD_DEFINITION = 'FieldDefinition';
+var INPUT_VALUE_DEFINITION = exports.INPUT_VALUE_DEFINITION = 'InputValueDefinition';
+var INTERFACE_TYPE_DEFINITION = exports.INTERFACE_TYPE_DEFINITION = 'InterfaceTypeDefinition';
+var UNION_TYPE_DEFINITION = exports.UNION_TYPE_DEFINITION = 'UnionTypeDefinition';
+var ENUM_TYPE_DEFINITION = exports.ENUM_TYPE_DEFINITION = 'EnumTypeDefinition';
+var ENUM_VALUE_DEFINITION = exports.ENUM_VALUE_DEFINITION = 'EnumValueDefinition';
+var INPUT_OBJECT_TYPE_DEFINITION = exports.INPUT_OBJECT_TYPE_DEFINITION = 'InputObjectTypeDefinition';
+
+// Type Extensions
+
+var SCALAR_TYPE_EXTENSION = exports.SCALAR_TYPE_EXTENSION = 'ScalarTypeExtension';
+var OBJECT_TYPE_EXTENSION = exports.OBJECT_TYPE_EXTENSION = 'ObjectTypeExtension';
+var INTERFACE_TYPE_EXTENSION = exports.INTERFACE_TYPE_EXTENSION = 'InterfaceTypeExtension';
+var UNION_TYPE_EXTENSION = exports.UNION_TYPE_EXTENSION = 'UnionTypeExtension';
+var ENUM_TYPE_EXTENSION = exports.ENUM_TYPE_EXTENSION = 'EnumTypeExtension';
+var INPUT_OBJECT_TYPE_EXTENSION = exports.INPUT_OBJECT_TYPE_EXTENSION = 'InputObjectTypeExtension';
+
+// Directive Definitions
+
+var DIRECTIVE_DEFINITION = exports.DIRECTIVE_DEFINITION = 'DirectiveDefinition';
+});
+
+unwrapExports(kinds);
+var kinds_1 = kinds.NAME;
+var kinds_2 = kinds.DOCUMENT;
+var kinds_3 = kinds.OPERATION_DEFINITION;
+var kinds_4 = kinds.VARIABLE_DEFINITION;
+var kinds_5 = kinds.VARIABLE;
+var kinds_6 = kinds.SELECTION_SET;
+var kinds_7 = kinds.FIELD;
+var kinds_8 = kinds.ARGUMENT;
+var kinds_9 = kinds.FRAGMENT_SPREAD;
+var kinds_10 = kinds.INLINE_FRAGMENT;
+var kinds_11 = kinds.FRAGMENT_DEFINITION;
+var kinds_12 = kinds.INT;
+var kinds_13 = kinds.FLOAT;
+var kinds_14 = kinds.STRING;
+var kinds_15 = kinds.BOOLEAN;
+var kinds_16 = kinds.NULL;
+var kinds_17 = kinds.ENUM;
+var kinds_18 = kinds.LIST;
+var kinds_19 = kinds.OBJECT;
+var kinds_20 = kinds.OBJECT_FIELD;
+var kinds_21 = kinds.DIRECTIVE;
+var kinds_22 = kinds.NAMED_TYPE;
+var kinds_23 = kinds.LIST_TYPE;
+var kinds_24 = kinds.NON_NULL_TYPE;
+var kinds_25 = kinds.SCHEMA_DEFINITION;
+var kinds_26 = kinds.OPERATION_TYPE_DEFINITION;
+var kinds_27 = kinds.SCALAR_TYPE_DEFINITION;
+var kinds_28 = kinds.OBJECT_TYPE_DEFINITION;
+var kinds_29 = kinds.FIELD_DEFINITION;
+var kinds_30 = kinds.INPUT_VALUE_DEFINITION;
+var kinds_31 = kinds.INTERFACE_TYPE_DEFINITION;
+var kinds_32 = kinds.UNION_TYPE_DEFINITION;
+var kinds_33 = kinds.ENUM_TYPE_DEFINITION;
+var kinds_34 = kinds.ENUM_VALUE_DEFINITION;
+var kinds_35 = kinds.INPUT_OBJECT_TYPE_DEFINITION;
+var kinds_36 = kinds.SCALAR_TYPE_EXTENSION;
+var kinds_37 = kinds.OBJECT_TYPE_EXTENSION;
+var kinds_38 = kinds.INTERFACE_TYPE_EXTENSION;
+var kinds_39 = kinds.UNION_TYPE_EXTENSION;
+var kinds_40 = kinds.ENUM_TYPE_EXTENSION;
+var kinds_41 = kinds.INPUT_OBJECT_TYPE_EXTENSION;
+var kinds_42 = kinds.DIRECTIVE_DEFINITION;
+
+var directiveLocation = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+/**
+ * The set of allowed directive location values.
+ */
+var DirectiveLocation = exports.DirectiveLocation = {
+  // Request Definitions
+  QUERY: 'QUERY',
+  MUTATION: 'MUTATION',
+  SUBSCRIPTION: 'SUBSCRIPTION',
+  FIELD: 'FIELD',
+  FRAGMENT_DEFINITION: 'FRAGMENT_DEFINITION',
+  FRAGMENT_SPREAD: 'FRAGMENT_SPREAD',
+  INLINE_FRAGMENT: 'INLINE_FRAGMENT',
+  // Type System Definitions
+  SCHEMA: 'SCHEMA',
+  SCALAR: 'SCALAR',
+  OBJECT: 'OBJECT',
+  FIELD_DEFINITION: 'FIELD_DEFINITION',
+  ARGUMENT_DEFINITION: 'ARGUMENT_DEFINITION',
+  INTERFACE: 'INTERFACE',
+  UNION: 'UNION',
+  ENUM: 'ENUM',
+  ENUM_VALUE: 'ENUM_VALUE',
+  INPUT_OBJECT: 'INPUT_OBJECT',
+  INPUT_FIELD_DEFINITION: 'INPUT_FIELD_DEFINITION'
+};
+
+/**
+ * The enum type representing the directive location values.
+ */
+});
+
+unwrapExports(directiveLocation);
+var directiveLocation_1 = directiveLocation.DirectiveLocation;
+
+var parser = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.parse = parse;
+exports.parseValue = parseValue;
+exports.parseType = parseType;
+exports.parseConstValue = parseConstValue;
+exports.parseTypeReference = parseTypeReference;
+exports.parseNamedType = parseNamedType;
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Given a GraphQL source, parses it into a Document.
+ * Throws GraphQLError if a syntax error is encountered.
+ */
+
+
+/**
+ * Configuration options to control parser behavior
+ */
+function parse(source$$1, options) {
+  var sourceObj = typeof source$$1 === 'string' ? new source.Source(source$$1) : source$$1;
+  if (!(sourceObj instanceof source.Source)) {
+    throw new TypeError('Must provide Source. Received: ' + String(sourceObj));
+  }
+  var lexer$$1 = (0, lexer.createLexer)(sourceObj, options || {});
+  return parseDocument(lexer$$1);
+}
+
+/**
+ * Given a string containing a GraphQL value (ex. `[42]`), parse the AST for
+ * that value.
+ * Throws GraphQLError if a syntax error is encountered.
+ *
+ * This is useful within tools that operate upon GraphQL Values directly and
+ * in isolation of complete GraphQL documents.
+ *
+ * Consider providing the results to the utility function: valueFromAST().
+ */
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+function parseValue(source$$1, options) {
+  var sourceObj = typeof source$$1 === 'string' ? new source.Source(source$$1) : source$$1;
+  var lexer$$1 = (0, lexer.createLexer)(sourceObj, options || {});
+  expect(lexer$$1, lexer.TokenKind.SOF);
+  var value = parseValueLiteral(lexer$$1, false);
+  expect(lexer$$1, lexer.TokenKind.EOF);
+  return value;
+}
+
+/**
+ * Given a string containing a GraphQL Type (ex. `[Int!]`), parse the AST for
+ * that type.
+ * Throws GraphQLError if a syntax error is encountered.
+ *
+ * This is useful within tools that operate upon GraphQL Types directly and
+ * in isolation of complete GraphQL documents.
+ *
+ * Consider providing the results to the utility function: typeFromAST().
+ */
+function parseType(source$$1, options) {
+  var sourceObj = typeof source$$1 === 'string' ? new source.Source(source$$1) : source$$1;
+  var lexer$$1 = (0, lexer.createLexer)(sourceObj, options || {});
+  expect(lexer$$1, lexer.TokenKind.SOF);
+  var type = parseTypeReference(lexer$$1);
+  expect(lexer$$1, lexer.TokenKind.EOF);
+  return type;
+}
+
+/**
+ * Converts a name lex token into a name parse node.
+ */
+function parseName(lexer$$1) {
+  var token = expect(lexer$$1, lexer.TokenKind.NAME);
+  return {
+    kind: kinds.NAME,
+    value: token.value,
+    loc: loc(lexer$$1, token)
+  };
+}
+
+// Implements the parsing rules in the Document section.
+
+/**
+ * Document : Definition+
+ */
+function parseDocument(lexer$$1) {
+  var start = lexer$$1.token;
+  expect(lexer$$1, lexer.TokenKind.SOF);
+  var definitions = [];
+  do {
+    definitions.push(parseDefinition(lexer$$1));
+  } while (!skip(lexer$$1, lexer.TokenKind.EOF));
+
+  return {
+    kind: kinds.DOCUMENT,
+    definitions: definitions,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * Definition :
+ *   - ExecutableDefinition
+ *   - TypeSystemDefinition
+ */
+function parseDefinition(lexer$$1) {
+  if (peek(lexer$$1, lexer.TokenKind.NAME)) {
+    switch (lexer$$1.token.value) {
+      case 'query':
+      case 'mutation':
+      case 'subscription':
+      case 'fragment':
+        return parseExecutableDefinition(lexer$$1);
+      case 'schema':
+      case 'scalar':
+      case 'type':
+      case 'interface':
+      case 'union':
+      case 'enum':
+      case 'input':
+      case 'extend':
+      case 'directive':
+        // Note: The schema definition language is an experimental addition.
+        return parseTypeSystemDefinition(lexer$$1);
+    }
+  } else if (peek(lexer$$1, lexer.TokenKind.BRACE_L)) {
+    return parseExecutableDefinition(lexer$$1);
+  } else if (peekDescription(lexer$$1)) {
+    // Note: The schema definition language is an experimental addition.
+    return parseTypeSystemDefinition(lexer$$1);
+  }
+
+  throw unexpected(lexer$$1);
+}
+
+/**
+ * ExecutableDefinition :
+ *   - OperationDefinition
+ *   - FragmentDefinition
+ */
+function parseExecutableDefinition(lexer$$1) {
+  if (peek(lexer$$1, lexer.TokenKind.NAME)) {
+    switch (lexer$$1.token.value) {
+      case 'query':
+      case 'mutation':
+      case 'subscription':
+        return parseOperationDefinition(lexer$$1);
+
+      case 'fragment':
+        return parseFragmentDefinition(lexer$$1);
+    }
+  } else if (peek(lexer$$1, lexer.TokenKind.BRACE_L)) {
+    return parseOperationDefinition(lexer$$1);
+  }
+
+  throw unexpected(lexer$$1);
+}
+
+// Implements the parsing rules in the Operations section.
+
+/**
+ * OperationDefinition :
+ *  - SelectionSet
+ *  - OperationType Name? VariableDefinitions? Directives? SelectionSet
+ */
+function parseOperationDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  if (peek(lexer$$1, lexer.TokenKind.BRACE_L)) {
+    return {
+      kind: kinds.OPERATION_DEFINITION,
+      operation: 'query',
+      name: undefined,
+      variableDefinitions: [],
+      directives: [],
+      selectionSet: parseSelectionSet(lexer$$1),
+      loc: loc(lexer$$1, start)
+    };
+  }
+  var operation = parseOperationType(lexer$$1);
+  var name = void 0;
+  if (peek(lexer$$1, lexer.TokenKind.NAME)) {
+    name = parseName(lexer$$1);
+  }
+  return {
+    kind: kinds.OPERATION_DEFINITION,
+    operation: operation,
+    name: name,
+    variableDefinitions: parseVariableDefinitions(lexer$$1),
+    directives: parseDirectives(lexer$$1, false),
+    selectionSet: parseSelectionSet(lexer$$1),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * OperationType : one of query mutation subscription
+ */
+function parseOperationType(lexer$$1) {
+  var operationToken = expect(lexer$$1, lexer.TokenKind.NAME);
+  switch (operationToken.value) {
+    case 'query':
+      return 'query';
+    case 'mutation':
+      return 'mutation';
+    case 'subscription':
+      return 'subscription';
+  }
+
+  throw unexpected(lexer$$1, operationToken);
+}
+
+/**
+ * VariableDefinitions : ( VariableDefinition+ )
+ */
+function parseVariableDefinitions(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.PAREN_L) ? many(lexer$$1, lexer.TokenKind.PAREN_L, parseVariableDefinition, lexer.TokenKind.PAREN_R) : [];
+}
+
+/**
+ * VariableDefinition : Variable : Type DefaultValue?
+ */
+function parseVariableDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.VARIABLE_DEFINITION,
+    variable: parseVariable(lexer$$1),
+    type: (expect(lexer$$1, lexer.TokenKind.COLON), parseTypeReference(lexer$$1)),
+    defaultValue: skip(lexer$$1, lexer.TokenKind.EQUALS) ? parseValueLiteral(lexer$$1, true) : undefined,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * Variable : $ Name
+ */
+function parseVariable(lexer$$1) {
+  var start = lexer$$1.token;
+  expect(lexer$$1, lexer.TokenKind.DOLLAR);
+  return {
+    kind: kinds.VARIABLE,
+    name: parseName(lexer$$1),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * SelectionSet : { Selection+ }
+ */
+function parseSelectionSet(lexer$$1) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.SELECTION_SET,
+    selections: many(lexer$$1, lexer.TokenKind.BRACE_L, parseSelection, lexer.TokenKind.BRACE_R),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * Selection :
+ *   - Field
+ *   - FragmentSpread
+ *   - InlineFragment
+ */
+function parseSelection(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.SPREAD) ? parseFragment(lexer$$1) : parseField(lexer$$1);
+}
+
+/**
+ * Field : Alias? Name Arguments? Directives? SelectionSet?
+ *
+ * Alias : Name :
+ */
+function parseField(lexer$$1) {
+  var start = lexer$$1.token;
+
+  var nameOrAlias = parseName(lexer$$1);
+  var alias = void 0;
+  var name = void 0;
+  if (skip(lexer$$1, lexer.TokenKind.COLON)) {
+    alias = nameOrAlias;
+    name = parseName(lexer$$1);
+  } else {
+    name = nameOrAlias;
+  }
+
+  return {
+    kind: kinds.FIELD,
+    alias: alias,
+    name: name,
+    arguments: parseArguments(lexer$$1, false),
+    directives: parseDirectives(lexer$$1, false),
+    selectionSet: peek(lexer$$1, lexer.TokenKind.BRACE_L) ? parseSelectionSet(lexer$$1) : undefined,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * Arguments[Const] : ( Argument[?Const]+ )
+ */
+function parseArguments(lexer$$1, isConst) {
+  var item = isConst ? parseConstArgument : parseArgument;
+  return peek(lexer$$1, lexer.TokenKind.PAREN_L) ? many(lexer$$1, lexer.TokenKind.PAREN_L, item, lexer.TokenKind.PAREN_R) : [];
+}
+
+/**
+ * Argument[Const] : Name : Value[?Const]
+ */
+function parseArgument(lexer$$1) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.ARGUMENT,
+    name: parseName(lexer$$1),
+    value: (expect(lexer$$1, lexer.TokenKind.COLON), parseValueLiteral(lexer$$1, false)),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+function parseConstArgument(lexer$$1) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.ARGUMENT,
+    name: parseName(lexer$$1),
+    value: (expect(lexer$$1, lexer.TokenKind.COLON), parseConstValue(lexer$$1)),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+// Implements the parsing rules in the Fragments section.
+
+/**
+ * Corresponds to both FragmentSpread and InlineFragment in the spec.
+ *
+ * FragmentSpread : ... FragmentName Directives?
+ *
+ * InlineFragment : ... TypeCondition? Directives? SelectionSet
+ */
+function parseFragment(lexer$$1) {
+  var start = lexer$$1.token;
+  expect(lexer$$1, lexer.TokenKind.SPREAD);
+  if (peek(lexer$$1, lexer.TokenKind.NAME) && lexer$$1.token.value !== 'on') {
+    return {
+      kind: kinds.FRAGMENT_SPREAD,
+      name: parseFragmentName(lexer$$1),
+      directives: parseDirectives(lexer$$1, false),
+      loc: loc(lexer$$1, start)
+    };
+  }
+  var typeCondition = void 0;
+  if (lexer$$1.token.value === 'on') {
+    lexer$$1.advance();
+    typeCondition = parseNamedType(lexer$$1);
+  }
+  return {
+    kind: kinds.INLINE_FRAGMENT,
+    typeCondition: typeCondition,
+    directives: parseDirectives(lexer$$1, false),
+    selectionSet: parseSelectionSet(lexer$$1),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * FragmentDefinition :
+ *   - fragment FragmentName on TypeCondition Directives? SelectionSet
+ *
+ * TypeCondition : NamedType
+ */
+function parseFragmentDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'fragment');
+  // Experimental support for defining variables within fragments changes
+  // the grammar of FragmentDefinition:
+  //   - fragment FragmentName VariableDefinitions? on TypeCondition Directives? SelectionSet
+  if (lexer$$1.options.experimentalFragmentVariables) {
+    return {
+      kind: kinds.FRAGMENT_DEFINITION,
+      name: parseFragmentName(lexer$$1),
+      variableDefinitions: parseVariableDefinitions(lexer$$1),
+      typeCondition: (expectKeyword(lexer$$1, 'on'), parseNamedType(lexer$$1)),
+      directives: parseDirectives(lexer$$1, false),
+      selectionSet: parseSelectionSet(lexer$$1),
+      loc: loc(lexer$$1, start)
+    };
+  }
+  return {
+    kind: kinds.FRAGMENT_DEFINITION,
+    name: parseFragmentName(lexer$$1),
+    typeCondition: (expectKeyword(lexer$$1, 'on'), parseNamedType(lexer$$1)),
+    directives: parseDirectives(lexer$$1, false),
+    selectionSet: parseSelectionSet(lexer$$1),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * FragmentName : Name but not `on`
+ */
+function parseFragmentName(lexer$$1) {
+  if (lexer$$1.token.value === 'on') {
+    throw unexpected(lexer$$1);
+  }
+  return parseName(lexer$$1);
+}
+
+// Implements the parsing rules in the Values section.
+
+/**
+ * Value[Const] :
+ *   - [~Const] Variable
+ *   - IntValue
+ *   - FloatValue
+ *   - StringValue
+ *   - BooleanValue
+ *   - NullValue
+ *   - EnumValue
+ *   - ListValue[?Const]
+ *   - ObjectValue[?Const]
+ *
+ * BooleanValue : one of `true` `false`
+ *
+ * NullValue : `null`
+ *
+ * EnumValue : Name but not `true`, `false` or `null`
+ */
+function parseValueLiteral(lexer$$1, isConst) {
+  var token = lexer$$1.token;
+  switch (token.kind) {
+    case lexer.TokenKind.BRACKET_L:
+      return parseList(lexer$$1, isConst);
+    case lexer.TokenKind.BRACE_L:
+      return parseObject(lexer$$1, isConst);
+    case lexer.TokenKind.INT:
+      lexer$$1.advance();
+      return {
+        kind: kinds.INT,
+        value: token.value,
+        loc: loc(lexer$$1, token)
+      };
+    case lexer.TokenKind.FLOAT:
+      lexer$$1.advance();
+      return {
+        kind: kinds.FLOAT,
+        value: token.value,
+        loc: loc(lexer$$1, token)
+      };
+    case lexer.TokenKind.STRING:
+    case lexer.TokenKind.BLOCK_STRING:
+      return parseStringLiteral(lexer$$1);
+    case lexer.TokenKind.NAME:
+      if (token.value === 'true' || token.value === 'false') {
+        lexer$$1.advance();
+        return {
+          kind: kinds.BOOLEAN,
+          value: token.value === 'true',
+          loc: loc(lexer$$1, token)
+        };
+      } else if (token.value === 'null') {
+        lexer$$1.advance();
+        return {
+          kind: kinds.NULL,
+          loc: loc(lexer$$1, token)
+        };
+      }
+      lexer$$1.advance();
+      return {
+        kind: kinds.ENUM,
+        value: token.value,
+        loc: loc(lexer$$1, token)
+      };
+    case lexer.TokenKind.DOLLAR:
+      if (!isConst) {
+        return parseVariable(lexer$$1);
+      }
+      break;
+  }
+  throw unexpected(lexer$$1);
+}
+
+function parseStringLiteral(lexer$$1) {
+  var token = lexer$$1.token;
+  lexer$$1.advance();
+  return {
+    kind: kinds.STRING,
+    value: token.value,
+    block: token.kind === lexer.TokenKind.BLOCK_STRING,
+    loc: loc(lexer$$1, token)
+  };
+}
+
+function parseConstValue(lexer$$1) {
+  return parseValueLiteral(lexer$$1, true);
+}
+
+function parseValueValue(lexer$$1) {
+  return parseValueLiteral(lexer$$1, false);
+}
+
+/**
+ * ListValue[Const] :
+ *   - [ ]
+ *   - [ Value[?Const]+ ]
+ */
+function parseList(lexer$$1, isConst) {
+  var start = lexer$$1.token;
+  var item = isConst ? parseConstValue : parseValueValue;
+  return {
+    kind: kinds.LIST,
+    values: any(lexer$$1, lexer.TokenKind.BRACKET_L, item, lexer.TokenKind.BRACKET_R),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ObjectValue[Const] :
+ *   - { }
+ *   - { ObjectField[?Const]+ }
+ */
+function parseObject(lexer$$1, isConst) {
+  var start = lexer$$1.token;
+  expect(lexer$$1, lexer.TokenKind.BRACE_L);
+  var fields = [];
+  while (!skip(lexer$$1, lexer.TokenKind.BRACE_R)) {
+    fields.push(parseObjectField(lexer$$1, isConst));
+  }
+  return {
+    kind: kinds.OBJECT,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ObjectField[Const] : Name : Value[?Const]
+ */
+function parseObjectField(lexer$$1, isConst) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.OBJECT_FIELD,
+    name: parseName(lexer$$1),
+    value: (expect(lexer$$1, lexer.TokenKind.COLON), parseValueLiteral(lexer$$1, isConst)),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+// Implements the parsing rules in the Directives section.
+
+/**
+ * Directives[Const] : Directive[?Const]+
+ */
+function parseDirectives(lexer$$1, isConst) {
+  var directives = [];
+  while (peek(lexer$$1, lexer.TokenKind.AT)) {
+    directives.push(parseDirective(lexer$$1, isConst));
+  }
+  return directives;
+}
+
+/**
+ * Directive[Const] : @ Name Arguments[?Const]?
+ */
+function parseDirective(lexer$$1, isConst) {
+  var start = lexer$$1.token;
+  expect(lexer$$1, lexer.TokenKind.AT);
+  return {
+    kind: kinds.DIRECTIVE,
+    name: parseName(lexer$$1),
+    arguments: parseArguments(lexer$$1, isConst),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+// Implements the parsing rules in the Types section.
+
+/**
+ * Type :
+ *   - NamedType
+ *   - ListType
+ *   - NonNullType
+ */
+function parseTypeReference(lexer$$1) {
+  var start = lexer$$1.token;
+  var type = void 0;
+  if (skip(lexer$$1, lexer.TokenKind.BRACKET_L)) {
+    type = parseTypeReference(lexer$$1);
+    expect(lexer$$1, lexer.TokenKind.BRACKET_R);
+    type = {
+      kind: kinds.LIST_TYPE,
+      type: type,
+      loc: loc(lexer$$1, start)
+    };
+  } else {
+    type = parseNamedType(lexer$$1);
+  }
+  if (skip(lexer$$1, lexer.TokenKind.BANG)) {
+    return {
+      kind: kinds.NON_NULL_TYPE,
+      type: type,
+      loc: loc(lexer$$1, start)
+    };
+  }
+  return type;
+}
+
+/**
+ * NamedType : Name
+ */
+function parseNamedType(lexer$$1) {
+  var start = lexer$$1.token;
+  return {
+    kind: kinds.NAMED_TYPE,
+    name: parseName(lexer$$1),
+    loc: loc(lexer$$1, start)
+  };
+}
+
+// Implements the parsing rules in the Type Definition section.
+
+/**
+ * TypeSystemDefinition :
+ *   - SchemaDefinition
+ *   - TypeDefinition
+ *   - TypeExtension
+ *   - DirectiveDefinition
+ *
+ * TypeDefinition :
+ *   - ScalarTypeDefinition
+ *   - ObjectTypeDefinition
+ *   - InterfaceTypeDefinition
+ *   - UnionTypeDefinition
+ *   - EnumTypeDefinition
+ *   - InputObjectTypeDefinition
+ */
+function parseTypeSystemDefinition(lexer$$1) {
+  // Many definitions begin with a description and require a lookahead.
+  var keywordToken = peekDescription(lexer$$1) ? lexer$$1.lookahead() : lexer$$1.token;
+
+  if (keywordToken.kind === lexer.TokenKind.NAME) {
+    switch (keywordToken.value) {
+      case 'schema':
+        return parseSchemaDefinition(lexer$$1);
+      case 'scalar':
+        return parseScalarTypeDefinition(lexer$$1);
+      case 'type':
+        return parseObjectTypeDefinition(lexer$$1);
+      case 'interface':
+        return parseInterfaceTypeDefinition(lexer$$1);
+      case 'union':
+        return parseUnionTypeDefinition(lexer$$1);
+      case 'enum':
+        return parseEnumTypeDefinition(lexer$$1);
+      case 'input':
+        return parseInputObjectTypeDefinition(lexer$$1);
+      case 'extend':
+        return parseTypeExtension(lexer$$1);
+      case 'directive':
+        return parseDirectiveDefinition(lexer$$1);
+    }
+  }
+
+  throw unexpected(lexer$$1, keywordToken);
+}
+
+function peekDescription(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.STRING) || peek(lexer$$1, lexer.TokenKind.BLOCK_STRING);
+}
+
+/**
+ * Description : StringValue
+ */
+function parseDescription(lexer$$1) {
+  if (peekDescription(lexer$$1)) {
+    return parseStringLiteral(lexer$$1);
+  }
+}
+
+/**
+ * SchemaDefinition : schema Directives[Const]? { OperationTypeDefinition+ }
+ */
+function parseSchemaDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'schema');
+  var directives = parseDirectives(lexer$$1, true);
+  var operationTypes = many(lexer$$1, lexer.TokenKind.BRACE_L, parseOperationTypeDefinition, lexer.TokenKind.BRACE_R);
+  return {
+    kind: kinds.SCHEMA_DEFINITION,
+    directives: directives,
+    operationTypes: operationTypes,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * OperationTypeDefinition : OperationType : NamedType
+ */
+function parseOperationTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var operation = parseOperationType(lexer$$1);
+  expect(lexer$$1, lexer.TokenKind.COLON);
+  var type = parseNamedType(lexer$$1);
+  return {
+    kind: kinds.OPERATION_TYPE_DEFINITION,
+    operation: operation,
+    type: type,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ScalarTypeDefinition : Description? scalar Name Directives[Const]?
+ */
+function parseScalarTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'scalar');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  return {
+    kind: kinds.SCALAR_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ObjectTypeDefinition :
+ *   Description?
+ *   type Name ImplementsInterfaces? Directives[Const]? FieldsDefinition?
+ */
+function parseObjectTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'type');
+  var name = parseName(lexer$$1);
+  var interfaces = parseImplementsInterfaces(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseFieldsDefinition(lexer$$1);
+  return {
+    kind: kinds.OBJECT_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    interfaces: interfaces,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ImplementsInterfaces : implements NamedType+
+ */
+function parseImplementsInterfaces(lexer$$1) {
+  var types = [];
+  if (lexer$$1.token.value === 'implements') {
+    lexer$$1.advance();
+    do {
+      types.push(parseNamedType(lexer$$1));
+    } while (peek(lexer$$1, lexer.TokenKind.NAME));
+  }
+  return types;
+}
+
+/**
+ * FieldsDefinition : { FieldDefinition+ }
+ */
+function parseFieldsDefinition(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.BRACE_L) ? many(lexer$$1, lexer.TokenKind.BRACE_L, parseFieldDefinition, lexer.TokenKind.BRACE_R) : [];
+}
+
+/**
+ * FieldDefinition :
+ *   - Description? Name ArgumentsDefinition? : Type Directives[Const]?
+ */
+function parseFieldDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  var name = parseName(lexer$$1);
+  var args = parseArgumentDefs(lexer$$1);
+  expect(lexer$$1, lexer.TokenKind.COLON);
+  var type = parseTypeReference(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  return {
+    kind: kinds.FIELD_DEFINITION,
+    description: description,
+    name: name,
+    arguments: args,
+    type: type,
+    directives: directives,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ArgumentsDefinition : ( InputValueDefinition+ )
+ */
+function parseArgumentDefs(lexer$$1) {
+  if (!peek(lexer$$1, lexer.TokenKind.PAREN_L)) {
+    return [];
+  }
+  return many(lexer$$1, lexer.TokenKind.PAREN_L, parseInputValueDef, lexer.TokenKind.PAREN_R);
+}
+
+/**
+ * InputValueDefinition :
+ *   - Description? Name : Type DefaultValue? Directives[Const]?
+ */
+function parseInputValueDef(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  var name = parseName(lexer$$1);
+  expect(lexer$$1, lexer.TokenKind.COLON);
+  var type = parseTypeReference(lexer$$1);
+  var defaultValue = void 0;
+  if (skip(lexer$$1, lexer.TokenKind.EQUALS)) {
+    defaultValue = parseConstValue(lexer$$1);
+  }
+  var directives = parseDirectives(lexer$$1, true);
+  return {
+    kind: kinds.INPUT_VALUE_DEFINITION,
+    description: description,
+    name: name,
+    type: type,
+    defaultValue: defaultValue,
+    directives: directives,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * InterfaceTypeDefinition :
+ *   - Description? interface Name Directives[Const]? FieldsDefinition?
+ */
+function parseInterfaceTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'interface');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseFieldsDefinition(lexer$$1);
+  return {
+    kind: kinds.INTERFACE_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * UnionTypeDefinition :
+ *   - Description? union Name Directives[Const]? MemberTypesDefinition?
+ */
+function parseUnionTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'union');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var types = parseMemberTypesDefinition(lexer$$1);
+  return {
+    kind: kinds.UNION_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    types: types,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * MemberTypesDefinition : = MemberTypes
+ *
+ * MemberTypes :
+ *   - `|`? NamedType
+ *   - MemberTypes | NamedType
+ */
+function parseMemberTypesDefinition(lexer$$1) {
+  var types = [];
+  if (skip(lexer$$1, lexer.TokenKind.EQUALS)) {
+    // Optional leading pipe
+    skip(lexer$$1, lexer.TokenKind.PIPE);
+    do {
+      types.push(parseNamedType(lexer$$1));
+    } while (skip(lexer$$1, lexer.TokenKind.PIPE));
+  }
+  return types;
+}
+
+/**
+ * EnumTypeDefinition :
+ *   - Description? enum Name Directives[Const]? EnumValuesDefinition?
+ */
+function parseEnumTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'enum');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var values = parseEnumValuesDefinition(lexer$$1);
+  return {
+    kind: kinds.ENUM_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    values: values,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * EnumValuesDefinition : { EnumValueDefinition+ }
+ */
+function parseEnumValuesDefinition(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.BRACE_L) ? many(lexer$$1, lexer.TokenKind.BRACE_L, parseEnumValueDefinition, lexer.TokenKind.BRACE_R) : [];
+}
+
+/**
+ * EnumValueDefinition : Description? EnumValue Directives[Const]?
+ *
+ * EnumValue : Name
+ */
+function parseEnumValueDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  return {
+    kind: kinds.ENUM_VALUE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * InputObjectTypeDefinition :
+ *   - Description? input Name Directives[Const]? InputFieldsDefinition?
+ */
+function parseInputObjectTypeDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'input');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseInputFieldsDefinition(lexer$$1);
+  return {
+    kind: kinds.INPUT_OBJECT_TYPE_DEFINITION,
+    description: description,
+    name: name,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * InputFieldsDefinition : { InputValueDefinition+ }
+ */
+function parseInputFieldsDefinition(lexer$$1) {
+  return peek(lexer$$1, lexer.TokenKind.BRACE_L) ? many(lexer$$1, lexer.TokenKind.BRACE_L, parseInputValueDef, lexer.TokenKind.BRACE_R) : [];
+}
+
+/**
+ * TypeExtension :
+ *   - ScalarTypeExtension
+ *   - ObjectTypeExtension
+ *   - InterfaceTypeExtension
+ *   - UnionTypeExtension
+ *   - EnumTypeExtension
+ *   - InputObjectTypeDefinition
+ */
+function parseTypeExtension(lexer$$1) {
+  var keywordToken = lexer$$1.lookahead();
+
+  if (keywordToken.kind === lexer.TokenKind.NAME) {
+    switch (keywordToken.value) {
+      case 'scalar':
+        return parseScalarTypeExtension(lexer$$1);
+      case 'type':
+        return parseObjectTypeExtension(lexer$$1);
+      case 'interface':
+        return parseInterfaceTypeExtension(lexer$$1);
+      case 'union':
+        return parseUnionTypeExtension(lexer$$1);
+      case 'enum':
+        return parseEnumTypeExtension(lexer$$1);
+      case 'input':
+        return parseInputObjectTypeExtension(lexer$$1);
+    }
+  }
+
+  throw unexpected(lexer$$1, keywordToken);
+}
+
+/**
+ * ScalarTypeExtension :
+ *   - extend scalar Name Directives[Const]
+ */
+function parseScalarTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'scalar');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  if (directives.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.SCALAR_TYPE_EXTENSION,
+    name: name,
+    directives: directives,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * ObjectTypeExtension :
+ *  - extend type Name ImplementsInterfaces? Directives[Const]? FieldsDefinition
+ *  - extend type Name ImplementsInterfaces? Directives[Const]
+ *  - extend type Name ImplementsInterfaces
+ */
+function parseObjectTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'type');
+  var name = parseName(lexer$$1);
+  var interfaces = parseImplementsInterfaces(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseFieldsDefinition(lexer$$1);
+  if (interfaces.length === 0 && directives.length === 0 && fields.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.OBJECT_TYPE_EXTENSION,
+    name: name,
+    interfaces: interfaces,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * InterfaceTypeExtension :
+ *   - extend interface Name Directives[Const]? FieldsDefinition
+ *   - extend interface Name Directives[Const]
+ */
+function parseInterfaceTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'interface');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseFieldsDefinition(lexer$$1);
+  if (directives.length === 0 && fields.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.INTERFACE_TYPE_EXTENSION,
+    name: name,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * UnionTypeExtension :
+ *   - extend union Name Directives[Const]? MemberTypesDefinition
+ *   - extend union Name Directives[Const]
+ */
+function parseUnionTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'union');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var types = parseMemberTypesDefinition(lexer$$1);
+  if (directives.length === 0 && types.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.UNION_TYPE_EXTENSION,
+    name: name,
+    directives: directives,
+    types: types,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * EnumTypeExtension :
+ *   - extend enum Name Directives[Const]? EnumValuesDefinition
+ *   - extend enum Name Directives[Const]
+ */
+function parseEnumTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'enum');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var values = parseEnumValuesDefinition(lexer$$1);
+  if (directives.length === 0 && values.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.ENUM_TYPE_EXTENSION,
+    name: name,
+    directives: directives,
+    values: values,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * InputObjectTypeExtension :
+ *   - extend input Name Directives[Const]? InputFieldsDefinition
+ *   - extend input Name Directives[Const]
+ */
+function parseInputObjectTypeExtension(lexer$$1) {
+  var start = lexer$$1.token;
+  expectKeyword(lexer$$1, 'extend');
+  expectKeyword(lexer$$1, 'input');
+  var name = parseName(lexer$$1);
+  var directives = parseDirectives(lexer$$1, true);
+  var fields = parseInputFieldsDefinition(lexer$$1);
+  if (directives.length === 0 && fields.length === 0) {
+    throw unexpected(lexer$$1);
+  }
+  return {
+    kind: kinds.INPUT_OBJECT_TYPE_EXTENSION,
+    name: name,
+    directives: directives,
+    fields: fields,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * DirectiveDefinition :
+ *   - Description? directive @ Name ArgumentsDefinition? on DirectiveLocations
+ */
+function parseDirectiveDefinition(lexer$$1) {
+  var start = lexer$$1.token;
+  var description = parseDescription(lexer$$1);
+  expectKeyword(lexer$$1, 'directive');
+  expect(lexer$$1, lexer.TokenKind.AT);
+  var name = parseName(lexer$$1);
+  var args = parseArgumentDefs(lexer$$1);
+  expectKeyword(lexer$$1, 'on');
+  var locations = parseDirectiveLocations(lexer$$1);
+  return {
+    kind: kinds.DIRECTIVE_DEFINITION,
+    description: description,
+    name: name,
+    arguments: args,
+    locations: locations,
+    loc: loc(lexer$$1, start)
+  };
+}
+
+/**
+ * DirectiveLocations :
+ *   - `|`? DirectiveLocation
+ *   - DirectiveLocations | DirectiveLocation
+ */
+function parseDirectiveLocations(lexer$$1) {
+  // Optional leading pipe
+  skip(lexer$$1, lexer.TokenKind.PIPE);
+  var locations = [];
+  do {
+    locations.push(parseDirectiveLocation(lexer$$1));
+  } while (skip(lexer$$1, lexer.TokenKind.PIPE));
+  return locations;
+}
+
+/*
+ * DirectiveLocation :
+ *   - ExecutableDirectiveLocation
+ *   - TypeSystemDirectiveLocation
+ *
+ * ExecutableDirectiveLocation : one of
+ *   `QUERY`
+ *   `MUTATION`
+ *   `SUBSCRIPTION`
+ *   `FIELD`
+ *   `FRAGMENT_DEFINITION`
+ *   `FRAGMENT_SPREAD`
+ *   `INLINE_FRAGMENT`
+ *
+ * TypeSystemDirectiveLocation : one of
+ *   `SCHEMA`
+ *   `SCALAR`
+ *   `OBJECT`
+ *   `FIELD_DEFINITION`
+ *   `ARGUMENT_DEFINITION`
+ *   `INTERFACE`
+ *   `UNION`
+ *   `ENUM`
+ *   `ENUM_VALUE`
+ *   `INPUT_OBJECT`
+ *   `INPUT_FIELD_DEFINITION`
+ */
+function parseDirectiveLocation(lexer$$1) {
+  var start = lexer$$1.token;
+  var name = parseName(lexer$$1);
+  if (directiveLocation.DirectiveLocation.hasOwnProperty(name.value)) {
+    return name;
+  }
+  throw unexpected(lexer$$1, start);
+}
+
+// Core parsing utility functions
+
+/**
+ * Returns a location object, used to identify the place in
+ * the source that created a given parsed object.
+ */
+function loc(lexer$$1, startToken) {
+  if (!lexer$$1.options.noLocation) {
+    return new Loc(startToken, lexer$$1.lastToken, lexer$$1.source);
+  }
+}
+
+function Loc(startToken, endToken, source$$1) {
+  this.start = startToken.start;
+  this.end = endToken.end;
+  this.startToken = startToken;
+  this.endToken = endToken;
+  this.source = source$$1;
+}
+
+// Print a simplified form when appearing in JSON/util.inspect.
+Loc.prototype.toJSON = Loc.prototype.inspect = function toJSON() {
+  return { start: this.start, end: this.end };
+};
+
+/**
+ * Determines if the next token is of a given kind
+ */
+function peek(lexer$$1, kind) {
+  return lexer$$1.token.kind === kind;
+}
+
+/**
+ * If the next token is of the given kind, return true after advancing
+ * the lexer. Otherwise, do not change the parser state and return false.
+ */
+function skip(lexer$$1, kind) {
+  var match = lexer$$1.token.kind === kind;
+  if (match) {
+    lexer$$1.advance();
+  }
+  return match;
+}
+
+/**
+ * If the next token is of the given kind, return that token after advancing
+ * the lexer. Otherwise, do not change the parser state and throw an error.
+ */
+function expect(lexer$$1, kind) {
+  var token = lexer$$1.token;
+  if (token.kind === kind) {
+    lexer$$1.advance();
+    return token;
+  }
+  throw (0, error.syntaxError)(lexer$$1.source, token.start, 'Expected ' + kind + ', found ' + (0, lexer.getTokenDesc)(token));
+}
+
+/**
+ * If the next token is a keyword with the given value, return that token after
+ * advancing the lexer. Otherwise, do not change the parser state and return
+ * false.
+ */
+function expectKeyword(lexer$$1, value) {
+  var token = lexer$$1.token;
+  if (token.kind === lexer.TokenKind.NAME && token.value === value) {
+    lexer$$1.advance();
+    return token;
+  }
+  throw (0, error.syntaxError)(lexer$$1.source, token.start, 'Expected "' + value + '", found ' + (0, lexer.getTokenDesc)(token));
+}
+
+/**
+ * Helper function for creating an error when an unexpected lexed token
+ * is encountered.
+ */
+function unexpected(lexer$$1, atToken) {
+  var token = atToken || lexer$$1.token;
+  return (0, error.syntaxError)(lexer$$1.source, token.start, 'Unexpected ' + (0, lexer.getTokenDesc)(token));
+}
+
+/**
+ * Returns a possibly empty list of parse nodes, determined by
+ * the parseFn. This list begins with a lex token of openKind
+ * and ends with a lex token of closeKind. Advances the parser
+ * to the next lex token after the closing token.
+ */
+function any(lexer$$1, openKind, parseFn, closeKind) {
+  expect(lexer$$1, openKind);
+  var nodes = [];
+  while (!skip(lexer$$1, closeKind)) {
+    nodes.push(parseFn(lexer$$1));
+  }
+  return nodes;
+}
+
+/**
+ * Returns a non-empty list of parse nodes, determined by
+ * the parseFn. This list begins with a lex token of openKind
+ * and ends with a lex token of closeKind. Advances the parser
+ * to the next lex token after the closing token.
+ */
+function many(lexer$$1, openKind, parseFn, closeKind) {
+  expect(lexer$$1, openKind);
+  var nodes = [parseFn(lexer$$1)];
+  while (!skip(lexer$$1, closeKind)) {
+    nodes.push(parseFn(lexer$$1));
+  }
+  return nodes;
+}
+});
+
+unwrapExports(parser);
+var parser_1 = parser.parse;
+var parser_2 = parser.parseValue;
+var parser_3 = parser.parseType;
+var parser_4 = parser.parseConstValue;
+var parser_5 = parser.parseTypeReference;
+var parser_6 = parser.parseNamedType;
+
+var parse = parser.parse;
+
+// Strip insignificant whitespace
+// Note that this could do a lot more, such as reorder fields etc.
+function normalize(string) {
+  return string.replace(/[\s,]+/g, ' ').trim();
+}
+
+// A map docString -> graphql document
+var docCache = {};
+
+// A map fragmentName -> [normalized source]
+var fragmentSourceMap = {};
+
+function cacheKeyFromLoc(loc) {
+  return normalize(loc.source.body.substring(loc.start, loc.end));
+}
+
+// For testing.
+function resetCaches() {
+  docCache = {};
+  fragmentSourceMap = {};
+}
+
+// Take a unstripped parsed document (query/mutation or even fragment), and
+// check all fragment definitions, checking for name->source uniqueness.
+// We also want to make sure only unique fragments exist in the document.
+var printFragmentWarnings = true;
+function processFragments(ast) {
+  var astFragmentMap = {};
+  var definitions = [];
+
+  for (var i = 0; i < ast.definitions.length; i++) {
+    var fragmentDefinition = ast.definitions[i];
+
+    if (fragmentDefinition.kind === 'FragmentDefinition') {
+      var fragmentName = fragmentDefinition.name.value;
+      var sourceKey = cacheKeyFromLoc(fragmentDefinition.loc);
+
+      // We know something about this fragment
+      if (fragmentSourceMap.hasOwnProperty(fragmentName) && !fragmentSourceMap[fragmentName][sourceKey]) {
+
+        // this is a problem because the app developer is trying to register another fragment with
+        // the same name as one previously registered. So, we tell them about it.
+        if (printFragmentWarnings) {
+          console.warn("Warning: fragment with name " + fragmentName + " already exists.\n"
+            + "graphql-tag enforces all fragment names across your application to be unique; read more about\n"
+            + "this in the docs: http://dev.apollodata.com/core/fragments.html#unique-names");
+        }
+
+        fragmentSourceMap[fragmentName][sourceKey] = true;
+
+      } else if (!fragmentSourceMap.hasOwnProperty(fragmentName)) {
+        fragmentSourceMap[fragmentName] = {};
+        fragmentSourceMap[fragmentName][sourceKey] = true;
+      }
+
+      if (!astFragmentMap[sourceKey]) {
+        astFragmentMap[sourceKey] = true;
+        definitions.push(fragmentDefinition);
+      }
+    } else {
+      definitions.push(fragmentDefinition);
+    }
+  }
+
+  ast.definitions = definitions;
+  return ast;
+}
+
+function disableFragmentWarnings() {
+  printFragmentWarnings = false;
+}
+
+function stripLoc(doc, removeLocAtThisLevel) {
+  var docType = Object.prototype.toString.call(doc);
+
+  if (docType === '[object Array]') {
+    return doc.map(function (d) {
+      return stripLoc(d, removeLocAtThisLevel);
+    });
+  }
+
+  if (docType !== '[object Object]') {
+    throw new Error('Unexpected input.');
+  }
+
+  // We don't want to remove the root loc field so we can use it
+  // for fragment substitution (see below)
+  if (removeLocAtThisLevel && doc.loc) {
+    delete doc.loc;
+  }
+
+  // https://github.com/apollographql/graphql-tag/issues/40
+  if (doc.loc) {
+    delete doc.loc.startToken;
+    delete doc.loc.endToken;
+  }
+
+  var keys = Object.keys(doc);
+  var key;
+  var value;
+  var valueType;
+
+  for (key in keys) {
+    if (keys.hasOwnProperty(key)) {
+      value = doc[keys[key]];
+      valueType = Object.prototype.toString.call(value);
+
+      if (valueType === '[object Object]' || valueType === '[object Array]') {
+        doc[keys[key]] = stripLoc(value, true);
+      }
+    }
+  }
+
+  return doc;
+}
+
+function parseDocument(doc) {
+  var cacheKey = normalize(doc);
+
+  if (docCache[cacheKey]) {
+    return docCache[cacheKey];
+  }
+
+  var parsed = parse(doc);
+  if (!parsed || parsed.kind !== 'Document') {
+    throw new Error('Not a valid GraphQL document.');
+  }
+
+  // check that all "new" fragments inside the documents are consistent with
+  // existing fragments of the same name
+  parsed = processFragments(parsed);
+  parsed = stripLoc(parsed, false);
+  docCache[cacheKey] = parsed;
+
+  return parsed;
+}
+
+// XXX This should eventually disallow arbitrary string interpolation, like Relay does
+function gql(/* arguments */) {
+  var args = Array.prototype.slice.call(arguments);
+
+  var literals = args[0];
+
+  // We always get literals[0] and then matching post literals for each arg given
+  var result = (typeof(literals) === "string") ? literals : literals[0];
+
+  for (var i = 1; i < args.length; i++) {
+    if (args[i] && args[i].kind && args[i].kind === 'Document') {
+      result += args[i].loc.source.body;
+    } else {
+      result += args[i];
+    }
+
+    result += literals[i];
+  }
+
+  return parseDocument(result);
+}
+
+// Support typescript, which isn't as nice as Babel about default exports
+gql.default = gql;
+gql.resetCaches = resetCaches;
+gql.disableFragmentWarnings = disableFragmentWarnings;
+
+var src = gql;
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5217,21 +8081,67 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
     }
 };
 var inflection = require('inflection');
+/**
+ * Own model class with some helpers
+ */
+var Model = /** @class */ (function () {
+    function Model(baseModel) {
+        var _this = this;
+        this.fields = new Map();
+        this.baseModel = baseModel;
+        this.singularName = inflection.singularize(this.baseModel.entity);
+        this.pluralName = inflection.pluralize(this.baseModel.entity);
+        var fields = this.baseModel.fields();
+        Object.keys(fields).forEach(function (name) {
+            _this.fields.set(name, fields[name]);
+        });
+    }
+    /**
+     * @returns {Array<string>} field names which should be queried
+     */
+    Model.prototype.getQueryFields = function () {
+        var fields = [];
+        this.fields.forEach(function (field, name) {
+            // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
+            // TODO import the classes from Vuex-ORM and use instanceof instead
+            if (field.constructor.name === 'Attr' && !name.endsWith('Id')) {
+                fields.push(name);
+            }
+        });
+        return fields;
+    };
+    /**
+     * @returns {Map<string, Field>} all relations of the model which should be queried
+     */
+    Model.prototype.getRelations = function () {
+        var relations = new Map();
+        this.fields.forEach(function (field, name) {
+            if (field.constructor.name !== 'Attr') {
+                relations.set(name, field);
+                console.log('adding relation', name);
+            }
+        });
+        return relations;
+    };
+    return Model;
+}());
+/**
+ * Plugin class
+ */
 var VuexORMApollo = /** @class */ (function () {
+    /**
+     * Constructor
+     *
+     * @param components
+     * @param options
+     */
     function VuexORMApollo(components, options) {
-        this.httpLink = null;
-        this.apolloClient = null;
-        this.components = null;
-        this.options = null;
+        this.models = new Map();
         this.components = components;
         this.options = options;
-        this.setupApollo();
+        this.database = options.database;
+        this.collectModels();
         this.setupFetch();
-    }
-    VuexORMApollo.install = function (components, options) {
-        return new VuexORMApollo(components, options);
-    };
-    VuexORMApollo.prototype.setupApollo = function () {
         this.httpLink = new HttpLink({
             uri: '/graphql'
         });
@@ -5240,36 +8150,69 @@ var VuexORMApollo = /** @class */ (function () {
             cache: new InMemoryCache(),
             connectToDevTools: true
         });
+    }
+    /**
+     * The install method will be called when the plugin should be installed. We create a new instance of the Plugin class
+     * here.
+     *
+     * @param components
+     * @param options
+     * @returns {VuexORMApollo}
+     */
+    VuexORMApollo.install = function (components, options) {
+        return new VuexORMApollo(components, options);
     };
-    VuexORMApollo.prototype.setupFetch = function () {
+    /**
+     * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
+     */
+    VuexORMApollo.prototype.collectModels = function () {
         var _this = this;
-        this.components.subActions.fetch = function (_a, _b) {
-            var state = _a.state, dispatch = _a.dispatch;
-            var filter = _b.filter;
-            return __awaiter(_this, void 0, void 0, function () {
-                var multiple, query, response, data;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
-                        case 0:
-                            // Ignore empty filters
-                            if (filter && Object.keys(filter).length === 0)
-                                filter = undefined;
-                            multiple = !(filter && filter.id);
-                            query = this.buildQuery(state, multiple, filter);
-                            return [4 /*yield*/, this.apolloClient.query({ query: query })];
-                        case 1:
-                            response = _c.sent();
-                            data = this.transformIncomingData(response.data);
-                            Object.keys(data).forEach(function (key) {
-                                dispatch('insert', { data: data[key] });
-                            });
-                            return [2 /*return*/];
-                    }
-                });
-            });
-        };
-        console.log('subactions', this.components.subActions);
+        this.database.entities.forEach(function (entity) {
+            var model = new Model(entity.model);
+            _this.models.set(model.singularName, model);
+        });
     };
+    /**
+     * This method will setup the fetch action for all entities.
+     */
+    VuexORMApollo.prototype.setupFetch = function () {
+        this.components.subActions.fetch = this.fetch.bind(this);
+    };
+    /**
+     * Will be called, when dispatch('entities/something/fetch') is called.
+     *
+     * @param {Filter} filter
+     * @param {any} state
+     * @param {any} dispatch
+     * @returns {Promise<void>}
+     */
+    VuexORMApollo.prototype.fetch = function (_a) {
+        var filter = _a.filter, state = _a.state, dispatch = _a.dispatch;
+        return __awaiter(this, void 0, void 0, function () {
+            var query, data;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        // Ignore empty filters
+                        if (filter && Object.keys(filter).length === 0)
+                            filter = undefined;
+                        query = this.buildQuery(state.$name, filter);
+                        return [4 /*yield*/, this.apolloRequest(query)];
+                    case 1:
+                        data = _b.sent();
+                        // Insert incoming data into the store
+                        this.storeData(data, dispatch);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Transforms a set of incoming data to the format vuex-orm requires.
+     *
+     * @param {Data | Array<Data>} data
+     * @returns {Data}
+     */
     VuexORMApollo.prototype.transformIncomingData = function (data) {
         var _this = this;
         var result = {};
@@ -5298,67 +8241,101 @@ var VuexORMApollo = /** @class */ (function () {
         }
         return result;
     };
-    /*private getQueryFields () {
-      const fields = this.fields()
-  
-      // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
-      return Object.keys(fields).filter((n) => (fields[n].constructor.name === 'Attr' && !n.endsWith('Id')))
-    }
-  
-    private getRelations () {
-      const fields = this.fields()
-      return Object
-        .keys(fields)
-        .filter((n) => fields[n].constructor.name !== 'Attr')
-    }
-  
-    private getQueryRelations (rootModel) {
-      const fields = this.fields()
-      return Object
-        .keys(fields)
-        .filter((n) => {
-          return fields[n].constructor.name !== 'Attr' &&
-            n !== rootModel.singularEntity() &&
-            n !== rootModel.entity
-        })
-        .map((n) => {
-          const field = fields[n]
-          console.log('field', field)
-  
-          if (field.constructor.name !== 'BelongsTo') {
-            return this.buildField(field.related, true)
-          } else {
-            return this.buildField(field.parent, false)
-          }
-  
-        })
-    }
-  
-    private buildField (model: Object, multiple: boolean = true, filter: Filter | null = null) {
-      let params: string = ''
-  
-      if (filter) {
-        params = `(id: ${filter.id})`
-      }
-  
-      if (multiple) {
-        return `${model.entity}${params} {
-                  nodes {
-                      ${model.getQueryFields()}
-                      ${model.getQueryRelations(this)}
-                  }
-              }`
-      } else {
-        return `${model.singularEntity()}${params} {
-                  ${model.getQueryFields()}
-                  ${model.getQueryRelations(this)}
-              }`
-      }
-    }*/
-    VuexORMApollo.prototype.buildQuery = function (model, multiple, filter) {
+    /**
+     *
+     * @param {Model} model
+     * @param {Model} rootModel
+     * @returns {Array<String>}
+     */
+    VuexORMApollo.prototype.buildRelationsQuery = function (model, rootModel) {
+        var _this = this;
+        var relationQueries = [];
+        model.getRelations().forEach(function (field, name) {
+            console.log('procesing relation', name);
+            if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
+                var multiple = field.constructor.name !== 'BelongsTo';
+                relationQueries.push(_this.buildField(name, multiple, undefined, rootModel || model));
+            }
+        });
+        console.log('relationQueries', relationQueries);
+        return relationQueries;
+    };
+    /**
+     * Builds a field for the GraphQL query and a specific model
+     * @param {Model} rootModel
+     * @param {string} modelName
+     * @param {boolean} multiple
+     * @param {Filter} filter
+     * @returns {string}
+     */
+    VuexORMApollo.prototype.buildField = function (modelName, multiple, filter, rootModel) {
         if (multiple === void 0) { multiple = true; }
-        console.log('model', model, this.options);
-        // return gql(`{ ${this.buildField(model, multiple, filter)} }`)
+        var model = this.getModel(modelName);
+        var params = '';
+        if (filter && filter.id) {
+            params = "(id: " + filter.id + ")";
+        }
+        if (multiple) {
+            return "" + model.pluralName + params + " {\n                nodes {\n                    " + model.getQueryFields().join(', ') + "\n                    " + this.buildRelationsQuery(model, rootModel) + "\n                }\n            }";
+        }
+        else {
+            return "" + model.singularName + params + " {\n                " + model.getQueryFields().join(', ') + "\n                " + this.buildRelationsQuery(model, rootModel) + "\n            }";
+        }
+    };
+    /**
+     * Create a GraphQL query for the given model and filter options.
+     *
+     * @param {string} modelName
+     * @param {Filter} filter
+     * @returns {any}
+     */
+    VuexORMApollo.prototype.buildQuery = function (modelName, filter) {
+        var multiple = !(filter && filter.id);
+        var query = "{ " + this.buildField(modelName, multiple, filter) + " }";
+        console.log('query', query);
+        return src(query);
+    };
+    /**
+     * Sends a query to the GraphQL API via apollo
+     * @param query
+     * @returns {Promise<Data>}
+     */
+    VuexORMApollo.prototype.apolloRequest = function (query) {
+        return __awaiter(this, void 0, void 0, function () {
+            var response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.apolloClient.query({ query: query })];
+                    case 1:
+                        response = _a.sent();
+                        // Transform incoming data into something useful
+                        return [2 /*return*/, this.transformIncomingData(response.data)];
+                }
+            });
+        });
+    };
+    /**
+     * Saves incoming data into the store.
+     *
+     * @param {Data} data
+     * @param {Function} dispatch
+     */
+    VuexORMApollo.prototype.storeData = function (data, dispatch) {
+        Object.keys(data).forEach(function (key) {
+            dispatch('insert', { data: data[key] });
+        });
+    };
+    /**
+     * Returns a model by name
+     *
+     * @param {string} modelName
+     * @returns {Model}
+     */
+    VuexORMApollo.prototype.getModel = function (modelName) {
+        var model = this.models.get(inflection.singularize(modelName));
+        if (!model)
+            throw new Error("No such model " + modelName + "!");
+        return model;
     };
     return VuexORMApollo;
 }());
