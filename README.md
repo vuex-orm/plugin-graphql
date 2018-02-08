@@ -10,13 +10,13 @@ This Vuex-ORM plugin let's you sync the data against a GraphQL API via Apollo.
 ## Usage
 
 ```bash
-yarn add @vuex-orm/plugin-apollo
+$ yarn add @vuex-orm/plugin-apollo
 ```
 
 or
 
 ```bash
-npm install --save @vuex-orm/plugin-apollo
+$ npm install --save @vuex-orm/plugin-apollo
 ```
 
 Add this after registering your models to the database:
@@ -74,28 +74,47 @@ In your component:
 ## Contribution
 
 ```bash
-$ npm run build
+$ yarn run build
 ```
 
 Compile files and generate bundles in dist directory.
 
 ```bash
-$ npm run lint
+$ yarn run lint
 ```
 
 Lint files using a rule of Standard JS.
 
 ```bash
-$ npm run test
+$ yarn run test
 ```
 
 Run the test using Mocha Webpack.
 
 ```bash
-$ npm run coverage
+$ yarn run coverage
 ```
 
 Generate test coverage in coverage directory.
+
+
+### apollo-link import bug
+
+Currently there exists [a bug in apollo-link](https://github.com/apollographql/apollo-link/issues/248), which causes
+errors in vuex-orm-apollo. As a workaround, you have to change he file `node_modules/apollo-link/lib/index.js` after
+installing the node_modules.
+
+In line 3 change
+
+```javascript
+import * as Observable from 'zen-observable';
+```
+
+to:
+
+```javascript
+import Observable from 'zen-observable';
+``` 
 
 
 ## License
