@@ -50,6 +50,12 @@ In your component:
 ```
 
 
+## Possible options:
+
+- `database` (required): The Vuex-ORM database.
+- `debug` (optional, default: false): Set to true to activate the debug logging.
+
+
 ## Roadmap
 
 - [x] Setup apollo integration

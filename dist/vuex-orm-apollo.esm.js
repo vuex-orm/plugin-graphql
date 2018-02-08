@@ -8138,9 +8138,14 @@ var VuexORMApollo = /** @class */ (function () {
      */
     function VuexORMApollo(components, options) {
         this.models = new Map();
+        this.debugMode = false;
         this.components = components;
         this.options = options;
+        if (!options.database) {
+            throw new Error('database param is required to initialize vuex-orm-apollo!');
+        }
         this.database = options.database;
+        this.debugMode = options.debug;
         this.collectModels();
         this.setupFetch();
         this.httpLink = new HttpLink({

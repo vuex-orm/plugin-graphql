@@ -17,6 +17,7 @@ export default class VuexORMApollo {
   private readonly options: any;
   private readonly database: any;
   private readonly models: Map<string, Model> = new Map();
+  private readonly debugMode: boolean = false;
 
   /**
    * Constructor
@@ -27,7 +28,13 @@ export default class VuexORMApollo {
   public constructor (components: any, options: any) {
     this.components = components;
     this.options = options;
+
+    if (!options.database) {
+      throw new Error('database param is required to initialize vuex-orm-apollo!');
+    }
+
     this.database = options.database;
+    this.debugMode = options.debug as boolean;
 
     this.collectModels();
     this.setupFetch();
