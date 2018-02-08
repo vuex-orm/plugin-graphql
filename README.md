@@ -66,6 +66,7 @@ In your component:
 - [ ] Docs & document schema expectations
 - [ ] Deletions & persist
 - [ ] Subscriptions
+- [ ] Attach multiple GraphQL APIs with different models in the same app
 
 
 
