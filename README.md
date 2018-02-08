@@ -31,7 +31,7 @@ In your component:
 ```vue
 <template>
     <ul>
-        <li v-for="user in users" :key="user.name">{{contract.name}}</li>
+        <li v-for="user in users" :key="user.name">{{user.name}}</li>
     </ul>
 </template>
 
@@ -56,11 +56,12 @@ In your component:
 - `debug` (optional, default: false): Set to true to activate the debug logging.
 
 
+
 ## Roadmap
 
 - [x] Setup apollo integration
 - [x] Implement fetch action
-- [ ] Make sure the reactivity works
+- [x] Make sure the reactivity works
 - [ ] Playground project (GraphQL API + Vue/Vuex-ORM app)
 - [ ] Tests
 - [ ] Docs & document schema expectations
