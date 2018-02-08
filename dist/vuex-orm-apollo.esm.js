@@ -1,3 +1,48 @@
+var inflection = require('inflection');
+/**
+ * Own model class with some helpers
+ */
+var Model = /** @class */ (function () {
+    function Model(baseModel) {
+        var _this = this;
+        this.fields = new Map();
+        this.baseModel = baseModel;
+        this.singularName = inflection.singularize(this.baseModel.entity);
+        this.pluralName = inflection.pluralize(this.baseModel.entity);
+        var fields = this.baseModel.fields();
+        Object.keys(fields).forEach(function (name) {
+            _this.fields.set(name, fields[name]);
+        });
+    }
+    /**
+     * @returns {Array<string>} field names which should be queried
+     */
+    Model.prototype.getQueryFields = function () {
+        var fields = [];
+        this.fields.forEach(function (field, name) {
+            // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
+            // TODO import the classes from Vuex-ORM and use instanceof instead
+            if (field.constructor.name === 'Attr' && !name.endsWith('Id')) {
+                fields.push(name);
+            }
+        });
+        return fields;
+    };
+    /**
+     * @returns {Map<string, Field>} all relations of the model which should be queried
+     */
+    Model.prototype.getRelations = function () {
+        var relations = new Map();
+        this.fields.forEach(function (field, name) {
+            if (field.constructor.name !== 'Attr') {
+                relations.set(name, field);
+            }
+        });
+        return relations;
+    };
+    return Model;
+}());
+
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
@@ -1956,6 +2001,13 @@ exports.Observable = Observable;
 
 var zenObservable$2 = zenObservable.Observable;
 
+
+
+var Observable = Object.freeze({
+	default: zenObservable$2,
+	__moduleExports: zenObservable$2
+});
+
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -2178,7 +2230,7 @@ var Observable$1 = (function (_super) {
         return this;
     };
     return Observable$$1;
-}(zenObservable$2));
+}(Observable));
 
 var __extends$2 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -2607,7 +2659,7 @@ var DedupLink = (function (_super) {
         if (!this.inFlightRequestObservables.get(key)) {
             var singleObserver_1 = forward(operation);
             var subscription_1;
-            var sharedObserver = new zenObservable$2(function (observer) {
+            var sharedObserver = new Observable(function (observer) {
                 var prev = _this.subscribers.get(key);
                 if (!prev)
                     prev = { next: [], error: [], complete: [] };
@@ -4091,7 +4143,7 @@ var createHttpLink = function (linkOptions) {
     if (!uri)
         uri = '/graphql';
     return new ApolloLink(function (operation) {
-        return new zenObservable$2(function (observer) {
+        return new Observable(function (observer) {
             var _a = operation.getContext(), headers = _a.headers, credentials = _a.credentials, _b = _a.fetchOptions, fetchOptions = _b === void 0 ? {} : _b, contextURI = _a.uri, _c = _a.http, httpOptions = _c === void 0 ? {} : _c;
             var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
             var http = __assign$7({}, defaultHttpOptions, httpOptions);
@@ -8073,50 +8125,7 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var inflection = require('inflection');
-/**
- * Own model class with some helpers
- */
-var Model = /** @class */ (function () {
-    function Model(baseModel) {
-        var _this = this;
-        this.fields = new Map();
-        this.baseModel = baseModel;
-        this.singularName = inflection.singularize(this.baseModel.entity);
-        this.pluralName = inflection.pluralize(this.baseModel.entity);
-        var fields = this.baseModel.fields();
-        Object.keys(fields).forEach(function (name) {
-            _this.fields.set(name, fields[name]);
-        });
-    }
-    /**
-     * @returns {Array<string>} field names which should be queried
-     */
-    Model.prototype.getQueryFields = function () {
-        var fields = [];
-        this.fields.forEach(function (field, name) {
-            // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
-            // TODO import the classes from Vuex-ORM and use instanceof instead
-            if (field.constructor.name === 'Attr' && !name.endsWith('Id')) {
-                fields.push(name);
-            }
-        });
-        return fields;
-    };
-    /**
-     * @returns {Map<string, Field>} all relations of the model which should be queried
-     */
-    Model.prototype.getRelations = function () {
-        var relations = new Map();
-        this.fields.forEach(function (field, name) {
-            if (field.constructor.name !== 'Attr') {
-                relations.set(name, field);
-            }
-        });
-        return relations;
-    };
-    return Model;
-}());
+var inflection$1 = require('inflection');
 /**
  * Plugin class
  */
@@ -8216,10 +8225,10 @@ var VuexORMApollo = /** @class */ (function () {
                 if (data[key]) {
                     if (data[key] instanceof Object) {
                         if (data[key].nodes) {
-                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes);
+                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes);
                         }
                         else {
-                            result[inflection.singularize(key)] = _this.transformIncomingData(data[key]);
+                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key]);
                         }
                     }
                     else if (key === 'id') {
@@ -8321,7 +8330,7 @@ var VuexORMApollo = /** @class */ (function () {
      * @returns {Model}
      */
     VuexORMApollo.prototype.getModel = function (modelName) {
-        var model = this.models.get(inflection.singularize(modelName));
+        var model = this.models.get(inflection$1.singularize(modelName));
         if (!model)
             throw new Error("No such model " + modelName + "!");
         return model;
