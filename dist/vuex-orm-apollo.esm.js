@@ -2001,13 +2001,6 @@ exports.Observable = Observable;
 
 var zenObservable$2 = zenObservable.Observable;
 
-
-
-var Observable = Object.freeze({
-	default: zenObservable$2,
-	__moduleExports: zenObservable$2
-});
-
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -2230,7 +2223,7 @@ var Observable$1 = (function (_super) {
         return this;
     };
     return Observable$$1;
-}(Observable));
+}(zenObservable$2));
 
 var __extends$2 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -2659,7 +2652,7 @@ var DedupLink = (function (_super) {
         if (!this.inFlightRequestObservables.get(key)) {
             var singleObserver_1 = forward(operation);
             var subscription_1;
-            var sharedObserver = new Observable(function (observer) {
+            var sharedObserver = new zenObservable$2(function (observer) {
                 var prev = _this.subscribers.get(key);
                 if (!prev)
                     prev = { next: [], error: [], complete: [] };
@@ -4143,7 +4136,7 @@ var createHttpLink = function (linkOptions) {
     if (!uri)
         uri = '/graphql';
     return new ApolloLink(function (operation) {
-        return new Observable(function (observer) {
+        return new zenObservable$2(function (observer) {
             var _a = operation.getContext(), headers = _a.headers, credentials = _a.credentials, _b = _a.fetchOptions, fetchOptions = _b === void 0 ? {} : _b, contextURI = _a.uri, _c = _a.http, httpOptions = _c === void 0 ? {} : _c;
             var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
             var http = __assign$7({}, defaultHttpOptions, httpOptions);
@@ -8090,6 +8083,35 @@ gql.disableFragmentWarnings = disableFragmentWarnings;
 
 var src = gql;
 
+var Logger = /** @class */ (function () {
+    function Logger(enabled) {
+        this.enabled = enabled;
+    }
+    Logger.prototype.group = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+        }
+    };
+    Logger.prototype.groupEnd = function () {
+        if (this.enabled)
+            console.groupEnd();
+    };
+    Logger.prototype.log = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+        }
+    };
+    return Logger;
+}());
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8146,6 +8168,7 @@ var VuexORMApollo = /** @class */ (function () {
         }
         this.database = options.database;
         this.debugMode = options.debug;
+        this.logger = new Logger(this.debugMode);
         this.collectModels();
         this.setupFetch();
         this.httpLink = new HttpLink({
@@ -8219,21 +8242,26 @@ var VuexORMApollo = /** @class */ (function () {
      * @param {Data | Array<Data>} data
      * @returns {Data}
      */
-    VuexORMApollo.prototype.transformIncomingData = function (data) {
+    VuexORMApollo.prototype.transformIncomingData = function (data, recursiveCall) {
         var _this = this;
+        if (recursiveCall === void 0) { recursiveCall = false; }
         var result = {};
+        if (!recursiveCall) {
+            this.logger.group('Transforming incoming data');
+            this.logger.log('Raw data:', data);
+        }
         if (data instanceof Array) {
-            result = data.map(function (d) { return _this.transformIncomingData(d); });
+            result = data.map(function (d) { return _this.transformIncomingData(d, true); });
         }
         else {
             Object.keys(data).forEach(function (key) {
                 if (data[key]) {
                     if (data[key] instanceof Object) {
                         if (data[key].nodes) {
-                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes);
+                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, true);
                         }
                         else {
-                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key]);
+                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key], true);
                         }
                     }
                     else if (key === 'id') {
@@ -8244,6 +8272,10 @@ var VuexORMApollo = /** @class */ (function () {
                     }
                 }
             });
+        }
+        if (!recursiveCall) {
+            this.logger.log('Transformed data:', result);
+            this.logger.groupEnd();
         }
         return result;
     };

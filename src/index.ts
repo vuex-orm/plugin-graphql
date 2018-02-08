@@ -4,6 +4,7 @@ import { HttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import gql from 'graphql-tag';
 import { Data, FetchParams, Field, Filter, ORMModel } from './interfaces';
+import Logger from './logger';
 
 const inflection = require('inflection');
 
@@ -18,6 +19,7 @@ export default class VuexORMApollo {
   private readonly database: any;
   private readonly models: Map<string, Model> = new Map();
   private readonly debugMode: boolean = false;
+  private readonly logger: Logger;
 
   /**
    * Constructor
@@ -35,6 +37,7 @@ export default class VuexORMApollo {
 
     this.database = options.database;
     this.debugMode = options.debug as boolean;
+    this.logger = new Logger(this.debugMode);
 
     this.collectModels();
     this.setupFetch();
@@ -105,19 +108,24 @@ export default class VuexORMApollo {
    * @param {Data | Array<Data>} data
    * @returns {Data}
    */
-  private transformIncomingData (data: Data | Array<Data>): Data {
+  private transformIncomingData (data: Data | Array<Data>, recursiveCall: boolean = false): Data {
     let result: Data = {};
 
+    if (!recursiveCall) {
+      this.logger.group('Transforming incoming data');
+      this.logger.log('Raw data:', data);
+    }
+
     if (data instanceof Array) {
-      result = data.map(d => this.transformIncomingData(d));
+      result = data.map(d => this.transformIncomingData(d, true));
     } else {
       Object.keys(data).forEach((key) => {
         if (data[key]) {
           if (data[key] instanceof Object) {
             if (data[key].nodes) {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes);
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, true);
             } else {
-              result[inflection.singularize(key)] = this.transformIncomingData(data[key]);
+              result[inflection.singularize(key)] = this.transformIncomingData(data[key], true);
             }
           } else if (key === 'id') {
             result[key] = parseInt(data[key], 0);
@@ -126,6 +134,11 @@ export default class VuexORMApollo {
           }
         }
       });
+    }
+
+    if (!recursiveCall) {
+      this.logger.log('Transformed data:', result);
+      this.logger.groupEnd();
     }
 
     return result;
