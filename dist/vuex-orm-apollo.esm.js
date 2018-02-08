@@ -8357,7 +8357,7 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.storeData = function (data, dispatch) {
         Object.keys(data).forEach(function (key) {
-            dispatch('insert', { data: data[key] });
+            dispatch('create', { data: data[key] });
         });
     };
     /**

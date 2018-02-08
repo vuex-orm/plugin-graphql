@@ -227,7 +227,7 @@ export default class VuexORMApollo {
    */
   private storeData (data: Data, dispatch: Function) {
     Object.keys(data).forEach((key) => {
-      dispatch('insert', { data: data[key] });
+      dispatch('create', { data: data[key] });
     });
   }
 
