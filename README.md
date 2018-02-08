@@ -55,6 +55,7 @@ In your component:
 - [x] Setup apollo integration
 - [x] Implement fetch action
 - [ ] Make sure the reactivity works
+- [ ] Playground project (GraphQL API + Vue/Vuex-ORM app)
 - [ ] Tests
 - [ ] Docs & document schema expectations
 - [ ] Deletions & persist
