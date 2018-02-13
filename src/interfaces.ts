@@ -1,3 +1,5 @@
+import Model from "./model";
+
 export interface ActionParams {
   commit: any;
   dispatch: any;
