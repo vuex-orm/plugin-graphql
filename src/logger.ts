@@ -1,5 +1,6 @@
 import { print } from 'graphql/language/printer';
 import { parse } from 'graphql/language/parser';
+import {DocumentNode} from "graphql";
 
 export default class Logger {
   private readonly enabled: boolean;
@@ -24,12 +25,17 @@ export default class Logger {
     }
   }
 
-  // TODO also accept gql parsed queries
-  public logQuery(query: string) {
+  public logQuery(query: string|DocumentNode) {
     if (this.enabled) {
       try {
         this.group('Sending query:')
-        console.log(this.prettify(query));
+
+        if (typeof query === 'object' && query.loc) {
+          console.log(this.prettify(query.loc.source.body));
+        } else {
+          console.log(this.prettify(<string>query));
+        }
+
         this.groupEnd();
       } catch(e) {
         console.error('[Vuex-ORM-Apollo] There is a syntax error in the query!', e, query);
