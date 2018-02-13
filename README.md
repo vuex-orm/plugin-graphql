@@ -6,6 +6,8 @@
 
 This Vuex-ORM plugin let's you sync the data against a GraphQL API via Apollo.
 
+**Warning:** This plugin is still under development, use with care.
+
 
 ## Usage
 

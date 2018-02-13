@@ -1,4 +1,4 @@
-import { Data, FetchParams, Field, Filter, ORMModel } from './interfaces';
+import { Field, ORMModel } from './interfaces';
 const inflection = require('inflection');
 
 /**
@@ -7,7 +7,7 @@ const inflection = require('inflection');
 export default class Model {
   public readonly singularName: string;
   public readonly pluralName: string;
-  private readonly baseModel: ORMModel;
+  public readonly baseModel: ORMModel;
   private readonly fields: Map<string, Field> = new Map<string, Field>();
 
   public constructor (baseModel: ORMModel) {
