@@ -136,7 +136,7 @@ export default class VuexORMApollo {
    * @param {any} id
    * @returns {Promise<void>}
    */
-  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<FetchResult> {
+  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams) {
     const model = this.getModel(state.$name);
     const name = `create${capitalizeFirstLetter(model.singularName)}`;
 
@@ -156,14 +156,16 @@ export default class VuexORMApollo {
     delete data.id;
 
     // Send GraphQL Mutation
-    const newData = await this.apolloClient.mutate({
+    const response = await this.apolloClient.mutate({
       'mutation': gql(query),
       'variables': {
         [model.singularName]: this.queryBuilder.transformOutgoingData(data)
       }
     });
 
+
     // Insert incoming data into the store
+    const newData = this.queryBuilder.transformIncomingData(response.data as Data);
     this.storeData(newData, dispatch);
 
     return newData;

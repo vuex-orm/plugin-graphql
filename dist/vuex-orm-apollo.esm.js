@@ -8506,7 +8506,7 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id;
         return __awaiter(this, void 0, void 0, function () {
-            var model, name, data, signature, query, newData, _c;
+            var model, name, data, signature, query, response, newData, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -8522,8 +8522,8 @@ var VuexORMApollo = /** @class */ (function () {
                                 'variables': (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c)
                             })];
                     case 1:
-                        newData = _d.sent();
-                        // Insert incoming data into the store
+                        response = _d.sent();
+                        newData = this.queryBuilder.transformIncomingData(response.data);
                         this.storeData(newData, dispatch);
                         return [2 /*return*/, newData];
                 }
