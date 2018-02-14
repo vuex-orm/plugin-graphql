@@ -8083,80 +8083,47 @@ gql.disableFragmentWarnings = disableFragmentWarnings;
 
 var src = gql;
 
-var Logger = /** @class */ (function () {
-    function Logger(enabled) {
-        this.enabled = enabled;
-    }
-    Logger.prototype.group = function () {
-        var messages = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            messages[_i] = arguments[_i];
-        }
-        if (this.enabled) {
-            console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
-        }
-    };
-    Logger.prototype.groupEnd = function () {
-        if (this.enabled)
-            console.groupEnd();
-    };
-    Logger.prototype.log = function () {
-        var messages = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            messages[_i] = arguments[_i];
-        }
-        if (this.enabled) {
-            console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
-        }
-    };
-    Logger.prototype.logQuery = function (query) {
-        if (this.enabled) {
-            try {
-                this.group('Sending query:');
-                if (typeof query === 'object' && query.loc) {
-                    console.log(this.prettify(query.loc.source.body));
-                }
-                else {
-                    console.log(this.prettify(query));
-                }
-                this.groupEnd();
-            }
-            catch (e) {
-                console.error('[Vuex-ORM-Apollo] There is a syntax error in the query!', e, query);
-            }
-        }
-    };
-    Logger.prototype.prettify = function (query) {
-        return printer_1(parser_1(query));
-    };
-    return Logger;
-}());
-
 var inflection$1 = require('inflection');
+/**
+ * This class takes care of everything GraphQL query related, especially the generation of queries out of models
+ */
 var QueryBuilder = /** @class */ (function () {
+    /**
+     * Constructor.
+     * @param {Logger} logger
+     * @param {(name: (Model | string)) => Model} getModel
+     */
     function QueryBuilder(logger, getModel) {
         this.logger = logger;
         this.getModel = getModel;
     }
     /**
+     * Takes a string with a graphql query and formats it
+     * @param {string} query
+     * @returns {string}
+     */
+    QueryBuilder.prettify = function (query) {
+        return printer_1(parser_1(query));
+    };
+    /**
      * Generates the arguments string for a graphql query based on a given map.
      *
      * There are three types of arguments:
      *
-     * 1) Signatures with attributes (signature = true)
+     * 1) Signatures with simple types (signature = true)
      *      mutation createUser($name: String!)
      *
-     * 2) Signatures with object (signature = true, args = { user: { __type: 'User' }})
-     *      mutation createUser($user: User!)
+     * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
+     *      mutation createUser($user: UserInput!)
      *
-     * 3) Field with values (signature = false, valuesAsVariables = false)
-     *      user(id: 15)
+     * 3) Fields with values (signature = false, valuesAsVariables = false)
+     *      query user(id: 15)
      *
-     * 4) Field with variables (signature = false, valuesAsVariables = true)
-     *      user(id: $id)
+     * 4) Fields with variables (signature = false, valuesAsVariables = true)
+     *      query user(id: $id)
      *
-     * 5) Field with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
-     *      createUser(user: {...})
+     * 5) Fields with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
+     *      mutation createUser(user: {...})
      *
      * @param {Arguments | undefined} args
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
@@ -8169,6 +8136,7 @@ var QueryBuilder = /** @class */ (function () {
         if (valuesAsVariables === void 0) { valuesAsVariables = false; }
         var returnValue = '';
         var any = false;
+        var first = true;
         if (args) {
             Object.keys(args).forEach(function (key) {
                 var value = args[key];
@@ -8193,14 +8161,15 @@ var QueryBuilder = /** @class */ (function () {
                     else {
                         if (typeof value === 'object' && value.__type) {
                             // Case 3 ({name: 'Helga Hufflepuff"})
-                            typeOrValue = value;
+                            typeOrValue = JSON.stringify(value);
                         }
                         else {
                             // Case 3 ("someValue")
                             typeOrValue = typeof value === 'number' ? value : "\"" + value + "\"";
                         }
                     }
-                    returnValue = returnValue + " " + ((signature ? '$' : '') + key) + ": " + typeOrValue;
+                    returnValue = "" + returnValue + (first ? '' : ', ') + ((signature ? '$' : '') + key) + ": " + typeOrValue;
+                    first = false;
                 }
             });
             if (any)
@@ -8208,12 +8177,22 @@ var QueryBuilder = /** @class */ (function () {
         }
         return returnValue;
     };
+    /**
+     * Transforms outgoing data. Use for variables param.
+     *
+     * Omits relations and id fields.
+     *
+     * @param {Data} data
+     * @returns {Data}
+     */
     QueryBuilder.prototype.transformOutgoingData = function (data) {
+        var model = this.getModel(data.$self().entity);
+        var relations = model.getRelations();
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
             var value = data[key];
             // Ignore IDs and connections
-            if (!(value instanceof Array || key === 'id')) {
+            if (!relations.has(key) && key !== 'id') {
                 returnValue[key] = value;
             }
         });
@@ -8316,6 +8295,52 @@ var QueryBuilder = /** @class */ (function () {
         return src(query);
     };
     return QueryBuilder;
+}());
+
+var Logger = /** @class */ (function () {
+    function Logger(enabled) {
+        this.enabled = enabled;
+    }
+    Logger.prototype.group = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+        }
+    };
+    Logger.prototype.groupEnd = function () {
+        if (this.enabled)
+            console.groupEnd();
+    };
+    Logger.prototype.log = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+        }
+    };
+    Logger.prototype.logQuery = function (query) {
+        if (this.enabled) {
+            try {
+                this.group('Sending query:');
+                if (typeof query === 'object' && query.loc) {
+                    console.log(QueryBuilder.prettify(query.loc.source.body));
+                }
+                else {
+                    console.log(QueryBuilder.prettify(query));
+                }
+                this.groupEnd();
+            }
+            catch (e) {
+                console.error('[Vuex-ORM-Apollo] There is a syntax error in the query!', e, query);
+            }
+        }
+    };
+    return Logger;
 }());
 
 /**
