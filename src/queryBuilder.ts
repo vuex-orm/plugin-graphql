@@ -41,20 +41,20 @@ export default class QueryBuilder {
    *
    * There are three types of arguments:
    *
-   * 1) Signatures with attributes (signature = true)
+   * 1) Signatures with simple types (signature = true)
    *      mutation createUser($name: String!)
    *
-   * 2) Signatures with object (signature = true, args = { user: { __type: 'User' }})
-   *      mutation createUser($user: User!)
+   * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
+   *      mutation createUser($user: UserInput!)
    *
-   * 3) Field with values (signature = false, valuesAsVariables = false)
-   *      user(id: 15)
+   * 3) Fields with values (signature = false, valuesAsVariables = false)
+   *      query user(id: 15)
    *
-   * 4) Field with variables (signature = false, valuesAsVariables = true)
-   *      user(id: $id)
+   * 4) Fields with variables (signature = false, valuesAsVariables = true)
+   *      query user(id: $id)
    *
-   * 5) Field with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
-   *      createUser(user: {...})
+   * 5) Fields with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
+   *      mutation createUser(user: {...})
    *
    * @param {Arguments | undefined} args
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
@@ -62,10 +62,12 @@ export default class QueryBuilder {
    *                           variables instead of values
    * @returns {String}
    */
-  public buildArguments(args: Arguments | undefined, signature: boolean = false,
-                                valuesAsVariables: boolean = false): string {
+  public buildArguments(args: Arguments | undefined,
+                        signature: boolean = false,
+                        valuesAsVariables: boolean = false): string {
     let returnValue: string = '';
     let any: boolean = false;
+    let first: boolean = true;
 
     if (args) {
       Object.keys(args).forEach((key: string) => {
@@ -90,14 +92,15 @@ export default class QueryBuilder {
           } else {
             if (typeof value === 'object' && value.__type) {
               // Case 3 ({name: 'Helga Hufflepuff"})
-              typeOrValue = value;
+              typeOrValue = JSON.stringify(value);
             } else {
               // Case 3 ("someValue")
               typeOrValue = typeof value === 'number' ? value : `"${value}"`;
             }
           }
 
-          returnValue = `${returnValue} ${(signature ? '$' : '') + key}: ${typeOrValue}`;
+          returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`;
+          first = false;
         }
       });
 
@@ -108,17 +111,24 @@ export default class QueryBuilder {
   }
 
 
-
-
-
+  /**
+   * Transforms outgoing data. Use for variables param.
+   *
+   * Omits relations and id fields.
+   *
+   * @param {Data} data
+   * @returns {Data}
+   */
   public transformOutgoingData(data: Data): Data {
+    const model: Model = this.getModel(data.$self().entity);
+    const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
 
     Object.keys(data).forEach((key) => {
       const value = data[key];
 
       // Ignore IDs and connections
-      if (!(value instanceof Array || key === 'id')) {
+      if (!relations.has(key) && key !== 'id') {
         returnValue[key] = value;
       }
     });
