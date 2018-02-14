@@ -1,40 +1,36 @@
 import { print } from 'graphql/language/printer';
 import { parse } from 'graphql/language/parser';
-import {Arguments, Data, Field} from "./interfaces";
-import Model from "./model";
-import gql from "graphql-tag";
-import Logger from "./logger";
+import { Arguments, Data, Field } from './interfaces';
+import Model from './model';
+import gql from 'graphql-tag';
+import Logger from './logger';
 const inflection = require('inflection');
-
 
 /**
  * This class takes care of everything GraphQL query related, especially the generation of queries out of models
  */
 export default class QueryBuilder {
   private readonly logger: Logger;
-  private readonly getModel: (name: Model|string) => Model;
-
+  private readonly getModel: (name: Model | string) => Model;
 
   /**
    * Constructor.
    * @param {Logger} logger
    * @param {(name: (Model | string)) => Model} getModel
    */
-  public constructor(logger: Logger, getModel: (name: Model|string) => Model) {
+  public constructor (logger: Logger, getModel: (name: Model | string) => Model) {
     this.logger = logger;
     this.getModel = getModel;
   }
-
 
   /**
    * Takes a string with a graphql query and formats it
    * @param {string} query
    * @returns {string}
    */
-  public static prettify(query: string): string {
+  public static prettify (query: string): string {
     return print(parse(query));
   }
-
 
   /**
    * Generates the arguments string for a graphql query based on a given map.
@@ -62,11 +58,10 @@ export default class QueryBuilder {
    *                           variables instead of values
    * @returns {String}
    */
-  public buildArguments(args: Arguments | undefined,
+  public buildArguments (args: Arguments | undefined,
                         signature: boolean = false,
                         valuesAsVariables: boolean = false): string {
     let returnValue: string = '';
-    let any: boolean = false;
     let first: boolean = true;
 
     if (args) {
@@ -75,7 +70,6 @@ export default class QueryBuilder {
 
         // Ignore ids and connections
         if (!(value instanceof Array || key === 'id')) {
-          any = true;
           let typeOrValue: any = '';
 
           if (signature) {
@@ -104,12 +98,11 @@ export default class QueryBuilder {
         }
       });
 
-      if (any) returnValue = `(${returnValue})`;
+      if (!first) returnValue = `(${returnValue})`;
     }
 
     return returnValue;
   }
-
 
   /**
    * Transforms outgoing data. Use for variables param.
@@ -119,7 +112,7 @@ export default class QueryBuilder {
    * @param {Data} data
    * @returns {Data}
    */
-  public transformOutgoingData(data: Data): Data {
+  public transformOutgoingData (data: Data): Data {
     const model: Model = this.getModel(data.$self().entity);
     const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
@@ -135,7 +128,6 @@ export default class QueryBuilder {
 
     return returnValue;
   }
-
 
   /**
    * Transforms a set of incoming data to the format vuex-orm requires.
@@ -209,7 +201,7 @@ export default class QueryBuilder {
    * @param {string} name
    * @returns {string}
    */
-  public buildField (model: Model|string, multiple: boolean = true, args?: Arguments, withVars: boolean = false, rootModel?: Model, name?: string): string {
+  public buildField (model: Model | string, multiple: boolean = true, args?: Arguments, withVars: boolean = false, rootModel?: Model, name?: string): string {
     model = this.getModel(model);
 
     let params: string = this.buildArguments(args, false, withVars);

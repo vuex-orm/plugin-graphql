@@ -1,4 +1,4 @@
-import Model from "./model";
+import Model from './model';
 
 export interface ActionParams {
   commit: any;
@@ -9,7 +9,7 @@ export interface ActionParams {
   state: any;
   filter?: Filter;
   data?: Data;
-  id?: string|number
+  id?: string | number;
 }
 
 export interface Data {
@@ -28,8 +28,8 @@ export interface ORMModel {
   entity: string;
 
   fields (): any;
-  dispatch(name: string, ...params: Array<any>): any;
-  getters(name: string, ...params: Array<any>): any;
+  dispatch (name: string, ...params: Array<any>): any;
+  getters (name: string, ...params: Array<any>): any;
 }
 
 export interface Field {

@@ -5,7 +5,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import gql from 'graphql-tag';
 import { Data, ActionParams, Field, Arguments, ORMModel } from './interfaces';
 import Logger from './logger';
-import { FetchResult } from "apollo-link";
+import { FetchResult } from 'apollo-link';
 import QueryBuilder from './queryBuilder';
 import { capitalizeFirstLetter } from './utils';
 
@@ -72,6 +72,21 @@ export default class VuexORMApollo {
   }
 
   /**
+   * Returns a model by name
+   *
+   * @param {Model|string} model
+   * @returns {Model}
+   */
+  public getModel (model: Model | string): Model {
+    if (!(model instanceof Model)) {
+      model = this.models.get(inflection.singularize(model)) as Model;
+      if (!model) throw new Error(`No such model ${model}!`);
+    }
+
+    return model;
+  }
+
+  /**
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
   private collectModels () {
@@ -89,8 +104,8 @@ export default class VuexORMApollo {
 
     this.components.subActions.persist = this.persist.bind(this);
     this.components.subActions.push = this.push.bind(this);
-    //this.components.subActions.destroy = this.destroy.bind(this);
-    //this.components.subActions.destroyAll = this.destroyAll.bind(this);
+    // this.components.subActions.destroy = this.destroy.bind(this);
+    // this.components.subActions.destroyAll = this.destroyAll.bind(this);
   }
 
   /**
@@ -125,15 +140,14 @@ export default class VuexORMApollo {
     const model = this.getModel(state.$name);
     const name = `create${capitalizeFirstLetter(model.singularName)}`;
 
-
     const data = model.baseModel.getters('find', { id })();
 
     // Send the request to the GraphQL API
-    const signature = this.queryBuilder.buildArguments({contract: {__type: 'Contract'}}, true);
+    const signature = this.queryBuilder.buildArguments({ contract: { __type: 'Contract' } }, true);
 
     const query = `
       mutation ${name}${signature} {
-        ${this.queryBuilder.buildField(model, false, {contract: {__type: 'Contract'}}, true, undefined, name)}
+        ${this.queryBuilder.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name)}
       }
     `;
 
@@ -143,12 +157,11 @@ export default class VuexORMApollo {
 
     // Send GraphQL Mutation
     const newData = await this.apolloClient.mutate({
-      "mutation": gql(query),
-      "variables": {
+      'mutation': gql(query),
+      'variables': {
         [model.singularName]: this.queryBuilder.transformOutgoingData(data)
       }
     });
-
 
     // Insert incoming data into the store
     this.storeData(newData, dispatch);
@@ -156,9 +169,8 @@ export default class VuexORMApollo {
     return newData;
   }
 
-
-  private async push({ state, dispatch }: ActionParams, { id }: ActionParams) {
-
+  private async push ({ state, dispatch }: ActionParams, { id }: ActionParams) {
+    // TODO
   }
 
   /**
@@ -183,20 +195,5 @@ export default class VuexORMApollo {
     Object.keys(data).forEach((key) => {
       dispatch('create', { data: data[key] });
     });
-  }
-
-  /**
-   * Returns a model by name
-   *
-   * @param {Model|string} model
-   * @returns {Model}
-   */
-  public getModel (model: Model|string): Model {
-    if (!(model instanceof Model)) {
-      model = this.models.get(inflection.singularize(model)) as Model;
-      if (!model) throw new Error(`No such model ${model}!`);
-    }
-
-    return model;
   }
 }

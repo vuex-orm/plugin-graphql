@@ -1,5 +1,5 @@
 import QueryBuilder from './queryBuilder';
-import {DocumentNode} from "graphql";
+import { DocumentNode } from 'graphql';
 
 export default class Logger {
   private readonly enabled: boolean;
@@ -24,7 +24,7 @@ export default class Logger {
     }
   }
 
-  public logQuery(query: string|DocumentNode) {
+  public logQuery (query: string | DocumentNode) {
     if (this.enabled) {
       try {
         this.group('Sending query:');
@@ -32,11 +32,11 @@ export default class Logger {
         if (typeof query === 'object' && query.loc) {
           console.log(QueryBuilder.prettify(query.loc.source.body));
         } else {
-          console.log(QueryBuilder.prettify(<string>query));
+          console.log(QueryBuilder.prettify(query as string));
         }
 
         this.groupEnd();
-      } catch(e) {
+      } catch (e) {
         console.error('[Vuex-ORM-Apollo] There is a syntax error in the query!', e, query);
       }
     }

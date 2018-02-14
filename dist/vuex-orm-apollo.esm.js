@@ -8135,14 +8135,12 @@ var QueryBuilder = /** @class */ (function () {
         if (signature === void 0) { signature = false; }
         if (valuesAsVariables === void 0) { valuesAsVariables = false; }
         var returnValue = '';
-        var any = false;
         var first = true;
         if (args) {
             Object.keys(args).forEach(function (key) {
                 var value = args[key];
                 // Ignore ids and connections
                 if (!(value instanceof Array || key === 'id')) {
-                    any = true;
                     var typeOrValue = '';
                     if (signature) {
                         if (typeof value === 'object' && value.__type) {
@@ -8172,7 +8170,7 @@ var QueryBuilder = /** @class */ (function () {
                     first = false;
                 }
             });
-            if (any)
+            if (!first)
                 returnValue = "(" + returnValue + ")";
         }
         return returnValue;
@@ -8346,11 +8344,11 @@ var Logger = /** @class */ (function () {
 /**
  * Capitalizes the first letter of the given string.
  *
- * @param {string} string
+ * @param {string} input
  * @returns {string}
  */
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+function capitalizeFirstLetter(input) {
+    return input.charAt(0).toUpperCase() + input.slice(1);
 }
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -8434,6 +8432,20 @@ var VuexORMApollo = /** @class */ (function () {
         return new VuexORMApollo(components, options);
     };
     /**
+     * Returns a model by name
+     *
+     * @param {Model|string} model
+     * @returns {Model}
+     */
+    VuexORMApollo.prototype.getModel = function (model) {
+        if (!(model instanceof Model)) {
+            model = this.models.get(inflection$2.singularize(model));
+            if (!model)
+                throw new Error("No such model " + model + "!");
+        }
+        return model;
+    };
+    /**
      * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
      */
     VuexORMApollo.prototype.collectModels = function () {
@@ -8450,8 +8462,8 @@ var VuexORMApollo = /** @class */ (function () {
         this.components.subActions.fetch = this.fetch.bind(this);
         this.components.subActions.persist = this.persist.bind(this);
         this.components.subActions.push = this.push.bind(this);
-        //this.components.subActions.destroy = this.destroy.bind(this);
-        //this.components.subActions.destroyAll = this.destroyAll.bind(this);
+        // this.components.subActions.destroy = this.destroy.bind(this);
+        // this.components.subActions.destroyAll = this.destroyAll.bind(this);
     };
     /**
      * Will be called, when dispatch('entities/something/fetch') is called.
@@ -8506,8 +8518,8 @@ var VuexORMApollo = /** @class */ (function () {
                         this.logger.logQuery(query);
                         delete data.id;
                         return [4 /*yield*/, this.apolloClient.mutate({
-                                "mutation": src(query),
-                                "variables": (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c)
+                                'mutation': src(query),
+                                'variables': (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c)
                             })];
                     case 1:
                         newData = _d.sent();
@@ -8556,20 +8568,6 @@ var VuexORMApollo = /** @class */ (function () {
         Object.keys(data).forEach(function (key) {
             dispatch('create', { data: data[key] });
         });
-    };
-    /**
-     * Returns a model by name
-     *
-     * @param {Model|string} model
-     * @returns {Model}
-     */
-    VuexORMApollo.prototype.getModel = function (model) {
-        if (!(model instanceof Model)) {
-            model = this.models.get(inflection$2.singularize(model));
-            if (!model)
-                throw new Error("No such model " + model + "!");
-        }
-        return model;
     };
     return VuexORMApollo;
 }());
