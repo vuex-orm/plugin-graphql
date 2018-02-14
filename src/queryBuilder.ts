@@ -4,6 +4,7 @@ import { Arguments, Data, Field } from './interfaces';
 import Model from './model';
 import gql from 'graphql-tag';
 import Logger from './logger';
+import { capitalizeFirstLetter } from './utils';
 const inflection = require('inflection');
 
 /**
@@ -236,8 +237,42 @@ export default class QueryBuilder {
    * @returns {any}
    */
   public buildQuery (modelName: string, args?: Arguments): any {
+    // Ignore empty args
+    if (args && Object.keys(args).length === 0) args = undefined;
+
     const multiple = !(args && args.get('id'));
     const query = `{ ${this.buildField(modelName, multiple, args)} }`;
+    return gql(query);
+  }
+
+  /**
+   * Generates a mutation query for a model.
+   *
+   * @param {Model} model
+   * @param {string}prefix
+   * @returns {any}
+   */
+  public buildMutation (model: Model, prefix: string = 'create') {
+    const name = `${prefix}${capitalizeFirstLetter(model.singularName)}`;
+
+    // Send the request to the GraphQL API
+    const signature = this.buildArguments({ contract: { __type: 'Contract' } }, true);
+
+    const field = this.buildField(
+      model,
+      false,
+      { contract: { __type: 'Contract' } },
+      true,
+      undefined,
+      name
+    );
+
+    const query = `
+        mutation ${name}${signature} {
+          ${field}
+        }
+      `;
+
     return gql(query);
   }
 }

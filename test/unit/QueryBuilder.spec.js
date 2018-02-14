@@ -262,7 +262,7 @@ query users {
 
 
   describe('.buildQuery', () => {
-    it('generates a complete query a model', () => {
+    it('generates a complete query for a model', () => {
       const args = new Map();
       args.set('age', 32);
 
@@ -280,6 +280,30 @@ query users {
           id
           user_id
         }
+      }
+    }
+  }
+}
+      `.trim() + "\n");
+
+    });
+  });
+
+
+  describe('.buildMutation', () => {
+    it('generates a complete mutation query for a model', () => {
+      let query = queryBuilder.buildMutation(new Model(User));
+      query = QueryBuilder.prettify(query.loc.source.body);
+
+      expect(query).toEqual(`
+mutation createUser($contract: ContractInput!) {
+  createUser(contract: $contract) {
+    id
+    name
+    profiles {
+      nodes {
+        id
+        user_id
       }
     }
   }

@@ -8083,6 +8083,16 @@ gql.disableFragmentWarnings = disableFragmentWarnings;
 
 var src = gql;
 
+/**
+ * Capitalizes the first letter of the given string.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function capitalizeFirstLetter(input) {
+    return input.charAt(0).toUpperCase() + input.slice(1);
+}
+
 var inflection$1 = require('inflection');
 /**
  * This class takes care of everything GraphQL query related, especially the generation of queries out of models
@@ -8288,8 +8298,27 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {any}
      */
     QueryBuilder.prototype.buildQuery = function (modelName, args) {
+        // Ignore empty args
+        if (args && Object.keys(args).length === 0)
+            args = undefined;
         var multiple = !(args && args.get('id'));
         var query = "{ " + this.buildField(modelName, multiple, args) + " }";
+        return src(query);
+    };
+    /**
+     * Generates a mutation query for a model.
+     *
+     * @param {Model} model
+     * @param {string}prefix
+     * @returns {any}
+     */
+    QueryBuilder.prototype.buildMutation = function (model, prefix) {
+        if (prefix === void 0) { prefix = 'create'; }
+        var name = "" + prefix + capitalizeFirstLetter(model.singularName);
+        // Send the request to the GraphQL API
+        var signature = this.buildArguments({ contract: { __type: 'Contract' } }, true);
+        var field = this.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name);
+        var query = "\n        mutation " + name + signature + " {\n          " + field + "\n        }\n      ";
         return src(query);
     };
     return QueryBuilder;
@@ -8340,16 +8369,6 @@ var Logger = /** @class */ (function () {
     };
     return Logger;
 }());
-
-/**
- * Capitalizes the first letter of the given string.
- *
- * @param {string} input
- * @returns {string}
- */
-function capitalizeFirstLetter(input) {
-    return input.charAt(0).toUpperCase() + input.slice(1);
-}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8421,17 +8440,6 @@ var VuexORMApollo = /** @class */ (function () {
         this.queryBuilder = new QueryBuilder(this.logger, this.getModel.bind(this));
     }
     /**
-     * The install method will be called when the plugin should be installed. We create a new instance of the Plugin class
-     * here.
-     *
-     * @param components
-     * @param options
-     * @returns {VuexORMApollo}
-     */
-    VuexORMApollo.install = function (components, options) {
-        return new VuexORMApollo(components, options);
-    };
-    /**
      * Returns a model by name
      *
      * @param {Model|string} model
@@ -8480,9 +8488,6 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        // Ignore empty filters
-                        if (filter && Object.keys(filter).length === 0)
-                            filter = undefined;
                         query = this.queryBuilder.buildQuery(state.$name, filter);
                         return [4 /*yield*/, this.apolloRequest(query)];
                     case 1:
@@ -8504,38 +8509,57 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.persist = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var id = _b.id;
+        var data = _b.data;
         return __awaiter(this, void 0, void 0, function () {
-            var model, name, data, signature, query, response, newData, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        model = this.getModel(state.$name);
-                        name = "create" + capitalizeFirstLetter(model.singularName);
-                        data = model.baseModel.getters('find', { id: id })();
-                        signature = this.queryBuilder.buildArguments({ contract: { __type: 'Contract' } }, true);
-                        query = "\n      mutation " + name + signature + " {\n        " + this.queryBuilder.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name) + "\n      }\n    ";
-                        this.logger.logQuery(query);
-                        delete data.id;
-                        return [4 /*yield*/, this.apolloClient.mutate({
-                                'mutation': src(query),
-                                'variables': (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c)
-                            })];
-                    case 1:
-                        response = _d.sent();
-                        newData = this.queryBuilder.transformIncomingData(response.data);
-                        this.storeData(newData, dispatch);
-                        return [2 /*return*/, newData];
-                }
+            return __generator(this, function (_c) {
+                return [2 /*return*/, this.mutate('create', data, dispatch, this.getModel(state.$name))];
             });
         });
     };
+    /**
+     * Will be called, when dispatch('entities/something/push') is called.
+     * @param {any} state
+     * @param {any} dispatch
+     * @param {Data} data
+     * @returns {Promise<Data | {}>}
+     */
     VuexORMApollo.prototype.push = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var id = _b.id;
+        var data = _b.data;
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_c) {
-                return [2 /*return*/];
+                return [2 /*return*/, this.mutate('update', data, dispatch, this.getModel(state.$name))];
+            });
+        });
+    };
+    /**
+     * Contains the logic to save (persist or push) data.
+     *
+     * @param {string} action
+     * @param {Data | undefined} data
+     * @param {Function} dispatch
+     * @param {Model} model
+     * @returns {Promise<any>}
+     */
+    VuexORMApollo.prototype.mutate = function (action, data, dispatch, model) {
+        return __awaiter(this, void 0, void 0, function () {
+            var query, response, newData, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!data) return [3 /*break*/, 2];
+                        query = this.queryBuilder.buildMutation(model, action);
+                        return [4 /*yield*/, this.apolloClient.mutate({
+                                'mutation': query,
+                                'variables': (_a = {}, _a[model.singularName] = this.queryBuilder.transformOutgoingData(data), _a)
+                            })];
+                    case 1:
+                        response = _b.sent();
+                        newData = this.queryBuilder.transformIncomingData(response.data);
+                        this.storeData(newData, dispatch);
+                        return [2 /*return*/, newData];
+                    case 2: return [2 /*return*/, {}];
+                }
             });
         });
     };
@@ -8566,10 +8590,19 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.storeData = function (data, dispatch) {
         Object.keys(data).forEach(function (key) {
-            dispatch('create', { data: data[key] });
+            dispatch('insert', { data: data[key] });
         });
     };
     return VuexORMApollo;
 }());
 
-export default VuexORMApollo;
+var VuexORMApolloPlugin = /** @class */ (function () {
+    function VuexORMApolloPlugin() {
+    }
+    VuexORMApolloPlugin.install = function (components, options) {
+        return new VuexORMApollo(components, options);
+    };
+    return VuexORMApolloPlugin;
+}());
+
+export default VuexORMApolloPlugin;

@@ -9,7 +9,6 @@ export interface ActionParams {
   state: any;
   filter?: Filter;
   data?: Data;
-  id?: string | number;
 }
 
 export interface Data {
