@@ -1,16 +1,38 @@
+import { print } from 'graphql/language/printer';
+import { parse } from 'graphql/language/parser';
 import {Arguments, Data, Field} from "./interfaces";
 import Model from "./model";
 import gql from "graphql-tag";
 import Logger from "./logger";
 const inflection = require('inflection');
 
+
+/**
+ * This class takes care of everything GraphQL query related, especially the generation of queries out of models
+ */
 export default class QueryBuilder {
   private readonly logger: Logger;
   private readonly getModel: (name: Model|string) => Model;
 
+
+  /**
+   * Constructor.
+   * @param {Logger} logger
+   * @param {(name: (Model | string)) => Model} getModel
+   */
   public constructor(logger: Logger, getModel: (name: Model|string) => Model) {
     this.logger = logger;
     this.getModel = getModel;
+  }
+
+
+  /**
+   * Takes a string with a graphql query and formats it
+   * @param {string} query
+   * @returns {string}
+   */
+  public static prettify(query: string): string {
+    return print(parse(query));
   }
 
 

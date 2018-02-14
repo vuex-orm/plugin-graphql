@@ -8109,12 +8109,16 @@ var Logger = /** @class */ (function () {
             console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
         }
     };
-    // TODO also accept gql parsed queries
     Logger.prototype.logQuery = function (query) {
         if (this.enabled) {
             try {
                 this.group('Sending query:');
-                console.log(this.prettify(query));
+                if (typeof query === 'object' && query.loc) {
+                    console.log(this.prettify(query.loc.source.body));
+                }
+                else {
+                    console.log(this.prettify(query));
+                }
                 this.groupEnd();
             }
             catch (e) {
@@ -8127,6 +8131,202 @@ var Logger = /** @class */ (function () {
     };
     return Logger;
 }());
+
+var inflection$1 = require('inflection');
+var QueryBuilder = /** @class */ (function () {
+    function QueryBuilder(logger, getModel) {
+        this.logger = logger;
+        this.getModel = getModel;
+    }
+    /**
+     * Generates the arguments string for a graphql query based on a given map.
+     *
+     * There are three types of arguments:
+     *
+     * 1) Signatures with attributes (signature = true)
+     *      mutation createUser($name: String!)
+     *
+     * 2) Signatures with object (signature = true, args = { user: { __type: 'User' }})
+     *      mutation createUser($user: User!)
+     *
+     * 3) Field with values (signature = false, valuesAsVariables = false)
+     *      user(id: 15)
+     *
+     * 4) Field with variables (signature = false, valuesAsVariables = true)
+     *      user(id: $id)
+     *
+     * 5) Field with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
+     *      createUser(user: {...})
+     *
+     * @param {Arguments | undefined} args
+     * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
+     * @param {boolean} valuesAsVariables When true and abstract = false, then this method generates filter arguments with
+     *                           variables instead of values
+     * @returns {String}
+     */
+    QueryBuilder.prototype.buildArguments = function (args, signature, valuesAsVariables) {
+        if (signature === void 0) { signature = false; }
+        if (valuesAsVariables === void 0) { valuesAsVariables = false; }
+        var returnValue = '';
+        var any = false;
+        if (args) {
+            Object.keys(args).forEach(function (key) {
+                var value = args[key];
+                // Ignore ids and connections
+                if (!(value instanceof Array || key === 'id')) {
+                    any = true;
+                    var typeOrValue = '';
+                    if (signature) {
+                        if (typeof value === 'object' && value.__type) {
+                            // Case 2 (User!)
+                            typeOrValue = value.__type + 'Input!';
+                        }
+                        else {
+                            // Case 1 (String!)
+                            typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
+                        }
+                    }
+                    else if (valuesAsVariables) {
+                        // Case 6 (user: $user)
+                        typeOrValue = "$" + key;
+                    }
+                    else {
+                        if (typeof value === 'object' && value.__type) {
+                            // Case 3 ({name: 'Helga Hufflepuff"})
+                            typeOrValue = value;
+                        }
+                        else {
+                            // Case 3 ("someValue")
+                            typeOrValue = typeof value === 'number' ? value : "\"" + value + "\"";
+                        }
+                    }
+                    returnValue = returnValue + " " + ((signature ? '$' : '') + key) + ": " + typeOrValue;
+                }
+            });
+            if (any)
+                returnValue = "(" + returnValue + ")";
+        }
+        return returnValue;
+    };
+    QueryBuilder.prototype.transformOutgoingData = function (data) {
+        var returnValue = {};
+        Object.keys(data).forEach(function (key) {
+            var value = data[key];
+            // Ignore IDs and connections
+            if (!(value instanceof Array || key === 'id')) {
+                returnValue[key] = value;
+            }
+        });
+        return returnValue;
+    };
+    /**
+     * Transforms a set of incoming data to the format vuex-orm requires.
+     *
+     * @param {Data | Array<Data>} data
+     * @param {boolean} recursiveCall
+     * @returns {Data}
+     */
+    QueryBuilder.prototype.transformIncomingData = function (data, recursiveCall) {
+        var _this = this;
+        if (recursiveCall === void 0) { recursiveCall = false; }
+        var result = {};
+        if (!recursiveCall) {
+            this.logger.group('Transforming incoming data');
+            this.logger.log('Raw data:', data);
+        }
+        if (data instanceof Array) {
+            result = data.map(function (d) { return _this.transformIncomingData(d, true); });
+        }
+        else {
+            Object.keys(data).forEach(function (key) {
+                if (data[key]) {
+                    if (data[key] instanceof Object) {
+                        if (data[key].nodes) {
+                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, true);
+                        }
+                        else {
+                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key], true);
+                        }
+                    }
+                    else if (key === 'id') {
+                        result[key] = parseInt(data[key], 0);
+                    }
+                    else {
+                        result[key] = data[key];
+                    }
+                }
+            });
+        }
+        if (!recursiveCall) {
+            this.logger.log('Transformed data:', result);
+            this.logger.groupEnd();
+        }
+        return result;
+    };
+    /**
+     *
+     * @param {Model} model
+     * @param {Model} rootModel
+     * @returns {Array<String>}
+     */
+    QueryBuilder.prototype.buildRelationsQuery = function (model, rootModel) {
+        var _this = this;
+        var relationQueries = [];
+        model.getRelations().forEach(function (field, name) {
+            if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
+                var multiple = field.constructor.name !== 'BelongsTo';
+                relationQueries.push(_this.buildField(name, multiple, undefined, false, rootModel || model));
+            }
+        });
+        return relationQueries;
+    };
+    /**
+     * Builds a field for the GraphQL query and a specific model
+     * @param {Model|string} model
+     * @param {boolean} multiple
+     * @param {Arguments} args
+     * @param {boolean} withVars
+     * @param {Model} rootModel
+     * @param {string} name
+     * @returns {string}
+     */
+    QueryBuilder.prototype.buildField = function (model, multiple, args, withVars, rootModel, name) {
+        if (multiple === void 0) { multiple = true; }
+        if (withVars === void 0) { withVars = false; }
+        model = this.getModel(model);
+        var params = this.buildArguments(args, false, withVars);
+        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
+        if (multiple) {
+            return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
+        }
+        else {
+            return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
+        }
+    };
+    /**
+     * Create a GraphQL query for the given model and arguments.
+     *
+     * @param {string} modelName
+     * @param {Arguments} args
+     * @returns {any}
+     */
+    QueryBuilder.prototype.buildQuery = function (modelName, args) {
+        var multiple = !(args && args.get('id'));
+        var query = "{ " + this.buildField(modelName, multiple, args) + " }";
+        return src(query);
+    };
+    return QueryBuilder;
+}());
+
+/**
+ * Capitalizes the first letter of the given string.
+ *
+ * @param {string} string
+ * @returns {string}
+ */
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8163,10 +8363,9 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var inflection$1 = require('inflection');
+var inflection$2 = require('inflection');
 /**
  * Plugin class
- * TODO: Refactor to smaller classes
  */
 var VuexORMApollo = /** @class */ (function () {
     /**
@@ -8196,6 +8395,7 @@ var VuexORMApollo = /** @class */ (function () {
             cache: new InMemoryCache(),
             connectToDevTools: true
         });
+        this.queryBuilder = new QueryBuilder(this.logger, this.getModel.bind(this));
     }
     /**
      * The install method will be called when the plugin should be installed. We create a new instance of the Plugin class
@@ -8246,7 +8446,7 @@ var VuexORMApollo = /** @class */ (function () {
                         // Ignore empty filters
                         if (filter && Object.keys(filter).length === 0)
                             filter = undefined;
-                        query = this.buildQuery(state.$name, filter);
+                        query = this.queryBuilder.buildQuery(state.$name, filter);
                         return [4 /*yield*/, this.apolloRequest(query)];
                     case 1:
                         data = _b.sent();
@@ -8274,18 +8474,15 @@ var VuexORMApollo = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         model = this.getModel(state.$name);
-                        name = "create" + VuexORMApollo.capitalizeFirstLetter(model.singularName);
+                        name = "create" + capitalizeFirstLetter(model.singularName);
                         data = model.baseModel.getters('find', { id: id })();
-                        console.log('state', state);
-                        console.log('model', model);
-                        console.log('data', data);
-                        signature = VuexORMApollo.buildArguments({ contract: { __type: 'Contract' } }, true);
-                        query = "\n      mutation " + name + signature + " {\n        " + this.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name) + "\n      }\n    ";
+                        signature = this.queryBuilder.buildArguments({ contract: { __type: 'Contract' } }, true);
+                        query = "\n      mutation " + name + signature + " {\n        " + this.queryBuilder.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name) + "\n      }\n    ";
                         this.logger.logQuery(query);
                         delete data.id;
                         return [4 /*yield*/, this.apolloClient.mutate({
                                 "mutation": src(query),
-                                "variables": (_c = {}, _c[model.singularName] = this.transformOutgoingData(data), _c)
+                                "variables": (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c)
                             })];
                     case 1:
                         newData = _d.sent();
@@ -8305,113 +8502,6 @@ var VuexORMApollo = /** @class */ (function () {
             });
         });
     };
-    VuexORMApollo.prototype.transformOutgoingData = function (data) {
-        var returnValue = {};
-        Object.keys(data).forEach(function (key) {
-            var value = data[key];
-            // Ignore IDs and connections
-            if (!(value instanceof Array || key === 'id')) {
-                returnValue[key] = value;
-            }
-        });
-        return returnValue;
-    };
-    /**
-     * Transforms a set of incoming data to the format vuex-orm requires.
-     *
-     * @param {Data | Array<Data>} data
-     * @param {boolean} recursiveCall
-     * @returns {Data}
-     */
-    VuexORMApollo.prototype.transformIncomingData = function (data, recursiveCall) {
-        var _this = this;
-        if (recursiveCall === void 0) { recursiveCall = false; }
-        var result = {};
-        if (!recursiveCall) {
-            this.logger.group('Transforming incoming data');
-            this.logger.log('Raw data:', data);
-        }
-        if (data instanceof Array) {
-            result = data.map(function (d) { return _this.transformIncomingData(d, true); });
-        }
-        else {
-            Object.keys(data).forEach(function (key) {
-                if (data[key]) {
-                    if (data[key] instanceof Object) {
-                        if (data[key].nodes) {
-                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, true);
-                        }
-                        else {
-                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key], true);
-                        }
-                    }
-                    else if (key === 'id') {
-                        result[key] = parseInt(data[key], 0);
-                    }
-                    else {
-                        result[key] = data[key];
-                    }
-                }
-            });
-        }
-        if (!recursiveCall) {
-            this.logger.log('Transformed data:', result);
-            this.logger.groupEnd();
-        }
-        return result;
-    };
-    /**
-     *
-     * @param {Model} model
-     * @param {Model} rootModel
-     * @returns {Array<String>}
-     */
-    VuexORMApollo.prototype.buildRelationsQuery = function (model, rootModel) {
-        var _this = this;
-        var relationQueries = [];
-        model.getRelations().forEach(function (field, name) {
-            if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
-                var multiple = field.constructor.name !== 'BelongsTo';
-                relationQueries.push(_this.buildField(name, multiple, undefined, false, rootModel || model));
-            }
-        });
-        return relationQueries;
-    };
-    /**
-     * Builds a field for the GraphQL query and a specific model
-     * @param {Model|string} model
-     * @param {boolean} multiple
-     * @param {Arguments} args
-     * @param {boolean} withVars
-     * @param {Model} rootModel
-     * @param {string} name
-     * @returns {string}
-     */
-    VuexORMApollo.prototype.buildField = function (model, multiple, args, withVars, rootModel, name) {
-        if (multiple === void 0) { multiple = true; }
-        if (withVars === void 0) { withVars = false; }
-        model = this.getModel(model);
-        var params = VuexORMApollo.buildArguments(args, false, withVars);
-        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
-        if (multiple) {
-            return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
-        }
-        else {
-            return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
-        }
-    };
-    /**
-     * Create a GraphQL query for the given model and arguments.
-     *
-     * @param {string} modelName
-     * @param {Arguments} args
-     * @returns {any}
-     */
-    VuexORMApollo.prototype.buildQuery = function (modelName, args) {
-        var multiple = !(args && args.get('id'));
-        var query = "{ " + this.buildField(modelName, multiple, args) + " }";
-        return src(query);
-    };
     /**
      * Sends a query to the GraphQL API via apollo
      * @param query
@@ -8426,7 +8516,7 @@ var VuexORMApollo = /** @class */ (function () {
                     case 1:
                         response = _a.sent();
                         // Transform incoming data into something useful
-                        return [2 /*return*/, this.transformIncomingData(response.data)];
+                        return [2 /*return*/, this.queryBuilder.transformIncomingData(response.data)];
                 }
             });
         });
@@ -8450,91 +8540,11 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.getModel = function (model) {
         if (!(model instanceof Model)) {
-            model = this.models.get(inflection$1.singularize(model));
+            model = this.models.get(inflection$2.singularize(model));
             if (!model)
                 throw new Error("No such model " + model + "!");
         }
         return model;
-    };
-    /**
-     * Capitalizes the first letter of the given string.
-     *
-     * @param {string} string
-     * @returns {string}
-     */
-    VuexORMApollo.capitalizeFirstLetter = function (string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    };
-    /**
-     * Generates the arguments string for a graphql query based on a given map.
-     *
-     * There are three types of arguments:
-     *
-     * 1) Signatures with attributes (signature = true)
-     *      mutation createUser($name: String!)
-     *
-     * 2) Signatures with object (signature = true, args = { user: { __type: 'User' }})
-     *      mutation createUser($user: User!)
-     *
-     * 3) Field with values (signature = false, valuesAsVariables = false)
-     *      user(id: 15)
-     *
-     * 4) Field with variables (signature = false, valuesAsVariables = true)
-     *      user(id: $id)
-     *
-     * 5) Field with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
-     *      createUser(user: {...})
-     *
-     * @param {Arguments | undefined} args
-     * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
-     * @param {boolean} valuesAsVariables When true and abstract = false, then this method generates filter arguments with
-     *                           variables instead of values
-     * TODO: Query with variables too?
-     * @returns {String}
-     */
-    VuexORMApollo.buildArguments = function (args, signature, valuesAsVariables) {
-        if (signature === void 0) { signature = false; }
-        if (valuesAsVariables === void 0) { valuesAsVariables = false; }
-        var returnValue = '';
-        var any = false;
-        if (args) {
-            Object.keys(args).forEach(function (key) {
-                var value = args[key];
-                // Ignore ids and connections
-                if (!(value instanceof Array || key === 'id')) {
-                    any = true;
-                    var typeOrValue = '';
-                    if (signature) {
-                        if (typeof value === 'object' && value.__type) {
-                            // Case 2 (User!)
-                            typeOrValue = value.__type + 'Input!';
-                        }
-                        else {
-                            // Case 1 (String!)
-                            typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
-                        }
-                    }
-                    else if (valuesAsVariables) {
-                        // Case 6 (user: $user)
-                        typeOrValue = "$" + key;
-                    }
-                    else {
-                        if (typeof value === 'object' && value.__type) {
-                            // Case 3 ({name: 'Helga Hufflepuff"})
-                            typeOrValue = value;
-                        }
-                        else {
-                            // Case 3 ("someValue")
-                            typeOrValue = typeof value === 'number' ? value : "\"" + value + "\"";
-                        }
-                    }
-                    returnValue = returnValue + " " + ((signature ? '$' : '') + key) + ": " + typeOrValue;
-                }
-            });
-            if (any)
-                returnValue = "(" + returnValue + ")";
-        }
-        return returnValue;
     };
     return VuexORMApollo;
 }());
