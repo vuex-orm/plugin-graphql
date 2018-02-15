@@ -119,13 +119,15 @@ export default class VuexORMApollo {
    * @returns {Promise<void>}
    */
   private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams) {
-    const model = this.getModel(state.$name);
-    const data = model.baseModel.getters('find')(id);
+    if (id) {
+      const model = this.getModel(state.$name);
+      const data = model.baseModel.getters('find')(id);
 
-    await this.mutate('create', data, dispatch, this.getModel(state.$name));
+      await this.mutate('create', data, dispatch, model);
 
-    // TODO is this really necessary?
-    return model.baseModel.getters('find')(id);
+      // TODO is this really necessary?
+      return model.baseModel.getters('find')(id);
+    }
   }
 
   /**
@@ -136,7 +138,14 @@ export default class VuexORMApollo {
    * @returns {Promise<Data | {}>}
    */
   private async push ({ state, dispatch }: ActionParams, { data }: ActionParams) {
-    return this.mutate('update', data, dispatch, this.getModel(state.$name));
+    if (data) {
+      const model = this.getModel(state.$name);
+
+      await this.mutate('update', data, dispatch, model);
+
+      // TODO is this really necessary?
+      return model.baseModel.getters('find')(data.id);
+    }
   }
 
   /**

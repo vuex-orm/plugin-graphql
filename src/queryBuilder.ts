@@ -278,6 +278,8 @@ export default class QueryBuilder {
     if (prefix === 'delete') {
       if (!id) throw new Error('No ID given.');
       args = { id };
+    } else if (prefix === 'update') {
+      args['id'] = id;
     }
 
     const signature: string = this.buildArguments(args, true, false, true);

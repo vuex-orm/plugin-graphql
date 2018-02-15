@@ -8349,6 +8349,9 @@ var QueryBuilder = /** @class */ (function () {
                 throw new Error('No ID given.');
             args = { id: id };
         }
+        else if (prefix === 'update') {
+            args['id'] = id;
+        }
         var signature = this.buildArguments(args, true, false, true);
         var field = this.buildField(model, false, args, true, model, name, true);
         var query = "\n        mutation " + name + signature + " {\n          " + field + "\n        }\n      ";
@@ -8552,13 +8555,15 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        if (!id) return [3 /*break*/, 2];
                         model = this.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
-                        return [4 /*yield*/, this.mutate('create', data, dispatch, this.getModel(state.$name))];
+                        return [4 /*yield*/, this.mutate('create', data, dispatch, model)];
                     case 1:
                         _c.sent();
                         // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(id)];
+                    case 2: return [2 /*return*/];
                 }
             });
         });
@@ -8574,8 +8579,19 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var data = _b.data;
         return __awaiter(this, void 0, void 0, function () {
+            var model;
             return __generator(this, function (_c) {
-                return [2 /*return*/, this.mutate('update', data, dispatch, this.getModel(state.$name))];
+                switch (_c.label) {
+                    case 0:
+                        if (!data) return [3 /*break*/, 2];
+                        model = this.getModel(state.$name);
+                        return [4 /*yield*/, this.mutate('update', data, dispatch, model)];
+                    case 1:
+                        _c.sent();
+                        // TODO is this really necessary?
+                        return [2 /*return*/, model.baseModel.getters('find')(data.id)];
+                    case 2: return [2 /*return*/];
+                }
             });
         });
     };

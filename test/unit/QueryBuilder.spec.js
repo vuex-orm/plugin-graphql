@@ -357,8 +357,8 @@ mutation createUser($user: UserInput!) {
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation updateUser($user: UserInput!) {
-  updateUser(user: $user) {
+mutation updateUser($user: UserInput!, $id: ID!) {
+  updateUser(user: $user, id: $id) {
     id
     name
     profiles {
