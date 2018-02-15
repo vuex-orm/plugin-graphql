@@ -2,11 +2,9 @@ import Model from './model';
 import { ApolloClient } from 'apollo-client';
 import { HttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-import gql from 'graphql-tag';
-import { Data, ActionParams, Arguments, ORMModel } from './interfaces';
+import { Data, ActionParams, Arguments, ORMModel, DispatchFunction } from './interfaces';
 import Logger from './logger';
 import QueryBuilder from './queryBuilder';
-import { capitalizeFirstLetter } from './utils';
 
 const inflection = require('inflection');
 
@@ -91,7 +89,7 @@ export default class VuexORMApollo {
 
     this.components.subActions.persist = this.persist.bind(this);
     this.components.subActions.push = this.push.bind(this);
-    // this.components.subActions.destroy = this.destroy.bind(this);
+    this.components.subActions.destroy = this.destroy.bind(this);
     // this.components.subActions.destroyAll = this.destroyAll.bind(this);
   }
 
@@ -109,7 +107,7 @@ export default class VuexORMApollo {
     const data = await this.apolloRequest(query);
 
     // Insert incoming data into the store
-    this.storeData(data, dispatch);
+    await this.insertData(data, dispatch);
   }
 
   /**
@@ -120,8 +118,14 @@ export default class VuexORMApollo {
    * @param {any} id
    * @returns {Promise<void>}
    */
-  private async persist ({ state, dispatch }: ActionParams, { data }: ActionParams) {
-    return this.mutate('create', data, dispatch, this.getModel(state.$name));
+  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams) {
+    const model = this.getModel(state.$name);
+    const data = model.baseModel.getters('find')(id);
+
+    await this.mutate('create', data, dispatch, this.getModel(state.$name));
+
+    // TODO is this really necessary?
+    return model.baseModel.getters('find')(id);
   }
 
   /**
@@ -136,6 +140,28 @@ export default class VuexORMApollo {
   }
 
   /**
+   * Will be called, when dispatch('entities/something/destroy') is called.
+   *
+   * @param {any} state
+   * @param {any} dispatch
+   * @param {Data} id
+   * @returns {Promise<void>}
+   */
+  private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<void> {
+    const model = this.getModel(state.$name);
+
+    if (id) {
+      const query = this.queryBuilder.buildMutation(model, id, 'delete');
+
+      // Send GraphQL Mutation
+      await this.apolloClient.mutate({
+        mutation: query,
+        variables: { id }
+      });
+    }
+  }
+
+  /**
    * Contains the logic to save (persist or push) data.
    *
    * @param {string} action
@@ -144,30 +170,27 @@ export default class VuexORMApollo {
    * @param {Model} model
    * @returns {Promise<any>}
    */
-  private async mutate (action: string, data: Data | undefined, dispatch: Function, model: Model) {
+  private async mutate (action: string, data: Data | undefined, dispatch: DispatchFunction, model: Model): Promise<any> {
     if (data) {
-      const query = this.queryBuilder.buildMutation(model, action);
+      const id = action === 'create' ? undefined : data.id;
+      const query = this.queryBuilder.buildMutation(model, id, action);
+
+      const variables: Data = {
+        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
+      };
+
+      if (id) variables['id'] = id;
 
       // Send GraphQL Mutation
       const response = await this.apolloClient.mutate({
-        'mutation': query,
-        'variables': {
-          [model.singularName]: this.queryBuilder.transformOutgoingData(data)
-        }
+        mutation: query,
+        variables
       });
 
-      // Remove the original data
-      // FIXME how? https://github.com/vuex-orm/vuex-orm/issues/78
-      // model.baseModel.dispatch('delete', { id });
-
       // Insert incoming data into the store
-      const newData = this.queryBuilder.transformIncomingData(response.data as Data);
-      this.storeData(newData, dispatch);
-
-      return newData;
+      const newData = this.queryBuilder.transformIncomingData(response.data as Data, true);
+      return this.updateData(newData, dispatch, data.id);
     }
-
-    return {};
   }
 
   /**
@@ -183,14 +206,33 @@ export default class VuexORMApollo {
   }
 
   /**
-   * Saves incoming data into the store.
+   * Inserts incoming data into the store.
    *
    * @param {Data} data
    * @param {Function} dispatch
+   * @param {boolean} update
    */
-  private storeData (data: Data, dispatch: Function) {
-    Object.keys(data).forEach((key) => {
-      dispatch('insert', { data: data[key] });
+  private async insertData (data: Data, dispatch: DispatchFunction) {
+    Object.keys(data).forEach(async (key) => {
+      await dispatch('insertOrUpdate', { data: data[key] });
     });
+  }
+
+  /**
+   * Updates an existing record in the store with new data. This method can only update one single record, so
+   * it takes the first record of the first field from the data object!
+   * @param {Data} data
+   * @param {Function} dispatch
+   * @param id
+   */
+  private async updateData (data: Data, dispatch: DispatchFunction, id: number | string) {
+    // We only take the first field!
+    data = data[Object.keys(data)[0]];
+
+    if (data instanceof Array) {
+      data = data[0];
+    }
+
+    return dispatch('update', { where: id, data });
   }
 }

@@ -18,11 +18,12 @@ var Model = /** @class */ (function () {
      * @returns {Array<string>} field names which should be queried
      */
     Model.prototype.getQueryFields = function () {
+        var _this = this;
         var fields = [];
         this.fields.forEach(function (field, name) {
-            // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
+            // field.constructor.name is one of Increment, Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
             // TODO import the classes from Vuex-ORM and use instanceof instead
-            if (field.constructor.name === 'Attr' && !name.endsWith('Id')) {
+            if (_this.fieldIsAttribute(field) && !name.endsWith('Id')) {
                 fields.push(name);
             }
         });
@@ -32,13 +33,17 @@ var Model = /** @class */ (function () {
      * @returns {Map<string, Field>} all relations of the model which should be queried
      */
     Model.prototype.getRelations = function () {
+        var _this = this;
         var relations = new Map();
         this.fields.forEach(function (field, name) {
-            if (field.constructor.name !== 'Attr') {
+            if (!_this.fieldIsAttribute(field)) {
                 relations.set(name, field);
             }
         });
         return relations;
+    };
+    Model.prototype.fieldIsAttribute = function (field) {
+        return field.constructor.name === 'Attr' || field.constructor.name === 'Increment';
     };
     return Model;
 }());
@@ -8089,8 +8094,17 @@ var src = gql;
  * @param {string} input
  * @returns {string}
  */
-function capitalizeFirstLetter(input) {
+function upcaseFirstLetter(input) {
     return input.charAt(0).toUpperCase() + input.slice(1);
+}
+/**
+ * Down cases the first letter of the given string.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function downcaseFirstLetter(input) {
+    return input.charAt(0).toLowerCase() + input.slice(1);
 }
 
 var inflection$1 = require('inflection');
@@ -8141,21 +8155,26 @@ var QueryBuilder = /** @class */ (function () {
      *                           variables instead of values
      * @returns {String}
      */
-    QueryBuilder.prototype.buildArguments = function (args, signature, valuesAsVariables) {
+    QueryBuilder.prototype.buildArguments = function (args, signature, valuesAsVariables, allowIdFields) {
         if (signature === void 0) { signature = false; }
         if (valuesAsVariables === void 0) { valuesAsVariables = false; }
+        if (allowIdFields === void 0) { allowIdFields = false; }
         var returnValue = '';
         var first = true;
         if (args) {
             Object.keys(args).forEach(function (key) {
                 var value = args[key];
                 // Ignore ids and connections
-                if (!(value instanceof Array || key === 'id')) {
+                if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
                     var typeOrValue = '';
                     if (signature) {
                         if (typeof value === 'object' && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
+                        }
+                        else if (key === 'id') {
+                            // Case 1 (ID!)
+                            typeOrValue = 'ID!';
                         }
                         else {
                             // Case 1 (String!)
@@ -8213,8 +8232,9 @@ var QueryBuilder = /** @class */ (function () {
      * @param {boolean} recursiveCall
      * @returns {Data}
      */
-    QueryBuilder.prototype.transformIncomingData = function (data, recursiveCall) {
+    QueryBuilder.prototype.transformIncomingData = function (data, mutationResult, recursiveCall) {
         var _this = this;
+        if (mutationResult === void 0) { mutationResult = false; }
         if (recursiveCall === void 0) { recursiveCall = false; }
         var result = {};
         if (!recursiveCall) {
@@ -8222,17 +8242,22 @@ var QueryBuilder = /** @class */ (function () {
             this.logger.log('Raw data:', data);
         }
         if (data instanceof Array) {
-            result = data.map(function (d) { return _this.transformIncomingData(d, true); });
+            result = data.map(function (d) { return _this.transformIncomingData(d, mutationResult, true); });
         }
         else {
             Object.keys(data).forEach(function (key) {
                 if (data[key]) {
                     if (data[key] instanceof Object) {
                         if (data[key].nodes) {
-                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, true);
+                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, mutationResult, true);
                         }
                         else {
-                            result[inflection$1.singularize(key)] = _this.transformIncomingData(data[key], true);
+                            var newKey = key;
+                            if (mutationResult) {
+                                newKey = newKey.replace(/^(create|update)(.+)/, '$2');
+                                newKey = downcaseFirstLetter(newKey);
+                            }
+                            result[inflection$1.singularize(newKey)] = _this.transformIncomingData(data[key], mutationResult, true);
                         }
                     }
                     else if (key === 'id') {
@@ -8260,7 +8285,7 @@ var QueryBuilder = /** @class */ (function () {
         var _this = this;
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
+            if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
                 var multiple = field.constructor.name !== 'BelongsTo';
                 relationQueries.push(_this.buildField(name, multiple, undefined, false, rootModel || model));
             }
@@ -8277,11 +8302,12 @@ var QueryBuilder = /** @class */ (function () {
      * @param {string} name
      * @returns {string}
      */
-    QueryBuilder.prototype.buildField = function (model, multiple, args, withVars, rootModel, name) {
+    QueryBuilder.prototype.buildField = function (model, multiple, args, withVars, rootModel, name, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
         if (withVars === void 0) { withVars = false; }
+        if (allowIdFields === void 0) { allowIdFields = false; }
         model = this.getModel(model);
-        var params = this.buildArguments(args, false, withVars);
+        var params = this.buildArguments(args, false, withVars, allowIdFields);
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
@@ -8311,15 +8337,23 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Model} model
      * @param {string}prefix
      * @returns {any}
+     *
+     * TODO: Refactor to avoid prefix param
      */
-    QueryBuilder.prototype.buildMutation = function (model, prefix) {
+    QueryBuilder.prototype.buildMutation = function (model, id, prefix) {
         if (prefix === void 0) { prefix = 'create'; }
-        var name = "" + prefix + capitalizeFirstLetter(model.singularName);
-        // Send the request to the GraphQL API
-        var signature = this.buildArguments({ contract: { __type: 'Contract' } }, true);
-        var field = this.buildField(model, false, { contract: { __type: 'Contract' } }, true, undefined, name);
+        var name = "" + prefix + upcaseFirstLetter(model.singularName);
+        var args = (_a = {}, _a[model.singularName] = { __type: upcaseFirstLetter(model.singularName) }, _a);
+        if (prefix === 'delete') {
+            if (!id)
+                throw new Error('No ID given.');
+            args = { id: id };
+        }
+        var signature = this.buildArguments(args, true, false, true);
+        var field = this.buildField(model, false, args, true, model, name, true);
         var query = "\n        mutation " + name + signature + " {\n          " + field + "\n        }\n      ";
         return src(query);
+        var _a;
     };
     return QueryBuilder;
 }());
@@ -8470,7 +8504,7 @@ var VuexORMApollo = /** @class */ (function () {
         this.components.subActions.fetch = this.fetch.bind(this);
         this.components.subActions.persist = this.persist.bind(this);
         this.components.subActions.push = this.push.bind(this);
-        // this.components.subActions.destroy = this.destroy.bind(this);
+        this.components.subActions.destroy = this.destroy.bind(this);
         // this.components.subActions.destroyAll = this.destroyAll.bind(this);
     };
     /**
@@ -8493,7 +8527,10 @@ var VuexORMApollo = /** @class */ (function () {
                     case 1:
                         data = _b.sent();
                         // Insert incoming data into the store
-                        this.storeData(data, dispatch);
+                        return [4 /*yield*/, this.insertData(data, dispatch)];
+                    case 2:
+                        // Insert incoming data into the store
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
@@ -8509,10 +8546,20 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.persist = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var data = _b.data;
+        var id = _b.id;
         return __awaiter(this, void 0, void 0, function () {
+            var model, data;
             return __generator(this, function (_c) {
-                return [2 /*return*/, this.mutate('create', data, dispatch, this.getModel(state.$name))];
+                switch (_c.label) {
+                    case 0:
+                        model = this.getModel(state.$name);
+                        data = model.baseModel.getters('find')(id);
+                        return [4 /*yield*/, this.mutate('create', data, dispatch, this.getModel(state.$name))];
+                    case 1:
+                        _c.sent();
+                        // TODO is this really necessary?
+                        return [2 /*return*/, model.baseModel.getters('find')(id)];
+                }
             });
         });
     };
@@ -8533,6 +8580,39 @@ var VuexORMApollo = /** @class */ (function () {
         });
     };
     /**
+     * Will be called, when dispatch('entities/something/destroy') is called.
+     *
+     * @param {any} state
+     * @param {any} dispatch
+     * @param {Data} id
+     * @returns {Promise<void>}
+     */
+    VuexORMApollo.prototype.destroy = function (_a, _b) {
+        var state = _a.state, dispatch = _a.dispatch;
+        var id = _b.id;
+        return __awaiter(this, void 0, void 0, function () {
+            var model, query;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        model = this.getModel(state.$name);
+                        if (!id) return [3 /*break*/, 2];
+                        query = this.queryBuilder.buildMutation(model, id, 'delete');
+                        // Send GraphQL Mutation
+                        return [4 /*yield*/, this.apolloClient.mutate({
+                                mutation: query,
+                                variables: { id: id }
+                            })];
+                    case 1:
+                        // Send GraphQL Mutation
+                        _c.sent();
+                        _c.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
      * Contains the logic to save (persist or push) data.
      *
      * @param {string} action
@@ -8543,22 +8623,25 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.mutate = function (action, data, dispatch, model) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, response, newData, _a;
+            var id, query, variables, response, newData, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         if (!data) return [3 /*break*/, 2];
-                        query = this.queryBuilder.buildMutation(model, action);
+                        id = action === 'create' ? undefined : data.id;
+                        query = this.queryBuilder.buildMutation(model, id, action);
+                        variables = (_a = {}, _a[model.singularName] = this.queryBuilder.transformOutgoingData(data), _a);
+                        if (id)
+                            variables['id'] = id;
                         return [4 /*yield*/, this.apolloClient.mutate({
-                                'mutation': query,
-                                'variables': (_a = {}, _a[model.singularName] = this.queryBuilder.transformOutgoingData(data), _a)
+                                mutation: query,
+                                variables: variables
                             })];
                     case 1:
                         response = _b.sent();
-                        newData = this.queryBuilder.transformIncomingData(response.data);
-                        this.storeData(newData, dispatch);
-                        return [2 /*return*/, newData];
-                    case 2: return [2 /*return*/, {}];
+                        newData = this.queryBuilder.transformIncomingData(response.data, true);
+                        return [2 /*return*/, this.updateData(newData, dispatch, data.id)];
+                    case 2: return [2 /*return*/];
                 }
             });
         });
@@ -8583,14 +8666,47 @@ var VuexORMApollo = /** @class */ (function () {
         });
     };
     /**
-     * Saves incoming data into the store.
+     * Inserts incoming data into the store.
      *
      * @param {Data} data
      * @param {Function} dispatch
+     * @param {boolean} update
      */
-    VuexORMApollo.prototype.storeData = function (data, dispatch) {
-        Object.keys(data).forEach(function (key) {
-            dispatch('insert', { data: data[key] });
+    VuexORMApollo.prototype.insertData = function (data, dispatch) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                Object.keys(data).forEach(function (key) { return __awaiter(_this, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, dispatch('insertOrUpdate', { data: data[key] })];
+                            case 1:
+                                _a.sent();
+                                return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [2 /*return*/];
+            });
+        });
+    };
+    /**
+     * Updates an existing record in the store with new data. This method can only update one single record, so
+     * it takes the first record of the first field from the data object!
+     * @param {Data} data
+     * @param {Function} dispatch
+     * @param id
+     */
+    VuexORMApollo.prototype.updateData = function (data, dispatch, id) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                // We only take the first field!
+                data = data[Object.keys(data)[0]];
+                if (data instanceof Array) {
+                    data = data[0];
+                }
+                return [2 /*return*/, dispatch('update', { where: id, data: data })];
+            });
         });
     };
     return VuexORMApollo;

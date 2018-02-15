@@ -44,12 +44,12 @@
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.5.3.tgz#91b728599544efbb7386d8b6633693a3c2e7ade5"
 
-"@vuex-orm/core@^0.17.0":
-  version "0.17.0"
-  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.17.0.tgz#ee395d511e77d92193c0d81a9ac486d0c342fae1"
+"@vuex-orm/core@^0.19.0":
+  version "0.19.0"
+  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.19.0.tgz#453e0bfc5c964d201723231c5cac85ab5138a1cd"
   dependencies:
     "@types/lodash-es" "^4.17.0"
-    lodash-es "^4.17.4"
+    lodash-es "^4.17.5"
     normalizr "^3.2.4"
     vue "^2.5.13"
     vuex "^3.0.1"
@@ -2614,7 +2614,7 @@ locate-path@^2.0.0:
     p-locate "^2.0.0"
     path-exists "^3.0.0"
 
-lodash-es@^4.17.4, lodash-es@^4.17.5:
+lodash-es@^4.17.5:
   version "4.17.5"
   resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.5.tgz#9fc6e737b1c4d151d8f9cae2247305d552ce748f"
 

@@ -1,13 +1,16 @@
 import Model from './model';
 
+export type DispatchFunction = (action: string, data: Data) => Promise<any>;
+
 export interface ActionParams {
   commit: any;
-  dispatch: any;
+  dispatch: DispatchFunction;
   getters: any;
   rootGetters: any;
   rootState: any;
   state: any;
   filter?: Filter;
+  id?: number;
   data?: Data;
 }
 

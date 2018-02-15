@@ -30,9 +30,9 @@ export default class Model {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
-      // field.constructor.name is one of Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
+      // field.constructor.name is one of Increment, Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
       // TODO import the classes from Vuex-ORM and use instanceof instead
-      if (field.constructor.name === 'Attr' && !name.endsWith('Id')) {
+      if (this.fieldIsAttribute(field) && !name.endsWith('Id')) {
         fields.push(name);
       }
     });
@@ -47,11 +47,15 @@ export default class Model {
     const relations = new Map<string, Field>();
 
     this.fields.forEach((field: Field, name: string) => {
-      if (field.constructor.name !== 'Attr') {
+      if (!this.fieldIsAttribute(field)) {
         relations.set(name, field);
       }
     });
 
     return relations;
+  }
+
+  private fieldIsAttribute (field: Field): boolean {
+    return field.constructor.name === 'Attr' || field.constructor.name === 'Increment';
   }
 }

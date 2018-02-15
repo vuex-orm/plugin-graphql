@@ -4,7 +4,7 @@ import { Arguments, Data, Field } from './interfaces';
 import Model from './model';
 import gql from 'graphql-tag';
 import Logger from './logger';
-import { capitalizeFirstLetter } from './utils';
+import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
 const inflection = require('inflection');
 
 /**
@@ -60,8 +60,9 @@ export default class QueryBuilder {
    * @returns {String}
    */
   public buildArguments (args: Arguments | undefined,
-                        signature: boolean = false,
-                        valuesAsVariables: boolean = false): string {
+                         signature: boolean = false,
+                         valuesAsVariables: boolean = false,
+                         allowIdFields: boolean = false): string {
     let returnValue: string = '';
     let first: boolean = true;
 
@@ -70,13 +71,16 @@ export default class QueryBuilder {
         let value: any = args[key];
 
         // Ignore ids and connections
-        if (!(value instanceof Array || key === 'id')) {
+        if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
           let typeOrValue: any = '';
 
           if (signature) {
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
+            } else if (key === 'id') {
+              // Case 1 (ID!)
+              typeOrValue = 'ID!';
             } else {
               // Case 1 (String!)
               typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
@@ -137,7 +141,7 @@ export default class QueryBuilder {
    * @param {boolean} recursiveCall
    * @returns {Data}
    */
-  public transformIncomingData (data: Data | Array<Data>, recursiveCall: boolean = false): Data {
+  public transformIncomingData (data: Data | Array<Data>, mutationResult: boolean = false, recursiveCall: boolean = false): Data {
     let result: Data = {};
 
     if (!recursiveCall) {
@@ -146,15 +150,22 @@ export default class QueryBuilder {
     }
 
     if (data instanceof Array) {
-      result = data.map(d => this.transformIncomingData(d, true));
+      result = data.map(d => this.transformIncomingData(d, mutationResult, true));
     } else {
       Object.keys(data).forEach((key) => {
         if (data[key]) {
           if (data[key] instanceof Object) {
             if (data[key].nodes) {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, true);
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, mutationResult, true);
             } else {
-              result[inflection.singularize(key)] = this.transformIncomingData(data[key], true);
+              let newKey = key;
+
+              if (mutationResult) {
+                newKey = newKey.replace(/^(create|update)(.+)/, '$2');
+                newKey = downcaseFirstLetter(newKey);
+              }
+
+              result[inflection.singularize(newKey)] = this.transformIncomingData(data[key], mutationResult, true);
             }
           } else if (key === 'id') {
             result[key] = parseInt(data[key], 0);
@@ -183,7 +194,7 @@ export default class QueryBuilder {
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
-      if (!rootModel || name !== rootModel.singularName && name !== rootModel.pluralName) {
+      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
         const multiple: boolean = field.constructor.name !== 'BelongsTo';
         relationQueries.push(this.buildField(name, multiple, undefined, false, rootModel || model));
       }
@@ -202,10 +213,16 @@ export default class QueryBuilder {
    * @param {string} name
    * @returns {string}
    */
-  public buildField (model: Model | string, multiple: boolean = true, args?: Arguments, withVars: boolean = false, rootModel?: Model, name?: string): string {
+  public buildField (model: Model | string,
+                     multiple: boolean = true,
+                     args?: Arguments,
+                     withVars: boolean = false,
+                     rootModel?: Model,
+                     name?: string,
+                     allowIdFields: boolean = false): string {
     model = this.getModel(model);
 
-    let params: string = this.buildArguments(args, false, withVars);
+    let params: string = this.buildArguments(args, false, withVars, allowIdFields);
 
     const fields = `
       ${model.getQueryFields().join(' ')}
@@ -251,21 +268,20 @@ export default class QueryBuilder {
    * @param {Model} model
    * @param {string}prefix
    * @returns {any}
+   *
+   * TODO: Refactor to avoid prefix param
    */
-  public buildMutation (model: Model, prefix: string = 'create') {
-    const name = `${prefix}${capitalizeFirstLetter(model.singularName)}`;
+  public buildMutation (model: Model, id?: number, prefix: string = 'create') {
+    const name: string = `${prefix}${upcaseFirstLetter(model.singularName)}`;
+    let args: Data = { [model.singularName]: { __type: upcaseFirstLetter(model.singularName) } };
 
-    // Send the request to the GraphQL API
-    const signature = this.buildArguments({ contract: { __type: 'Contract' } }, true);
+    if (prefix === 'delete') {
+      if (!id) throw new Error('No ID given.');
+      args = { id };
+    }
 
-    const field = this.buildField(
-      model,
-      false,
-      { contract: { __type: 'Contract' } },
-      true,
-      undefined,
-      name
-    );
+    const signature: string = this.buildArguments(args, true, false, true);
+    const field = this.buildField(model, false, args, true, model, name, true);
 
     const query = `
         mutation ${name}${signature} {

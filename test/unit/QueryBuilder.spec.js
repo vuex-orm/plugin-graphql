@@ -99,117 +99,157 @@ describe('QueryBuilder', () => {
   describe('.transformIncomingData', () => {
     it('transforms incoming data into Vuex-ORM a readable structure', () => {
       const incomingData = {
-        "data": {
-          "contracts": {
+        "contracts": {
+          "nodes": [
+            {
+              "id": "1",
+              "name": "Contract S",
+              "displayName": "Contract S",
+              "slug": "contract-s",
+              "contractOptions": {
+                "nodes": [
+                  {
+                    "id": "1",
+                    "name": "Foo Bar 1",
+                    "description": "Very foo, much more bar"
+                  }
+                ]
+              },
+              "documentReferences": {
+                "nodes": []
+              }
+            },
+            {
+              "id": "2",
+              "name": "Contract M",
+              "displayName": "Contract M",
+              "slug": "contract-m",
+              "contractOptions": {
+                "nodes": [
+                  {
+                    "id": "1",
+                    "name": "Foo Bar 1",
+                    "description": "Very foo, much more bar"
+                  }
+                ]
+              },
+              "documentReferences": {
+                "nodes": []
+              }
+            },
+            {
+              "id": "3",
+              "name": "Contract L",
+              "displayName": "Contract L",
+              "slug": "contract-l",
+              "contractOptions": {
+                "nodes": [
+                  {
+                    "id": "1",
+                    "name": "Foo Bar 1",
+                    "description": "Very foo, much more bar"
+                  }
+                ]
+              },
+              "documentReferences": {
+                "nodes": []
+              }
+            }
+          ]
+        }
+      };
+      const expectedData = {
+        "contracts": [
+          {
+            "contractOptions": [
+              {
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Contract S",
+            "documentReferences": [],
+            "id": 1,
+            "name": "Contract S",
+            "slug": "contract-s",
+          },
+          {
+            "contractOptions": [
+              {
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Contract M",
+            "documentReferences": [],
+            "id": 2,
+            "name": "Contract M",
+            "slug": "contract-m",
+          },
+          {
+            "contractOptions": [
+              {
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Contract L",
+            "documentReferences": [],
+            "id": 3,
+            "name": "Contract L",
+            "slug": "contract-l",
+          },
+        ],
+      };
+
+      expect(queryBuilder.transformIncomingData(incomingData)).toEqual(expectedData);
+    });
+  });
+
+
+  describe('.transformIncomingData', () => {
+    it('transforms incoming data after a mutation into Vuex-ORM a readable structure', () => {
+      const incomingData = {
+        "createContract": {
+          "id": "1",
+          "name": "Contract S",
+          "displayName": "Contract S",
+          "slug": "contract-s",
+          "contractOptions": {
             "nodes": [
               {
                 "id": "1",
-                "name": "Contract S",
-                "displayName": "Contract S",
-                "slug": "contract-s",
-                "contractOptions": {
-                  "nodes": [
-                    {
-                      "id": "1",
-                      "name": "Foo Bar 1",
-                      "description": "Very foo, much more bar"
-                    }
-                  ]
-                },
-                "documentReferences": {
-                  "nodes": []
-                }
-              },
-              {
-                "id": "2",
-                "name": "Contract M",
-                "displayName": "Contract M",
-                "slug": "contract-m",
-                "contractOptions": {
-                  "nodes": [
-                    {
-                      "id": "1",
-                      "name": "Foo Bar 1",
-                      "description": "Very foo, much more bar"
-                    }
-                  ]
-                },
-                "documentReferences": {
-                  "nodes": []
-                }
-              },
-              {
-                "id": "3",
-                "name": "Contract L",
-                "displayName": "Contract L",
-                "slug": "contract-l",
-                "contractOptions": {
-                  "nodes": [
-                    {
-                      "id": "1",
-                      "name": "Foo Bar 1",
-                      "description": "Very foo, much more bar"
-                    }
-                  ]
-                },
-                "documentReferences": {
-                  "nodes": []
-                }
+                "name": "Foo Bar 1",
+                "description": "Very foo, much more bar"
               }
             ]
+          },
+          "documentReferences": {
+            "nodes": []
           }
         }
       };
       const expectedData = {
-        "datum": {
-          "contracts": [
-            {
-              "contractOptions": [
-                {
-                  "description": "Very foo, much more bar",
-                  "id": 1,
-                  "name": "Foo Bar 1",
-                },
-              ],
-              "displayName": "Contract S",
-              "documentReferences": [],
-              "id": 1,
-              "name": "Contract S",
-              "slug": "contract-s",
-            },
-            {
-              "contractOptions": [
-                {
-                  "description": "Very foo, much more bar",
-                  "id": 1,
-                  "name": "Foo Bar 1",
-                },
-              ],
-              "displayName": "Contract M",
-              "documentReferences": [],
-              "id": 2,
-              "name": "Contract M",
-              "slug": "contract-m",
-            },
-            {
-              "contractOptions": [
-                {
-                  "description": "Very foo, much more bar",
-                  "id": 1,
-                  "name": "Foo Bar 1",
-                },
-              ],
-              "displayName": "Contract L",
-              "documentReferences": [],
-              "id": 3,
-              "name": "Contract L",
-              "slug": "contract-l",
-            },
-          ],
-        },
-      };
+        "contract": {
+            "contractOptions": [
+              {
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Contract S",
+            "documentReferences": [],
+            "id": 1,
+            "name": "Contract S",
+            "slug": "contract-s",
+          }
+        };
 
-      expect(queryBuilder.transformIncomingData(incomingData)).toEqual(expectedData);
+      expect(queryBuilder.transformIncomingData(incomingData, true)).toEqual(expectedData);
     });
   });
 
@@ -291,13 +331,57 @@ query users {
 
 
   describe('.buildMutation', () => {
-    it('generates a complete mutation query for a model', () => {
+    it('generates a complete create mutation query for a model', () => {
       let query = queryBuilder.buildMutation(new Model(User));
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation createUser($contract: ContractInput!) {
-  createUser(contract: $contract) {
+mutation createUser($user: UserInput!) {
+  createUser(user: $user) {
+    id
+    name
+    profiles {
+      nodes {
+        id
+        user_id
+      }
+    }
+  }
+}
+      `.trim() + "\n");
+
+    });
+
+    it('generates a complete update mutation query for a model', () => {
+      let query = queryBuilder.buildMutation(new Model(User), 15, 'update');
+      query = QueryBuilder.prettify(query.loc.source.body);
+
+      expect(query).toEqual(`
+mutation updateUser($user: UserInput!) {
+  updateUser(user: $user) {
+    id
+    name
+    profiles {
+      nodes {
+        id
+        user_id
+      }
+    }
+  }
+}
+      `.trim() + "\n");
+
+    });
+
+
+
+    it('generates a complete delete mutation query for a model', () => {
+      let query = queryBuilder.buildMutation(new Model(User), 15, 'delete');
+      query = QueryBuilder.prettify(query.loc.source.body);
+
+      expect(query).toEqual(`
+mutation deleteUser($id: ID!) {
+  deleteUser(id: $id) {
     id
     name
     profiles {
