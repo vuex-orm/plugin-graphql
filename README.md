@@ -64,10 +64,10 @@ In your component:
 - [x] Setup apollo integration
 - [x] Implement fetch action
 - [x] Make sure the reactivity works
+- [x] destroy, push & persist
 - [ ] Playground project (GraphQL API + Vue/Vuex-ORM app)
-- [ ] Tests
+- [x] Tests
 - [ ] Docs & document schema expectations
-- [ ] Deletions & persist
 - [ ] Subscriptions
 - [ ] Attach multiple GraphQL APIs with different models in the same app
 

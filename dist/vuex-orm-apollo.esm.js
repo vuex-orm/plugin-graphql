@@ -8611,8 +8611,8 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        model = this.getModel(state.$name);
                         if (!id) return [3 /*break*/, 2];
+                        model = this.getModel(state.$name);
                         query = this.queryBuilder.buildMutation(model, id, 'delete');
                         // Send GraphQL Mutation
                         return [4 /*yield*/, this.apolloClient.mutate({

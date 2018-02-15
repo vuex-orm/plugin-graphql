@@ -157,9 +157,9 @@ export default class VuexORMApollo {
    * @returns {Promise<void>}
    */
   private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<void> {
-    const model = this.getModel(state.$name);
 
     if (id) {
+      const model = this.getModel(state.$name);
       const query = this.queryBuilder.buildMutation(model, id, 'delete');
 
       // Send GraphQL Mutation
