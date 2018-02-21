@@ -2006,6 +2006,13 @@ exports.Observable = Observable;
 
 var zenObservable$2 = zenObservable.Observable;
 
+
+
+var Observable = Object.freeze({
+	default: zenObservable$2,
+	__moduleExports: zenObservable$2
+});
+
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -2228,7 +2235,7 @@ var Observable$1 = (function (_super) {
         return this;
     };
     return Observable$$1;
-}(zenObservable$2));
+}(Observable));
 
 var __extends$2 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -2625,6 +2632,520 @@ var ObservableQuery = (function (_super) {
     return ObservableQuery;
 }(Observable$1));
 
+var zenObservable$4 = createCommonjsModule(function (module, exports) {
+(function(fn, name) { { fn(exports, module); } })(function(exports, module) { // === Symbol Support ===
+
+function hasSymbol(name) {
+  return typeof Symbol === "function" && Boolean(Symbol[name]);
+}
+
+function getSymbol(name) {
+  return hasSymbol(name) ? Symbol[name] : "@@" + name;
+}
+
+// Ponyfill Symbol.observable for interoperability with other libraries
+if (typeof Symbol === "function" && !Symbol.observable) {
+  Symbol.observable = Symbol("observable");
+}
+
+// === Abstract Operations ===
+
+function getMethod(obj, key) {
+  var value = obj[key];
+
+  if (value == null)
+    return undefined;
+
+  if (typeof value !== "function")
+    throw new TypeError(value + " is not a function");
+
+  return value;
+}
+
+function getSpecies(obj) {
+  var ctor = obj.constructor;
+  if (ctor !== undefined) {
+    ctor = ctor[getSymbol("species")];
+    if (ctor === null) {
+      ctor = undefined;
+    }
+  }
+  return ctor !== undefined ? ctor : Observable;
+}
+
+function addMethods(target, methods) {
+  Object.keys(methods).forEach(function(k) {
+    var desc = Object.getOwnPropertyDescriptor(methods, k);
+    desc.enumerable = false;
+    Object.defineProperty(target, k, desc);
+  });
+}
+
+function cleanupSubscription(subscription) {
+  // Assert:  observer._observer is undefined
+
+  var cleanup = subscription._cleanup;
+
+  if (!cleanup)
+    return;
+
+  // Drop the reference to the cleanup function so that we won't call it
+  // more than once
+  subscription._cleanup = undefined;
+
+  // Call the cleanup function
+  cleanup();
+}
+
+function subscriptionClosed(subscription) {
+  return subscription._observer === undefined;
+}
+
+function closeSubscription(subscription) {
+  if (subscriptionClosed(subscription))
+    return;
+
+  subscription._observer = undefined;
+  cleanupSubscription(subscription);
+}
+
+function cleanupFromSubscription(subscription) {
+  return function() { subscription.unsubscribe(); };
+}
+
+function Subscription(observer, subscriber) {
+  // Assert: subscriber is callable
+
+  // The observer must be an object
+  if (Object(observer) !== observer)
+    throw new TypeError("Observer must be an object");
+
+  this._cleanup = undefined;
+  this._observer = observer;
+
+  var start = getMethod(observer, "start");
+
+  if (start)
+    start.call(observer, this);
+
+  if (subscriptionClosed(this))
+    return;
+
+  observer = new SubscriptionObserver(this);
+
+  try {
+    // Call the subscriber function
+    var cleanup$0 = subscriber.call(undefined, observer);
+
+    // The return value must be undefined, null, a subscription object, or a function
+    if (cleanup$0 != null) {
+      if (typeof cleanup$0.unsubscribe === "function")
+        cleanup$0 = cleanupFromSubscription(cleanup$0);
+      else if (typeof cleanup$0 !== "function")
+        throw new TypeError(cleanup$0 + " is not a function");
+
+      this._cleanup = cleanup$0;
+    }
+  } catch (e) {
+    // If an error occurs during startup, then attempt to send the error
+    // to the observer
+    observer.error(e);
+    return;
+  }
+
+  // If the stream is already finished, then perform cleanup
+  if (subscriptionClosed(this))
+    cleanupSubscription(this);
+}
+
+addMethods(Subscription.prototype = {}, {
+  get closed() { return subscriptionClosed(this) },
+  unsubscribe: function() { closeSubscription(this); },
+});
+
+function SubscriptionObserver(subscription) {
+  this._subscription = subscription;
+}
+
+addMethods(SubscriptionObserver.prototype = {}, {
+
+  get closed() { return subscriptionClosed(this._subscription) },
+
+  next: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    var m = getMethod(observer, "next");
+
+    // If the observer doesn't support "next", then return undefined
+    if (!m)
+      return undefined;
+
+    // Send the next value to the sink
+    return m.call(observer, value);
+  },
+
+  error: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, throw the error to the caller
+    if (subscriptionClosed(subscription))
+      throw value;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$0 = getMethod(observer, "error");
+
+      // If the sink does not support "error", then throw the error to the caller
+      if (!m$0)
+        throw value;
+
+      value = m$0.call(observer, value);
+    } catch (e) {
+      try { cleanupSubscription(subscription); }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+  complete: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$1 = getMethod(observer, "complete");
+
+      // If the sink does not support "complete", then return undefined
+      value = m$1 ? m$1.call(observer, value) : undefined;
+    } catch (e) {
+      try { cleanupSubscription(subscription); }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+});
+
+function Observable(subscriber) {
+  // The stream subscriber must be a function
+  if (typeof subscriber !== "function")
+    throw new TypeError("Observable initializer must be a function");
+
+  this._subscriber = subscriber;
+}
+
+addMethods(Observable.prototype, {
+
+  subscribe: function(observer) { for (var args = [], __$0 = 1; __$0 < arguments.length; ++__$0) args.push(arguments[__$0]); 
+    if (typeof observer === 'function') {
+      observer = {
+        next: observer,
+        error: args[0],
+        complete: args[1],
+      };
+    }
+
+    return new Subscription(observer, this._subscriber);
+  },
+
+  forEach: function(fn) { var __this = this; 
+    return new Promise(function(resolve, reject) {
+      if (typeof fn !== "function")
+        return Promise.reject(new TypeError(fn + " is not a function"));
+
+      __this.subscribe({
+        _subscription: null,
+
+        start: function(subscription) {
+          if (Object(subscription) !== subscription)
+            throw new TypeError(subscription + " is not an object");
+
+          this._subscription = subscription;
+        },
+
+        next: function(value) {
+          var subscription = this._subscription;
+
+          if (subscription.closed)
+            return;
+
+          try {
+            return fn(value);
+          } catch (err) {
+            reject(err);
+            subscription.unsubscribe();
+          }
+        },
+
+        error: reject,
+        complete: resolve,
+      });
+    });
+  },
+
+  map: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { value = fn(value); }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function(x) { return observer.complete(x) },
+    }); });
+  },
+
+  filter: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { if (!fn(value)) return undefined }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function() { return observer.complete() },
+    }); });
+  },
+
+  reduce: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+    var hasSeed = arguments.length > 1;
+    var hasValue = false;
+    var seed = arguments[1];
+    var acc = seed;
+
+    return new C(function(observer) { return __this.subscribe({
+
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        var first = !hasValue;
+        hasValue = true;
+
+        if (!first || hasSeed) {
+          try { acc = fn(acc, value); }
+          catch (e) { return observer.error(e) }
+        } else {
+          acc = value;
+        }
+      },
+
+      error: function(e) { observer.error(e); },
+
+      complete: function() {
+        if (!hasValue && !hasSeed) {
+          observer.error(new TypeError("Cannot reduce an empty sequence"));
+          return;
+        }
+
+        observer.next(acc);
+        observer.complete();
+      },
+
+    }); });
+  },
+
+  flatMap: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) {
+      var completed = false;
+      var subscriptions = [];
+
+      // Subscribe to the outer Observable
+      var outer = __this.subscribe({
+
+        next: function(value) {
+          if (fn) {
+            try {
+              value = fn(value);
+            } catch (x) {
+              observer.error(x);
+              return;
+            }
+          }
+
+          // Subscribe to the inner Observable
+          Observable.from(value).subscribe({
+            _subscription: null,
+
+            start: function(s) { subscriptions.push(this._subscription = s); },
+            next: function(value) { observer.next(value); },
+            error: function(e) { observer.error(e); },
+
+            complete: function() {
+              var i = subscriptions.indexOf(this._subscription);
+
+              if (i >= 0)
+                subscriptions.splice(i, 1);
+
+              closeIfDone();
+            }
+          });
+        },
+
+        error: function(e) {
+          return observer.error(e);
+        },
+
+        complete: function() {
+          completed = true;
+          closeIfDone();
+        }
+      });
+
+      function closeIfDone() {
+        if (completed && subscriptions.length === 0)
+          observer.complete();
+      }
+
+      return function() {
+        subscriptions.forEach(function(s) { return s.unsubscribe(); });
+        outer.unsubscribe();
+      };
+    });
+  },
+
+});
+
+Object.defineProperty(Observable.prototype, getSymbol("observable"), {
+  value: function() { return this },
+  writable: true,
+  configurable: true,
+});
+
+addMethods(Observable, {
+
+  from: function(x) {
+    var C = typeof this === "function" ? this : Observable;
+
+    if (x == null)
+      throw new TypeError(x + " is not an object");
+
+    var method = getMethod(x, getSymbol("observable"));
+
+    if (method) {
+      var observable$0 = method.call(x);
+
+      if (Object(observable$0) !== observable$0)
+        throw new TypeError(observable$0 + " is not an object");
+
+      if (observable$0.constructor === C)
+        return observable$0;
+
+      return new C(function(observer) { return observable$0.subscribe(observer); });
+    }
+
+    if (hasSymbol("iterator") && (method = getMethod(x, getSymbol("iterator")))) {
+      return new C(function(observer) {
+        for (var __$0 = (method.call(x))[Symbol.iterator](), __$1; __$1 = __$0.next(), !__$1.done;) { var item$0 = __$1.value; 
+          observer.next(item$0);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    if (Array.isArray(x)) {
+      return new C(function(observer) {
+        for (var i$0 = 0; i$0 < x.length; ++i$0) {
+          observer.next(x[i$0]);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    throw new TypeError(x + " is not observable");
+  },
+
+  of: function() { for (var items = [], __$0 = 0; __$0 < arguments.length; ++__$0) items.push(arguments[__$0]); 
+    var C = typeof this === "function" ? this : Observable;
+
+    return new C(function(observer) {
+      for (var i$1 = 0; i$1 < items.length; ++i$1) {
+        observer.next(items[i$1]);
+        if (observer.closed)
+          return;
+      }
+
+      observer.complete();
+    });
+  },
+
+});
+
+Object.defineProperty(Observable, getSymbol("species"), {
+  get: function() { return this },
+  configurable: true,
+});
+
+Object.defineProperty(Observable, "observableSymbol", {
+  value: getSymbol("observable"),
+});
+
+exports.Observable = Observable;
+
+
+}, "*");
+});
+
+var zenObservable$6 = zenObservable$4.Observable;
+
+
+
+var Observable$2 = Object.freeze({
+	default: zenObservable$6,
+	__moduleExports: zenObservable$6
+});
+
 var __extends$4 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -2635,8 +3156,112 @@ var __extends$4 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign$3 = (undefined && undefined.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+
+var LinkError$1 = (function (_super) {
+    __extends$4(LinkError, _super);
+    function LinkError(message, link) {
+        var _this = _super.call(this, message) || this;
+        _this.link = link;
+        return _this;
+    }
+    return LinkError;
+}(Error));
+function isTerminating$1(link) {
+    return link.request.length <= 1;
+}
+
+var passthrough$1 = function (op, forward) { return (forward ? forward(op) : undefined()); };
+var toLink$1 = function (handler) {
+    return typeof handler === 'function' ? new ApolloLink$1(handler) : handler;
+};
+var empty$1 = function () {
+    return new ApolloLink$1(function (op, forward) { return undefined(); });
+};
+var from$1 = function (links) {
+    if (links.length === 0)
+        return empty$1();
+    return links.map(toLink$1).reduce(function (x, y) { return x.concat(y); });
+};
+var split$1 = function (test, left, right) {
+    if (right === void 0) { right = new ApolloLink$1(passthrough$1); }
+    var leftLink = toLink$1(left);
+    var rightLink = toLink$1(right);
+    if (isTerminating$1(leftLink) && isTerminating$1(rightLink)) {
+        return new ApolloLink$1(function (operation) {
+            return test(operation)
+                ? leftLink.request(operation) || undefined()
+                : rightLink.request(operation) || undefined();
+        });
+    }
+    else {
+        return new ApolloLink$1(function (operation, forward) {
+            return test(operation)
+                ? leftLink.request(operation, forward) || undefined()
+                : rightLink.request(operation, forward) || undefined();
+        });
+    }
+};
+var concat$1 = function (first, second) {
+    var firstLink = toLink$1(first);
+    if (isTerminating$1(firstLink)) {
+        console.warn(new LinkError$1("You are calling concat on a terminating link, which will have no effect", firstLink));
+        return firstLink;
+    }
+    var nextLink = toLink$1(second);
+    if (isTerminating$1(nextLink)) {
+        return new ApolloLink$1(function (operation) {
+            return firstLink.request(operation, function (op) { return nextLink.request(op) || undefined(); }) || undefined();
+        });
+    }
+    else {
+        return new ApolloLink$1(function (operation, forward) {
+            return (firstLink.request(operation, function (op) {
+                return nextLink.request(op, forward) || undefined();
+            }) || undefined());
+        });
+    }
+};
+var ApolloLink$1 = (function () {
+    function ApolloLink(request) {
+        if (request)
+            this.request = request;
+    }
+    ApolloLink.prototype.split = function (test, left, right) {
+        if (right === void 0) { right = new ApolloLink(passthrough$1); }
+        return this.concat(split$1(test, left, right));
+    };
+    ApolloLink.prototype.concat = function (next) {
+        return concat$1(this, next);
+    };
+    ApolloLink.prototype.request = function (operation, forward) {
+        throw new Error('request is not implemented');
+    };
+    ApolloLink.empty = empty$1;
+    ApolloLink.from = from$1;
+    ApolloLink.split = split$1;
+    return ApolloLink;
+}());
+
+var __extends$5 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var DedupLink = (function (_super) {
-    __extends$4(DedupLink, _super);
+    __extends$5(DedupLink, _super);
     function DedupLink() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.inFlightRequestObservables = new Map();
@@ -2657,7 +3282,7 @@ var DedupLink = (function (_super) {
         if (!this.inFlightRequestObservables.get(key)) {
             var singleObserver_1 = forward(operation);
             var subscription_1;
-            var sharedObserver = new zenObservable$2(function (observer) {
+            var sharedObserver = new Observable$2(function (observer) {
                 var prev = _this.subscribers.get(key);
                 if (!prev)
                     prev = { next: [], error: [], complete: [] };
@@ -2695,9 +3320,9 @@ var DedupLink = (function (_super) {
         return this.inFlightRequestObservables.get(key);
     };
     return DedupLink;
-}(ApolloLink));
+}(ApolloLink$1));
 
-var __assign$3 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$4 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -2762,7 +3387,7 @@ var QueryScheduler = (function () {
                 return true;
             }
             var queryOptions = _this.registeredQueries[queryId];
-            var pollingOptions = __assign$3({}, queryOptions);
+            var pollingOptions = __assign$4({}, queryOptions);
             pollingOptions.fetchPolicy = 'network-only';
             _this.fetchQuery(queryId, pollingOptions, FetchType.poll).catch(function () { });
             return true;
@@ -2841,7 +3466,7 @@ var MutationStore = (function () {
     return MutationStore;
 }());
 
-var __assign$4 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$5 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -2946,14 +3571,14 @@ var QueryStore = (function () {
             return observableQueryIds.indexOf(queryId) > -1;
         })
             .reduce(function (res, key) {
-            res[key] = __assign$4({}, _this.store[key], { networkStatus: NetworkStatus.loading });
+            res[key] = __assign$5({}, _this.store[key], { networkStatus: NetworkStatus.loading });
             return res;
         }, {});
     };
     return QueryStore;
 }());
 
-var __assign$5 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$6 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -3027,7 +3652,7 @@ var QueryManager = (function () {
         return new Promise(function (resolve, reject) {
             var storeResult;
             var error;
-            var operation = _this.buildOperationForLink(mutation, variables, __assign$5({}, context, { optimisticResponse: optimisticResponse }));
+            var operation = _this.buildOperationForLink(mutation, variables, __assign$6({}, context, { optimisticResponse: optimisticResponse }));
             execute(_this.link, operation).subscribe({
                 next: function (result) {
                     if (result.errors && errorPolicy === 'none') {
@@ -3328,7 +3953,7 @@ var QueryManager = (function () {
         if (typeof options.notifyOnNetworkStatusChange === 'undefined') {
             options.notifyOnNetworkStatusChange = false;
         }
-        var transformedOptions = __assign$5({}, options);
+        var transformedOptions = __assign$6({}, options);
         return new ObservableQuery({
             scheduler: this.scheduler,
             options: transformedOptions,
@@ -3601,7 +4226,7 @@ var QueryManager = (function () {
         var _this = this;
         var requestId = _a.requestId, queryId = _a.queryId, document = _a.document, options = _a.options, fetchMoreForQueryId = _a.fetchMoreForQueryId;
         var variables = options.variables, context = options.context, _b = options.errorPolicy, errorPolicy = _b === void 0 ? 'none' : _b, fetchPolicy = options.fetchPolicy;
-        var operation = this.buildOperationForLink(document, variables, __assign$5({}, context, { forceFetch: !this.queryDeduplication }));
+        var operation = this.buildOperationForLink(document, variables, __assign$6({}, context, { forceFetch: !this.queryDeduplication }));
         var resultFromStore;
         var errorsFromStore;
         var retPromise = new Promise(function (resolve, reject) {
@@ -3698,11 +4323,11 @@ var QueryManager = (function () {
         return requestId;
     };
     QueryManager.prototype.getQuery = function (queryId) {
-        return this.queries.get(queryId) || __assign$5({}, defaultQueryInfo);
+        return this.queries.get(queryId) || __assign$6({}, defaultQueryInfo);
     };
     QueryManager.prototype.setQuery = function (queryId, updater) {
         var prev = this.getQuery(queryId);
-        var newInfo = __assign$5({}, prev, updater(prev));
+        var newInfo = __assign$6({}, prev, updater(prev));
         this.queries.set(queryId, newInfo);
     };
     QueryManager.prototype.invalidate = function (invalidated, queryId, fetchMoreForQueryId) {
@@ -3720,7 +4345,7 @@ var QueryManager = (function () {
                 : document,
             variables: variables,
             operationName: getOperationName(document) || undefined,
-            context: __assign$5({}, extraContext, { cache: cache }),
+            context: __assign$6({}, extraContext, { cache: cache }),
         };
     };
     return QueryManager;
@@ -3864,7 +4489,7 @@ var DataStore = (function () {
 
 var version_1 = "2.2.2";
 
-var __assign$6 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$7 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -3928,30 +4553,30 @@ var ApolloClient = (function () {
     ApolloClient.prototype.watchQuery = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.watchQuery) {
-            options = __assign$6({}, this.defaultOptions.watchQuery, options);
+            options = __assign$7({}, this.defaultOptions.watchQuery, options);
         }
         if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
-            options = __assign$6({}, options, { fetchPolicy: 'cache-first' });
+            options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
         return this.queryManager.watchQuery(options);
     };
     ApolloClient.prototype.query = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.query) {
-            options = __assign$6({}, this.defaultOptions.query, options);
+            options = __assign$7({}, this.defaultOptions.query, options);
         }
         if (options.fetchPolicy === 'cache-and-network') {
             throw new Error('cache-and-network fetchPolicy can only be used with watchQuery');
         }
         if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
-            options = __assign$6({}, options, { fetchPolicy: 'cache-first' });
+            options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
         return this.queryManager.query(options);
     };
     ApolloClient.prototype.mutate = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.mutate) {
-            options = __assign$6({}, this.defaultOptions.mutate, options);
+            options = __assign$7({}, this.defaultOptions.mutate, options);
         }
         return this.queryManager.mutate(options);
     };
@@ -4047,7 +4672,521 @@ var ApolloClient = (function () {
     return ApolloClient;
 }());
 
-var __extends$5 = (undefined && undefined.__extends) || (function () {
+var zenObservable$8 = createCommonjsModule(function (module, exports) {
+(function(fn, name) { { fn(exports, module); } })(function(exports, module) { // === Symbol Support ===
+
+function hasSymbol(name) {
+  return typeof Symbol === "function" && Boolean(Symbol[name]);
+}
+
+function getSymbol(name) {
+  return hasSymbol(name) ? Symbol[name] : "@@" + name;
+}
+
+// Ponyfill Symbol.observable for interoperability with other libraries
+if (typeof Symbol === "function" && !Symbol.observable) {
+  Symbol.observable = Symbol("observable");
+}
+
+// === Abstract Operations ===
+
+function getMethod(obj, key) {
+  var value = obj[key];
+
+  if (value == null)
+    return undefined;
+
+  if (typeof value !== "function")
+    throw new TypeError(value + " is not a function");
+
+  return value;
+}
+
+function getSpecies(obj) {
+  var ctor = obj.constructor;
+  if (ctor !== undefined) {
+    ctor = ctor[getSymbol("species")];
+    if (ctor === null) {
+      ctor = undefined;
+    }
+  }
+  return ctor !== undefined ? ctor : Observable;
+}
+
+function addMethods(target, methods) {
+  Object.keys(methods).forEach(function(k) {
+    var desc = Object.getOwnPropertyDescriptor(methods, k);
+    desc.enumerable = false;
+    Object.defineProperty(target, k, desc);
+  });
+}
+
+function cleanupSubscription(subscription) {
+  // Assert:  observer._observer is undefined
+
+  var cleanup = subscription._cleanup;
+
+  if (!cleanup)
+    return;
+
+  // Drop the reference to the cleanup function so that we won't call it
+  // more than once
+  subscription._cleanup = undefined;
+
+  // Call the cleanup function
+  cleanup();
+}
+
+function subscriptionClosed(subscription) {
+  return subscription._observer === undefined;
+}
+
+function closeSubscription(subscription) {
+  if (subscriptionClosed(subscription))
+    return;
+
+  subscription._observer = undefined;
+  cleanupSubscription(subscription);
+}
+
+function cleanupFromSubscription(subscription) {
+  return function() { subscription.unsubscribe(); };
+}
+
+function Subscription(observer, subscriber) {
+  // Assert: subscriber is callable
+
+  // The observer must be an object
+  if (Object(observer) !== observer)
+    throw new TypeError("Observer must be an object");
+
+  this._cleanup = undefined;
+  this._observer = observer;
+
+  var start = getMethod(observer, "start");
+
+  if (start)
+    start.call(observer, this);
+
+  if (subscriptionClosed(this))
+    return;
+
+  observer = new SubscriptionObserver(this);
+
+  try {
+    // Call the subscriber function
+    var cleanup$0 = subscriber.call(undefined, observer);
+
+    // The return value must be undefined, null, a subscription object, or a function
+    if (cleanup$0 != null) {
+      if (typeof cleanup$0.unsubscribe === "function")
+        cleanup$0 = cleanupFromSubscription(cleanup$0);
+      else if (typeof cleanup$0 !== "function")
+        throw new TypeError(cleanup$0 + " is not a function");
+
+      this._cleanup = cleanup$0;
+    }
+  } catch (e) {
+    // If an error occurs during startup, then attempt to send the error
+    // to the observer
+    observer.error(e);
+    return;
+  }
+
+  // If the stream is already finished, then perform cleanup
+  if (subscriptionClosed(this))
+    cleanupSubscription(this);
+}
+
+addMethods(Subscription.prototype = {}, {
+  get closed() { return subscriptionClosed(this) },
+  unsubscribe: function() { closeSubscription(this); },
+});
+
+function SubscriptionObserver(subscription) {
+  this._subscription = subscription;
+}
+
+addMethods(SubscriptionObserver.prototype = {}, {
+
+  get closed() { return subscriptionClosed(this._subscription) },
+
+  next: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    var m = getMethod(observer, "next");
+
+    // If the observer doesn't support "next", then return undefined
+    if (!m)
+      return undefined;
+
+    // Send the next value to the sink
+    return m.call(observer, value);
+  },
+
+  error: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, throw the error to the caller
+    if (subscriptionClosed(subscription))
+      throw value;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$0 = getMethod(observer, "error");
+
+      // If the sink does not support "error", then throw the error to the caller
+      if (!m$0)
+        throw value;
+
+      value = m$0.call(observer, value);
+    } catch (e) {
+      try { cleanupSubscription(subscription); }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+  complete: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$1 = getMethod(observer, "complete");
+
+      // If the sink does not support "complete", then return undefined
+      value = m$1 ? m$1.call(observer, value) : undefined;
+    } catch (e) {
+      try { cleanupSubscription(subscription); }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+});
+
+function Observable(subscriber) {
+  // The stream subscriber must be a function
+  if (typeof subscriber !== "function")
+    throw new TypeError("Observable initializer must be a function");
+
+  this._subscriber = subscriber;
+}
+
+addMethods(Observable.prototype, {
+
+  subscribe: function(observer) { for (var args = [], __$0 = 1; __$0 < arguments.length; ++__$0) args.push(arguments[__$0]); 
+    if (typeof observer === 'function') {
+      observer = {
+        next: observer,
+        error: args[0],
+        complete: args[1],
+      };
+    }
+
+    return new Subscription(observer, this._subscriber);
+  },
+
+  forEach: function(fn) { var __this = this; 
+    return new Promise(function(resolve, reject) {
+      if (typeof fn !== "function")
+        return Promise.reject(new TypeError(fn + " is not a function"));
+
+      __this.subscribe({
+        _subscription: null,
+
+        start: function(subscription) {
+          if (Object(subscription) !== subscription)
+            throw new TypeError(subscription + " is not an object");
+
+          this._subscription = subscription;
+        },
+
+        next: function(value) {
+          var subscription = this._subscription;
+
+          if (subscription.closed)
+            return;
+
+          try {
+            return fn(value);
+          } catch (err) {
+            reject(err);
+            subscription.unsubscribe();
+          }
+        },
+
+        error: reject,
+        complete: resolve,
+      });
+    });
+  },
+
+  map: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { value = fn(value); }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function(x) { return observer.complete(x) },
+    }); });
+  },
+
+  filter: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { if (!fn(value)) return undefined }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function() { return observer.complete() },
+    }); });
+  },
+
+  reduce: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+    var hasSeed = arguments.length > 1;
+    var hasValue = false;
+    var seed = arguments[1];
+    var acc = seed;
+
+    return new C(function(observer) { return __this.subscribe({
+
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        var first = !hasValue;
+        hasValue = true;
+
+        if (!first || hasSeed) {
+          try { acc = fn(acc, value); }
+          catch (e) { return observer.error(e) }
+        } else {
+          acc = value;
+        }
+      },
+
+      error: function(e) { observer.error(e); },
+
+      complete: function() {
+        if (!hasValue && !hasSeed) {
+          observer.error(new TypeError("Cannot reduce an empty sequence"));
+          return;
+        }
+
+        observer.next(acc);
+        observer.complete();
+      },
+
+    }); });
+  },
+
+  flatMap: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) {
+      var completed = false;
+      var subscriptions = [];
+
+      // Subscribe to the outer Observable
+      var outer = __this.subscribe({
+
+        next: function(value) {
+          if (fn) {
+            try {
+              value = fn(value);
+            } catch (x) {
+              observer.error(x);
+              return;
+            }
+          }
+
+          // Subscribe to the inner Observable
+          Observable.from(value).subscribe({
+            _subscription: null,
+
+            start: function(s) { subscriptions.push(this._subscription = s); },
+            next: function(value) { observer.next(value); },
+            error: function(e) { observer.error(e); },
+
+            complete: function() {
+              var i = subscriptions.indexOf(this._subscription);
+
+              if (i >= 0)
+                subscriptions.splice(i, 1);
+
+              closeIfDone();
+            }
+          });
+        },
+
+        error: function(e) {
+          return observer.error(e);
+        },
+
+        complete: function() {
+          completed = true;
+          closeIfDone();
+        }
+      });
+
+      function closeIfDone() {
+        if (completed && subscriptions.length === 0)
+          observer.complete();
+      }
+
+      return function() {
+        subscriptions.forEach(function(s) { return s.unsubscribe(); });
+        outer.unsubscribe();
+      };
+    });
+  },
+
+});
+
+Object.defineProperty(Observable.prototype, getSymbol("observable"), {
+  value: function() { return this },
+  writable: true,
+  configurable: true,
+});
+
+addMethods(Observable, {
+
+  from: function(x) {
+    var C = typeof this === "function" ? this : Observable;
+
+    if (x == null)
+      throw new TypeError(x + " is not an object");
+
+    var method = getMethod(x, getSymbol("observable"));
+
+    if (method) {
+      var observable$0 = method.call(x);
+
+      if (Object(observable$0) !== observable$0)
+        throw new TypeError(observable$0 + " is not an object");
+
+      if (observable$0.constructor === C)
+        return observable$0;
+
+      return new C(function(observer) { return observable$0.subscribe(observer); });
+    }
+
+    if (hasSymbol("iterator") && (method = getMethod(x, getSymbol("iterator")))) {
+      return new C(function(observer) {
+        for (var __$0 = (method.call(x))[Symbol.iterator](), __$1; __$1 = __$0.next(), !__$1.done;) { var item$0 = __$1.value; 
+          observer.next(item$0);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    if (Array.isArray(x)) {
+      return new C(function(observer) {
+        for (var i$0 = 0; i$0 < x.length; ++i$0) {
+          observer.next(x[i$0]);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    throw new TypeError(x + " is not observable");
+  },
+
+  of: function() { for (var items = [], __$0 = 0; __$0 < arguments.length; ++__$0) items.push(arguments[__$0]); 
+    var C = typeof this === "function" ? this : Observable;
+
+    return new C(function(observer) {
+      for (var i$1 = 0; i$1 < items.length; ++i$1) {
+        observer.next(items[i$1]);
+        if (observer.closed)
+          return;
+      }
+
+      observer.complete();
+    });
+  },
+
+});
+
+Object.defineProperty(Observable, getSymbol("species"), {
+  get: function() { return this },
+  configurable: true,
+});
+
+Object.defineProperty(Observable, "observableSymbol", {
+  value: getSymbol("observable"),
+});
+
+exports.Observable = Observable;
+
+
+}, "*");
+});
+
+var zenObservable$10 = zenObservable$8.Observable;
+
+
+
+var Observable$3 = Object.freeze({
+	default: zenObservable$10,
+	__moduleExports: zenObservable$10
+});
+
+var __extends$6 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -4057,7 +5196,111 @@ var __extends$5 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$7 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+
+var LinkError$2 = (function (_super) {
+    __extends$6(LinkError, _super);
+    function LinkError(message, link) {
+        var _this = _super.call(this, message) || this;
+        _this.link = link;
+        return _this;
+    }
+    return LinkError;
+}(Error));
+function isTerminating$2(link) {
+    return link.request.length <= 1;
+}
+
+var passthrough$2 = function (op, forward) { return (forward ? forward(op) : undefined()); };
+var toLink$2 = function (handler) {
+    return typeof handler === 'function' ? new ApolloLink$2(handler) : handler;
+};
+var empty$2 = function () {
+    return new ApolloLink$2(function (op, forward) { return undefined(); });
+};
+var from$2 = function (links) {
+    if (links.length === 0)
+        return empty$2();
+    return links.map(toLink$2).reduce(function (x, y) { return x.concat(y); });
+};
+var split$2 = function (test, left, right) {
+    if (right === void 0) { right = new ApolloLink$2(passthrough$2); }
+    var leftLink = toLink$2(left);
+    var rightLink = toLink$2(right);
+    if (isTerminating$2(leftLink) && isTerminating$2(rightLink)) {
+        return new ApolloLink$2(function (operation) {
+            return test(operation)
+                ? leftLink.request(operation) || undefined()
+                : rightLink.request(operation) || undefined();
+        });
+    }
+    else {
+        return new ApolloLink$2(function (operation, forward) {
+            return test(operation)
+                ? leftLink.request(operation, forward) || undefined()
+                : rightLink.request(operation, forward) || undefined();
+        });
+    }
+};
+var concat$2 = function (first, second) {
+    var firstLink = toLink$2(first);
+    if (isTerminating$2(firstLink)) {
+        console.warn(new LinkError$2("You are calling concat on a terminating link, which will have no effect", firstLink));
+        return firstLink;
+    }
+    var nextLink = toLink$2(second);
+    if (isTerminating$2(nextLink)) {
+        return new ApolloLink$2(function (operation) {
+            return firstLink.request(operation, function (op) { return nextLink.request(op) || undefined(); }) || undefined();
+        });
+    }
+    else {
+        return new ApolloLink$2(function (operation, forward) {
+            return (firstLink.request(operation, function (op) {
+                return nextLink.request(op, forward) || undefined();
+            }) || undefined());
+        });
+    }
+};
+var ApolloLink$2 = (function () {
+    function ApolloLink(request) {
+        if (request)
+            this.request = request;
+    }
+    ApolloLink.prototype.split = function (test, left, right) {
+        if (right === void 0) { right = new ApolloLink(passthrough$2); }
+        return this.concat(split$2(test, left, right));
+    };
+    ApolloLink.prototype.concat = function (next) {
+        return concat$2(this, next);
+    };
+    ApolloLink.prototype.request = function (operation, forward) {
+        throw new Error('request is not implemented');
+    };
+    ApolloLink.empty = empty$2;
+    ApolloLink.from = from$2;
+    ApolloLink.split = split$2;
+    return ApolloLink;
+}());
+
+var __extends$7 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4140,11 +5383,11 @@ var createHttpLink = function (linkOptions) {
         fetcher = fetch;
     if (!uri)
         uri = '/graphql';
-    return new ApolloLink(function (operation) {
-        return new zenObservable$2(function (observer) {
+    return new ApolloLink$2(function (operation) {
+        return new Observable$3(function (observer) {
             var _a = operation.getContext(), headers = _a.headers, credentials = _a.credentials, _b = _a.fetchOptions, fetchOptions = _b === void 0 ? {} : _b, contextURI = _a.uri, _c = _a.http, httpOptions = _c === void 0 ? {} : _c;
             var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
-            var http = __assign$7({}, defaultHttpOptions, httpOptions);
+            var http = __assign$9({}, defaultHttpOptions, httpOptions);
             var body = { operationName: operationName, variables: variables };
             if (includeExtensions || http.includeExtensions)
                 body.extensions = extensions;
@@ -4161,8 +5404,8 @@ var createHttpLink = function (linkOptions) {
             }
             var options = fetchOptions;
             if (requestOptions.fetchOptions)
-                options = __assign$7({}, requestOptions.fetchOptions, options);
-            var fetcherOptions = __assign$7({ method: 'POST' }, options, { headers: {
+                options = __assign$9({}, requestOptions.fetchOptions, options);
+            var fetcherOptions = __assign$9({ method: 'POST' }, options, { headers: {
                     accept: '*/*',
                     'content-type': 'application/json',
                 }, body: serializedBody });
@@ -4171,9 +5414,9 @@ var createHttpLink = function (linkOptions) {
             if (credentials)
                 fetcherOptions.credentials = credentials;
             if (requestOptions.headers)
-                fetcherOptions.headers = __assign$7({}, fetcherOptions.headers, requestOptions.headers);
+                fetcherOptions.headers = __assign$9({}, fetcherOptions.headers, requestOptions.headers);
             if (headers)
-                fetcherOptions.headers = __assign$7({}, fetcherOptions.headers, headers);
+                fetcherOptions.headers = __assign$9({}, fetcherOptions.headers, headers);
             var _d = createSignalIfSupported(), controller = _d.controller, signal = _d.signal;
             if (controller)
                 fetcherOptions.signal = signal;
@@ -4201,12 +5444,12 @@ var createHttpLink = function (linkOptions) {
     });
 };
 var HttpLink = (function (_super) {
-    __extends$5(HttpLink, _super);
+    __extends$7(HttpLink, _super);
     function HttpLink(opts) {
         return _super.call(this, createHttpLink(opts).request) || this;
     }
     return HttpLink;
-}(ApolloLink));
+}(ApolloLink$2));
 
 function queryFromPojo(obj) {
     var op = {
@@ -4307,7 +5550,7 @@ var justTypenameQuery = {
     ],
 };
 
-var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4371,7 +5614,7 @@ var ApolloCache = (function () {
             catch (e) {
             }
             var __typename = (typenameResult && typenameResult.__typename) || '__ClientData';
-            var dataToWrite = __assign$8({ __typename: __typename }, data);
+            var dataToWrite = __assign$10({ __typename: __typename }, data);
             this.writeFragment({
                 id: id,
                 fragment: fragmentFromPojo(dataToWrite, __typename),
@@ -4454,7 +5697,7 @@ function defaultNormalizedCacheFactory(seed) {
     return new ObjectCache(seed);
 }
 
-var __extends$6 = (undefined && undefined.__extends) || (function () {
+var __extends$8 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -4464,7 +5707,7 @@ var __extends$6 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4473,7 +5716,7 @@ var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(
     return t;
 };
 var WriteError = (function (_super) {
-    __extends$6(WriteError, _super);
+    __extends$8(WriteError, _super);
     function WriteError() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.type = 'WriteError';
@@ -4593,7 +5836,7 @@ function mergeWithGenerated(generatedKey, realKey, cache) {
             mergeWithGenerated(value.id, realValue.id, cache);
         }
         cache.delete(generatedKey);
-        cache.set(realKey, __assign$9({}, generated, real));
+        cache.set(realKey, __assign$11({}, generated, real));
     });
 }
 function isDataProcessed(dataId, field, processedData) {
@@ -4680,7 +5923,7 @@ function writeFieldToStore(_a) {
             }
         }
     }
-    var newStoreObj = __assign$9({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
+    var newStoreObj = __assign$11({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
     if (shouldMerge) {
         mergeWithGenerated(generatedKey, storeValue.id, store);
     }
@@ -4831,7 +6074,7 @@ function merge(dest, src) {
     });
 }
 
-var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4842,7 +6085,7 @@ var __assign$10 = (undefined && undefined.__assign) || Object.assign || function
 var ID_KEY = typeof Symbol !== 'undefined' ? Symbol('id') : '@@id';
 function readQueryFromStore(options) {
     var optsPatch = { returnPartialData: false };
-    return diffQueryAgainstStore(__assign$10({}, options, optsPatch)).result;
+    return diffQueryAgainstStore(__assign$12({}, options, optsPatch)).result;
 }
 var readStoreResolver = function (fieldName, idValue, args, context, _a) {
     var resultKey = _a.resultKey, directives = _a.directives;
@@ -4915,7 +6158,7 @@ function assertIdValue(idValue) {
 }
 function addPreviousResultToIdValues(value, previousResult) {
     if (isIdValue(value)) {
-        return __assign$10({}, value, { previousResult: previousResult });
+        return __assign$12({}, value, { previousResult: previousResult });
     }
     else if (Array.isArray(value)) {
         var idToPreviousResult_1 = new Map();
@@ -4966,7 +6209,7 @@ function areNestedArrayItemsStrictlyEqual(a, b) {
     return a.every(function (item, i) { return areNestedArrayItemsStrictlyEqual(item, b[i]); });
 }
 
-var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$13 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4987,7 +6230,7 @@ var RecordingCache = (function () {
         return recordedData;
     };
     RecordingCache.prototype.toObject = function () {
-        return __assign$11({}, this.data, this.recordedData);
+        return __assign$13({}, this.data, this.recordedData);
     };
     RecordingCache.prototype.get = function (dataId) {
         if (this.recordedData.hasOwnProperty(dataId)) {
@@ -5010,7 +6253,7 @@ var RecordingCache = (function () {
     };
     RecordingCache.prototype.replace = function (newData) {
         this.clear();
-        this.recordedData = __assign$11({}, newData);
+        this.recordedData = __assign$13({}, newData);
     };
     return RecordingCache;
 }());
@@ -5019,7 +6262,7 @@ function record(startingState, transaction) {
     return recordingCache.record(transaction);
 }
 
-var __extends$7 = (undefined && undefined.__extends) || (function () {
+var __extends$9 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
         function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
@@ -5029,7 +6272,7 @@ var __extends$7 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$14 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -5055,14 +6298,14 @@ function defaultDataIdFromObject(result) {
     return null;
 }
 var InMemoryCache = (function (_super) {
-    __extends$7(InMemoryCache, _super);
+    __extends$9(InMemoryCache, _super);
     function InMemoryCache(config) {
         if (config === void 0) { config = {}; }
         var _this = _super.call(this) || this;
         _this.optimistic = [];
         _this.watches = [];
         _this.silenceBroadcast = false;
-        _this.config = __assign$12({}, defaultConfig, config);
+        _this.config = __assign$14({}, defaultConfig, config);
         if (_this.config.customResolvers)
             _this.config.cacheResolvers = _this.config.customResolvers;
         _this.addTypename = _this.config.addTypename;

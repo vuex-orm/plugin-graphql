@@ -66,7 +66,7 @@ describe('Model', () => {
 
       expect(relations.has('profile')).toEqual(true);
       expect(relations.get('profile')).toEqual({
-        foreignKey: "user_id", localKey: "id", record: null, related: Profile
+        connection: "entities", foreignKey: "user_id", localKey: "id", record: null, related: Profile
       });
     });
   });
