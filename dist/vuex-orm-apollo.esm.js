@@ -8617,7 +8617,7 @@ var VuexORMApollo = /** @class */ (function () {
                         // Send GraphQL Mutation
                         return [4 /*yield*/, this.apolloClient.mutate({
                                 mutation: query,
-                                variables: { id: id }
+                                variables: { where: id }
                             })];
                     case 1:
                         // Send GraphQL Mutation
