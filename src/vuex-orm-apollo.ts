@@ -165,7 +165,7 @@ export default class VuexORMApollo {
       // Send GraphQL Mutation
       await this.apolloClient.mutate({
         mutation: query,
-        variables: { id }
+        variables: { where: id }
       });
     }
   }
