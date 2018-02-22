@@ -58,6 +58,35 @@ In your component:
 - `debug` (optional, default: false): Set to true to activate the debug logging.
 
 
+## API
+
+While using Vuex-ORM you have to distinct between two types of operations:
+
+- Vuex operations: Retrieve or save data from or to Vuex
+- Persistence operations: Load or persist data from Vuex to the GraphQL API
+
+The following table lists all operations you can use and what they to:
+
+CRUD | Vuex Only | Persist to GraphQL API
+--| -- | --
+**R**EAD | getters['find'] & getters['findAll'] | dispatch('fetch')
+**C**REATE | dispatch('create) | dispatch('persist')
+**U**PDATE | dispatch('save') | dispatch('push')
+**D**ELETE | dispatch('delete') | dispatch('destroy')
+
+
+## Schema expectations
+
+This plugin has an opinion how the GraphQL API schema should look like:
+
+- Query for multiple records is plural camelCase: `blogPosts`
+- Mutations begin with the verb (`create`, `update`, `delete`) and the camelCased entity: `createBlogPost` for example.
+- The create mutation expects the new record as argument
+- The update mutation expects two arguments: The ID and the new record
+- The delete mutation expects the record ID to delete
+
+You can see query examples in the [project wiki]().
+
 
 ## Roadmap
 
@@ -67,7 +96,7 @@ In your component:
 - [x] destroy, push & persist
 - [ ] Playground project (GraphQL API + Vue/Vuex-ORM app)
 - [x] Tests
-- [ ] Docs & document schema expectations
+- [x] Docs & document schema expectations
 - [ ] Subscriptions
 - [ ] Attach multiple GraphQL APIs with different models in the same app
 
