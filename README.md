@@ -85,7 +85,7 @@ This plugin has an opinion how the GraphQL API schema should look like:
 - The update mutation expects two arguments: The ID and the new record
 - The delete mutation expects the record ID to delete
 
-You can see query examples in the [project wiki]().
+You can see query examples in the [project wiki](https://github.com/vuex-orm/vuex-orm-apollo/wiki).
 
 
 ## Roadmap
