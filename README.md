@@ -1,6 +1,6 @@
 # vuex-orm-apollo
 
-[![Travis CI](https://travis-ci.org/phortx/vuex-orm-apollo.svg?branch=master)](https://travis-ci.org/phortx/vuex-orm-apollo)
+[![Travis CI](https://travis-ci.org/phortx/vuex-orm-apollo.svg?branch=master)](https://travis-ci.org/vuex-orm/vuex-orm-apollo)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 [![License](https://img.shields.io/npm/l/@vuex-orm/core.svg)](https://github.com/vuex-orm/vuex-orm/blob/master/LICENSE.md)
 
@@ -127,25 +127,6 @@ $ yarn run coverage
 ```
 
 Generate test coverage in coverage directory.
-
-
-### apollo-link import bug
-
-Currently there exists [a bug in apollo-link](https://github.com/apollographql/apollo-link/issues/248), which causes
-errors in vuex-orm-apollo. As a workaround, you have to change he file `node_modules/apollo-link/lib/index.js` after
-installing the node_modules.
-
-In line 3 change
-
-```javascript
-import * as Observable from 'zen-observable';
-```
-
-to:
-
-```javascript
-import Observable from 'zen-observable';
-``` 
 
 
 ## License
