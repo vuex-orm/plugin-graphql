@@ -1,10 +1,10 @@
-import {parse} from "graphql/language/parser";
-import Logger from "./logger";
-import Model from "./model";
-import {print} from "graphql/language/printer";
-import {Arguments, Data, Field} from "./interfaces";
-import {downcaseFirstLetter, upcaseFirstLetter} from "./utils";
-import gql from "graphql-tag";
+import { parse } from 'graphql/language/parser';
+import Logger from './logger';
+import Model from './model';
+import { print } from 'graphql/language/printer';
+import { Arguments, Data, Field } from './interfaces';
+import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
+import gql from 'graphql-tag';
 
 const inflection = require('inflection');
 
@@ -31,7 +31,6 @@ export default class QueryBuilder {
     return print(parse(query));
   }
 
-
   /**
    * Generates the arguments string for a graphql query based on a given map.
    *
@@ -51,7 +50,7 @@ export default class QueryBuilder {
    * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
    * @returns {String}
    */
-  private buildArguments(args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
+  private buildArguments (args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
     if (args === null) return '';
 
     let returnValue: string = '';
@@ -91,8 +90,6 @@ export default class QueryBuilder {
 
     return returnValue;
   }
-
-
 
   /**
    * Builds a field for the GraphQL query and a specific model
@@ -137,14 +134,13 @@ export default class QueryBuilder {
     }
   }
 
-
   /**
    *
    * @param {Model} model
    * @param {Model} rootModel
    * @returns {Array<String>}
    */
-  private buildRelationsQuery (model: (null|Model), rootModel?: Model) {
+  private buildRelationsQuery (model: (null | Model), rootModel?: Model) {
     if (model === null) return '';
 
     const relationQueries: Array<string> = [];
@@ -159,9 +155,7 @@ export default class QueryBuilder {
     return relationQueries;
   }
 
-
-
-  public buildQuery(type: string, name?: string, args?: Arguments, model?: (Model|null|string), fields?: string, addModelToArgs:boolean = false, multiple?: boolean) {
+  public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, addModelToArgs: boolean = false, multiple?: boolean) {
     model = model ? this.getModel(model) : null;
 
     if (!args) args = {};
@@ -172,15 +166,13 @@ export default class QueryBuilder {
     if (!name && model) name = (multiple ? model.pluralName : model.singularName);
     if (!name) throw new Error("Can't determine name for the query! Please provide either name or model");
 
-
-    const query:string =
+    const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
       `  ${model ? this.buildField(model, multiple, args, model, name, true) : fields}\n` +
       `}`;
 
     return gql(query);
   }
-
 
   /**
    * Transforms outgoing data. Use for variables param.

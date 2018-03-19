@@ -5,7 +5,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { Data, ActionParams, Arguments, ORMModel, DispatchFunction } from './interfaces';
 import Logger from './logger';
 import QueryBuilder from './queryBuilder';
-import {upcaseFirstLetter} from "./utils";
+import { upcaseFirstLetter } from './utils';
 
 const inflection = require('inflection');
 
@@ -148,7 +148,7 @@ export default class VuexORMApollo {
    * @returns {Promise<Data | {}>}
    */
   private async customMutation ({ state, dispatch }: ActionParams, args: Arguments) {
-    const name:string = args['mutation'];
+    const name: string = args['mutation'];
     delete args['mutation'];
 
     const model = this.getModel(state.$name);
