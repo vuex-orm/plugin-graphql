@@ -172,7 +172,7 @@ export default class VuexORMApollo {
 
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
       // TODO whats in data? can we determine addModelToArgs from that?
-      await this.mutate(mutationName, data, dispatch, model, true);
+      await this.mutate(mutationName, data, dispatch, model, true, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(data.id);

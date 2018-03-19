@@ -205,4 +205,50 @@ mutation CreateUser($user: UserInput!) {
       `.trim() + "\n");
     });
   });
+
+
+  describe('push', () => {
+    it('sends the correct query to the API', async () => {
+      const response = {
+        data: {
+          updateUser: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+            posts: {
+              __typename: 'post',
+              nodes: []
+            }
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        const user = store.getters['entities/users/find'](1);
+        user.name = 'Charlie Brown';
+
+        await store.dispatch('entities/users/push', { data: user });
+      });
+
+      expect(request.variables).toEqual({ id: 1, user: { name: 'Charlie Brown' } });
+      expect(request.query).toEqual(`
+mutation UpdateUser($user: UserInput!) {
+  updateUser(user: $user) {
+    id
+    name
+    posts {
+      nodes {
+        id
+        title
+        content
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+  });
 });
