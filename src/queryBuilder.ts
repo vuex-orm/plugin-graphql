@@ -158,7 +158,8 @@ export default class QueryBuilder {
   public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, addModelToArgs: boolean = false, multiple?: boolean) {
     model = model ? this.getModel(model) : null;
 
-    if (!args) args = {};
+    args = args ? JSON.parse(JSON.stringify(args)) : {};
+    if (!args) throw new Error("args is undefined");
     if (addModelToArgs && model) args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
 
     multiple = multiple === undefined ? !args['id'] : multiple;

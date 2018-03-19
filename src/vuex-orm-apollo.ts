@@ -212,13 +212,14 @@ export default class VuexORMApollo {
   private async mutate (action: string, data: Data | undefined, dispatch: DispatchFunction, model: Model, addModelToArgs: boolean = false, multiple?: boolean): Promise<any> {
     if (data) {
       const id = data.id ? data.id : undefined;
-      // TODO what about the quers fields?
-      const query = this.queryBuilder.buildQuery('mutation', action, data, model, undefined, addModelToArgs, multiple);
-
       const variables: Data = {
         [model.singularName]: this.queryBuilder.transformOutgoingData(data)
       };
 
+      // TODO what about the query fields?
+      const query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, addModelToArgs, multiple);
+
+      // TODO don't add id for persist
       if (id) variables['id'] = id;
 
       // Send GraphQL Mutation

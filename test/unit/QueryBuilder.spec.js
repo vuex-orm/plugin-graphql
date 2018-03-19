@@ -298,8 +298,8 @@ query users {
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-query Users($_c: String!) {
-  users(_c: $_c) {
+query Users {
+  users {
     nodes {
       id
       name

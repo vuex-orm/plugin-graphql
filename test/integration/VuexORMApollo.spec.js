@@ -139,36 +139,36 @@ query User($id: ID!) {
 
         expect(request.variables).toEqual({});
         expect(request.query).toEqual(`
-  query Users {
-    users {
-      nodes {
-        id
-        name
-        posts {
-          nodes {
-            id
-            title
-            content
-            __typename
-          }
+query Users {
+  users {
+    nodes {
+      id
+      name
+      posts {
+        nodes {
+          id
+          title
+          content
           __typename
         }
         __typename
       }
       __typename
     }
+    __typename
   }
+}
           `.trim() + "\n");
       });
     });
   });
 
 
-  describe('create', () => {
+  describe('persist', () => {
     it('sends the correct query to the API', async () => {
       const response = {
         data: {
-          user: {
+          createUser: {
             __typename: 'user',
             id: 1,
             name: 'Johnny Imba',
@@ -181,26 +181,26 @@ query User($id: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/create', { user: { name: 'Charlie Brown' } });
+        await store.dispatch('entities/users/persist', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ user: { name: 'Charlie Brown' } });
+      expect(request.variables).toEqual({ id: 1, user: { name: 'Johnny Imba' } });
       expect(request.query).toEqual(`
-mutation createUser($user: UserInput!) {
-createUser(user: $user) {
-  id
-  name
-  posts {
-    nodes {
-      id
-      title
-      content
+mutation CreateUser($user: UserInput!) {
+  createUser(user: $user) {
+    id
+    name
+    posts {
+      nodes {
+        id
+        title
+        content
+        __typename
+      }
       __typename
     }
     __typename
   }
-  __typename
-}
 }
       `.trim() + "\n");
     });

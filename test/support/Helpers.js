@@ -38,6 +38,7 @@ export async function sendWithMockFetch(response, callback) {
 
   try {
     await callback();
+
   } catch (error) {
     console.error("An error occured:");
     console.error(error);
@@ -45,6 +46,9 @@ export async function sendWithMockFetch(response, callback) {
   }
 
   const request = fetchMock.lastCall();
+
+  if (!request) throw new Error("No request was made!");
+
   fetchMock.restore();
 
   /*
