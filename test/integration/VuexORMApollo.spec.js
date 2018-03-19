@@ -76,7 +76,133 @@ describe('VuexORMApollo', () => {
         });
 
         expect(request.variables).toEqual({ id: 1 });
+        expect(request.query).toEqual(`
+query User($id: ID!) {
+  user(id: $id) {
+    id
+    name
+    posts {
+      nodes {
+        id
+        title
+        content
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+        `.trim() + "\n");
       });
-    })
+    });
+
+    describe('without ID', () => {
+      it('sends the correct query to the API', async () => {
+        const response = {
+          data: {
+            users: {
+              __typename: 'user',
+              nodes: [
+                {
+                  __typename: 'user',
+                  id: 1,
+                  name: 'Johnny Imba',
+                  posts: {
+                    __typename: 'post',
+                    nodes: [
+                      {
+                        __typename: 'post',
+                        id: 1,
+                        userId: 1,
+                        title: 'Example Post 1',
+                        content: 'Foo'
+                      },
+                      {
+                        __typename: 'post',
+                        id: 2,
+                        userId: 1,
+                        title: 'Example Post 2',
+                        content: 'Bar'
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        };
+
+        const request = await sendWithMockFetch(response, async () => {
+          await store.dispatch('entities/users/fetch');
+        });
+
+        expect(request.variables).toEqual({});
+        expect(request.query).toEqual(`
+  query Users {
+    users {
+      nodes {
+        id
+        name
+        posts {
+          nodes {
+            id
+            title
+            content
+            __typename
+          }
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+  }
+          `.trim() + "\n");
+      });
+    });
+  });
+
+
+  describe('create', () => {
+    it('sends the correct query to the API', async () => {
+      const response = {
+        data: {
+          user: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+            posts: {
+              __typename: 'post',
+              nodes: []
+            }
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/users/create', { user: { name: 'Charlie Brown' } });
+      });
+
+      expect(request.variables).toEqual({ user: { name: 'Charlie Brown' } });
+      expect(request.query).toEqual(`
+mutation createUser($user: UserInput!) {
+createUser(user: $user) {
+  id
+  name
+  posts {
+    nodes {
+      id
+      title
+      content
+      __typename
+    }
+    __typename
+  }
+  __typename
+}
+}
+      `.trim() + "\n");
+    });
   });
 });
