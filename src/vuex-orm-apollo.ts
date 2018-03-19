@@ -5,6 +5,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { Data, ActionParams, Arguments, ORMModel, DispatchFunction } from './interfaces';
 import Logger from './logger';
 import QueryBuilder from './queryBuilder';
+import {upcaseFirstLetter} from "./utils";
 
 const inflection = require('inflection');
 
@@ -86,10 +87,11 @@ export default class VuexORMApollo {
    */
   private setupMethods () {
     this.components.subActions.fetch = this.fetch.bind(this);
-
     this.components.subActions.persist = this.persist.bind(this);
     this.components.subActions.push = this.push.bind(this);
     this.components.subActions.destroy = this.destroy.bind(this);
+    this.components.subActions.mutate = this.customMutation.bind(this);
+
     // this.components.subActions.destroyAll = this.destroyAll.bind(this);
   }
 
@@ -102,8 +104,13 @@ export default class VuexORMApollo {
    * @returns {Promise<void>}
    */
   private async fetch ({ state, dispatch, filter }: ActionParams) {
+    // When the filter contains an id, we query in singular mode
+    const multiple: boolean = !(filter && filter.get('id'));
+    const model: Model = this.getModel(state.$name);
+    const name: string = `${multiple ? model.pluralName : model.singularName}`;
+    const query = this.queryBuilder.buildQuery('query', name, filter, model.singularName);
+
     // Send the request to the GraphQL API
-    const query = this.queryBuilder.buildQuery(state.$name, filter);
     const data = await this.apolloRequest(query);
 
     // Insert incoming data into the store
@@ -123,11 +130,33 @@ export default class VuexORMApollo {
       const model = this.getModel(state.$name);
       const data = model.baseModel.getters('find')(id);
 
-      await this.mutate('create', data, dispatch, model);
+      const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
+      await this.mutate(mutationName, data, dispatch, model, true, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(id);
     }
+  }
+
+  /**
+   * Will be called, when dispatch('entities/something/mutate') is called.
+   * For custom mutations.
+   *
+   * @param {any} state
+   * @param {any} dispatch
+   * @param {Data} data
+   * @returns {Promise<Data | {}>}
+   */
+  private async customMutation ({ state, dispatch }: ActionParams, args: Arguments) {
+    const name:string = args['mutation'];
+    delete args['mutation'];
+
+    const model = this.getModel(state.$name);
+
+    await this.mutate(name, args, dispatch, model);
+
+    // TODO What would make sense here?
+    return true;
   }
 
   /**
@@ -141,7 +170,9 @@ export default class VuexORMApollo {
     if (data) {
       const model = this.getModel(state.$name);
 
-      await this.mutate('update', data, dispatch, model);
+      const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
+      // TODO whats in data? can we determine addModelToArgs from that?
+      await this.mutate(mutationName, data, dispatch, model, true);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(data.id);
@@ -160,7 +191,9 @@ export default class VuexORMApollo {
 
     if (id) {
       const model = this.getModel(state.$name);
-      const query = this.queryBuilder.buildMutation(model, id, 'delete');
+      // TODO use mutate here too
+      const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
+      const query = this.queryBuilder.buildQuery('mutation', mutationName, { id }, model);
 
       // Send GraphQL Mutation
       await this.apolloClient.mutate({
@@ -179,10 +212,11 @@ export default class VuexORMApollo {
    * @param {Model} model
    * @returns {Promise<any>}
    */
-  private async mutate (action: string, data: Data | undefined, dispatch: DispatchFunction, model: Model): Promise<any> {
+  private async mutate (action: string, data: Data | undefined, dispatch: DispatchFunction, model: Model, addModelToArgs: boolean = false, multiple?: boolean): Promise<any> {
     if (data) {
-      const id = action === 'create' ? undefined : data.id;
-      const query = this.queryBuilder.buildMutation(model, id, action);
+      const id = data.id ? data.id : undefined;
+      // TODO what about the quers fields?
+      const query = this.queryBuilder.buildQuery('mutation', action, data, model, undefined, addModelToArgs, multiple);
 
       const variables: Data = {
         [model.singularName]: this.queryBuilder.transformOutgoingData(data)

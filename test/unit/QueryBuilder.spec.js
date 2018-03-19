@@ -62,18 +62,6 @@ describe('QueryBuilder', () => {
       expect(args).toEqual('($name: String!, $email: String!, $age: Number!, $user: UserInput!)');
     });
 
-    it('can generate fields with values', () => {
-      let args = queryBuilder.buildArguments({
-        name: 'Foo Bar',
-        email: 'example@foo.net',
-        age: 32,
-        user: { __type: 'User' }
-      }, false, false);
-
-      expect(args).toEqual('(name: "Foo Bar", email: "example@foo.net", age: 32, user: {"__type":"User"})');
-    });
-
-
     it('can generate fields with variables', () => {
       let args = queryBuilder.buildArguments({
         name: 'Foo Bar',
@@ -282,7 +270,7 @@ query test {
 
       expect(query).toEqual(`
 query users {
-  users(age: 32) {
+  users(age: $age) {
     nodes {
       id
       name
@@ -306,12 +294,12 @@ query users {
       const args = new Map();
       args.set('age', 32);
 
-      let query = queryBuilder.buildQuery(new Model(User), args);
+      let query = queryBuilder.buildQuery('query', null, args, new Model(User));
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-{
-  users(_c: "[object Map]") {
+query Users($_c: String!) {
+  users(_c: $_c) {
     nodes {
       id
       name
@@ -327,16 +315,13 @@ query users {
       `.trim() + "\n");
 
     });
-  });
 
-
-  describe('.buildMutation', () => {
     it('generates a complete create mutation query for a model', () => {
-      let query = queryBuilder.buildMutation(new Model(User));
+      let query = queryBuilder.buildQuery('mutation', 'createUser', { user: { id: 15, name: 'test' } }, new Model(User), undefined, true, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation createUser($user: UserInput!) {
+mutation CreateUser($user: UserInput!) {
   createUser(user: $user) {
     id
     name
@@ -353,12 +338,12 @@ mutation createUser($user: UserInput!) {
     });
 
     it('generates a complete update mutation query for a model', () => {
-      let query = queryBuilder.buildMutation(new Model(User), 15, 'update');
+      let query = queryBuilder.buildQuery('mutation', 'updateUser', { id: 15, user: { name: 'test' } }, new Model(User), undefined, true);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation updateUser($user: UserInput!, $id: ID!) {
-  updateUser(user: $user, id: $id) {
+mutation UpdateUser($id: ID!, $user: UserInput!) {
+  updateUser(id: $id, user: $user) {
     id
     name
     profiles {
@@ -376,11 +361,11 @@ mutation updateUser($user: UserInput!, $id: ID!) {
 
 
     it('generates a complete delete mutation query for a model', () => {
-      let query = queryBuilder.buildMutation(new Model(User), 15, 'delete');
+      let query = queryBuilder.buildQuery('mutation', 'deleteUser', { id: 15 }, new Model(User));
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation deleteUser($id: ID!) {
+mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
     id
     name

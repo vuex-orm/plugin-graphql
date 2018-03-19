@@ -1,15 +1,13 @@
-import { print } from 'graphql/language/printer';
-import { parse } from 'graphql/language/parser';
-import { Arguments, Data, Field } from './interfaces';
-import Model from './model';
-import gql from 'graphql-tag';
-import Logger from './logger';
-import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
+import {parse} from "graphql/language/parser";
+import Logger from "./logger";
+import Model from "./model";
+import {print} from "graphql/language/printer";
+import {Arguments, Data, Field} from "./interfaces";
+import {downcaseFirstLetter, upcaseFirstLetter} from "./utils";
+import gql from "graphql-tag";
+
 const inflection = require('inflection');
 
-/**
- * This class takes care of everything GraphQL query related, especially the generation of queries out of models
- */
 export default class QueryBuilder {
   private readonly logger: Logger;
   private readonly getModel: (name: Model | string) => Model;
@@ -33,6 +31,7 @@ export default class QueryBuilder {
     return print(parse(query));
   }
 
+
   /**
    * Generates the arguments string for a graphql query based on a given map.
    *
@@ -44,25 +43,17 @@ export default class QueryBuilder {
    * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
    *      mutation createUser($user: UserInput!)
    *
-   * 3) Fields with values (signature = false, valuesAsVariables = false)
-   *      query user(id: 15)
-   *
-   * 4) Fields with variables (signature = false, valuesAsVariables = true)
+   * 3) Fields with variables (signature = false, valuesAsVariables = true)
    *      query user(id: $id)
-   *
-   * 5) Fields with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
-   *      mutation createUser(user: {...})
    *
    * @param {Arguments | undefined} args
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
-   * @param {boolean} valuesAsVariables When true and abstract = false, then this method generates filter arguments with
-   *                           variables instead of values
+   * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
    * @returns {String}
    */
-  public buildArguments (args: Arguments | undefined,
-                         signature: boolean = false,
-                         valuesAsVariables: boolean = false,
-                         allowIdFields: boolean = false): string {
+  private buildArguments(args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
+    if (args === null) return '';
+
     let returnValue: string = '';
     let first: boolean = true;
 
@@ -85,17 +76,9 @@ export default class QueryBuilder {
               // Case 1 (String!)
               typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
             }
-          } else if (valuesAsVariables) {
-            // Case 6 (user: $user)
-            typeOrValue = `$${key}`;
           } else {
-            if (typeof value === 'object' && value.__type) {
-              // Case 3 ({name: 'Helga Hufflepuff"})
-              typeOrValue = JSON.stringify(value);
-            } else {
-              // Case 3 ("someValue")
-              typeOrValue = typeof value === 'number' ? value : `"${value}"`;
-            }
+            // Case 3 (user: $user)
+            typeOrValue = `$${key}`;
           }
 
           returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`;
@@ -108,6 +91,96 @@ export default class QueryBuilder {
 
     return returnValue;
   }
+
+
+
+  /**
+   * Builds a field for the GraphQL query and a specific model
+   *
+   * @param {Model|string} model
+   * @param {boolean} multiple
+   * @param {Arguments} args
+   * @param {Model} rootModel
+   * @param {string} name
+   * @param allowIdFields
+   * @returns {string}
+   */
+  public buildField (model: Model | string,
+                     multiple: boolean = true,
+                     args?: Arguments,
+                     rootModel?: Model,
+                     name?: string,
+                     allowIdFields: boolean = false): string {
+    model = this.getModel(model);
+
+    let params: string = this.buildArguments(args, false, allowIdFields);
+
+    const fields = `
+      ${model.getQueryFields().join(' ')}
+      ${this.buildRelationsQuery(model, rootModel)}
+    `;
+
+    if (multiple) {
+      return `
+        ${name ? name : model.pluralName}${params} {
+          nodes {
+            ${fields}
+          }
+        }
+      `;
+    } else {
+      return `
+        ${name ? name : model.singularName}${params} {
+          ${fields}
+        }
+      `;
+    }
+  }
+
+
+  /**
+   *
+   * @param {Model} model
+   * @param {Model} rootModel
+   * @returns {Array<String>}
+   */
+  private buildRelationsQuery (model: (null|Model), rootModel?: Model) {
+    if (model === null) return '';
+
+    const relationQueries: Array<string> = [];
+
+    model.getRelations().forEach((field: Field, name: string) => {
+      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
+        const multiple: boolean = field.constructor.name !== 'BelongsTo';
+        relationQueries.push(this.buildField(name, multiple, undefined, rootModel || model));
+      }
+    });
+
+    return relationQueries;
+  }
+
+
+
+  public buildQuery(type: string, name?: string, args?: Arguments, model?: (Model|null|string), fields?: string, addModelToArgs:boolean = false, multiple?: boolean) {
+    model = model ? this.getModel(model) : null;
+
+    if (!args) args = {};
+    if (addModelToArgs && model) args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
+
+    multiple = multiple === undefined ? !args['id'] : multiple;
+
+    if (!name && model) name = (multiple ? model.pluralName : model.singularName);
+    if (!name) throw new Error("Can't determine name for the query! Please provide either name or model");
+
+
+    const query:string =
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
+      `  ${model ? this.buildField(model, multiple, args, model, name, true) : fields}\n` +
+      `}`;
+
+    return gql(query);
+  }
+
 
   /**
    * Transforms outgoing data. Use for variables param.
@@ -182,115 +255,5 @@ export default class QueryBuilder {
     }
 
     return result;
-  }
-
-  /**
-   *
-   * @param {Model} model
-   * @param {Model} rootModel
-   * @returns {Array<String>}
-   */
-  public buildRelationsQuery (model: Model, rootModel?: Model) {
-    const relationQueries: Array<string> = [];
-
-    model.getRelations().forEach((field: Field, name: string) => {
-      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
-        const multiple: boolean = field.constructor.name !== 'BelongsTo';
-        relationQueries.push(this.buildField(name, multiple, undefined, false, rootModel || model));
-      }
-    });
-
-    return relationQueries;
-  }
-
-  /**
-   * Builds a field for the GraphQL query and a specific model
-   * @param {Model|string} model
-   * @param {boolean} multiple
-   * @param {Arguments} args
-   * @param {boolean} withVars
-   * @param {Model} rootModel
-   * @param {string} name
-   * @returns {string}
-   */
-  public buildField (model: Model | string,
-                     multiple: boolean = true,
-                     args?: Arguments,
-                     withVars: boolean = false,
-                     rootModel?: Model,
-                     name?: string,
-                     allowIdFields: boolean = false): string {
-    model = this.getModel(model);
-
-    let params: string = this.buildArguments(args, false, withVars, allowIdFields);
-
-    const fields = `
-      ${model.getQueryFields().join(' ')}
-      ${this.buildRelationsQuery(model, rootModel)}
-    `;
-
-    if (multiple) {
-      return `
-        ${name ? name : model.pluralName}${params} {
-          nodes {
-            ${fields}
-          }
-        }
-      `;
-    } else {
-      return `
-        ${name ? name : model.singularName}${params} {
-          ${fields}
-        }
-      `;
-    }
-  }
-
-  /**
-   * Create a GraphQL query for the given model and arguments.
-   *
-   * @param {string} modelName
-   * @param {Arguments} args
-   * @returns {any}
-   */
-  public buildQuery (modelName: string, args?: Arguments): any {
-    // Ignore empty args
-    if (args && Object.keys(args).length === 0) args = undefined;
-
-    const multiple = !(args && args.get('id'));
-    const query = `{ ${this.buildField(modelName, multiple, args)} }`;
-    return gql(query);
-  }
-
-  /**
-   * Generates a mutation query for a model.
-   *
-   * @param {Model} model
-   * @param {string}prefix
-   * @returns {any}
-   *
-   * TODO: Refactor to avoid prefix param
-   */
-  public buildMutation (model: Model, id?: number, prefix: string = 'create') {
-    const name: string = `${prefix}${upcaseFirstLetter(model.singularName)}`;
-    let args: Data = { [model.singularName]: { __type: upcaseFirstLetter(model.singularName) } };
-
-    if (prefix === 'delete') {
-      if (!id) throw new Error('No ID given.');
-      args = { id };
-    } else if (prefix === 'update') {
-      args['id'] = id;
-    }
-
-    const signature: string = this.buildArguments(args, true, false, true);
-    const field = this.buildField(model, false, args, true, model, name, true);
-
-    const query = `
-        mutation ${name}${signature} {
-          ${field}
-        }
-      `;
-
-    return gql(query);
   }
 }
