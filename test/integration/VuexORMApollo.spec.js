@@ -251,4 +251,47 @@ mutation UpdateUser($user: UserInput!) {
       `.trim() + "\n");
     });
   });
+
+
+  describe('destroy', () => {
+    it('sends the correct query to the API', async () => {
+      const response = {
+        data: {
+          deleteUser: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+            posts: {
+              __typename: 'post',
+              nodes: []
+            }
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/users/destroy', { id: 1 });
+      });
+
+      expect(request.variables).toEqual({ where: 1 });
+      expect(request.query).toEqual(`
+mutation DeleteUser($id: ID!) {
+  deleteUser(id: $id) {
+    id
+    name
+    posts {
+      nodes {
+        id
+        title
+        content
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+  });
 });
