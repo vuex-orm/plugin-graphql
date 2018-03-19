@@ -103,15 +103,15 @@ export default class VuexORMApollo {
    * @param {any} dispatch
    * @returns {Promise<void>}
    */
-  private async fetch ({ state, dispatch, filter }: ActionParams) {
+  private async fetch ({ state, dispatch }: ActionParams, filter: ActionParams) {
     // When the filter contains an id, we query in singular mode
-    const multiple: boolean = !(filter && filter.get('id'));
+    const multiple: boolean = !(filter && filter['id']);
     const model: Model = this.getModel(state.$name);
     const name: string = `${multiple ? model.pluralName : model.singularName}`;
     const query = this.queryBuilder.buildQuery('query', name, filter, model.singularName);
 
     // Send the request to the GraphQL API
-    const data = await this.apolloRequest(query);
+    const data = await this.apolloRequest(query, filter);
 
     // Insert incoming data into the store
     await this.insertData(data, dispatch);
@@ -196,10 +196,7 @@ export default class VuexORMApollo {
       const query = this.queryBuilder.buildQuery('mutation', mutationName, { id }, model);
 
       // Send GraphQL Mutation
-      await this.apolloClient.mutate({
-        mutation: query,
-        variables: { where: id }
-      });
+      await this.apolloRequest(query, { where: id }, true);
     }
   }
 
@@ -225,27 +222,27 @@ export default class VuexORMApollo {
       if (id) variables['id'] = id;
 
       // Send GraphQL Mutation
-      const response = await this.apolloClient.mutate({
-        mutation: query,
-        variables
-      });
-
-      // Insert incoming data into the store
-      const newData = this.queryBuilder.transformIncomingData(response.data as Data, true);
+      const newData = await this.apolloRequest(query, variables, true);
       return this.updateData(newData, dispatch, data.id);
     }
   }
 
   /**
-   * Sends a query to the GraphQL API via apollo
+   * Sends a request to the GraphQL API via apollo
    * @param query
    * @returns {Promise<Data>}
    */
-  private async apolloRequest (query: any): Promise<Data> {
-    const response = await (this.apolloClient).query({ query });
+  private async apolloRequest (query: any, variables?: Arguments, mutation:boolean = false): Promise<Data> {
+    let response;
+
+    if (mutation) {
+      response = await (this.apolloClient).mutate({ mutation: query, variables });
+    } else {
+      response = await (this.apolloClient).query({ query, variables });
+    }
 
     // Transform incoming data into something useful
-    return this.queryBuilder.transformIncomingData(response.data);
+    return this.queryBuilder.transformIncomingData(response.data as Data, mutation);
   }
 
   /**
