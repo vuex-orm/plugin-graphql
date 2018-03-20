@@ -224,8 +224,8 @@ export default class VuexORMApollo {
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(query, variables, true);
 
-      // TODO: What if there is no id?
-      return this.updateData(newData, dispatch, id);
+      if (id) return this.updateData(newData, dispatch, id);
+      return null;
     }
   }
 
