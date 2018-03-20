@@ -5,6 +5,7 @@ import { print } from 'graphql/language/printer';
 import { Arguments, Data, Field } from './interfaces';
 import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
 import gql from 'graphql-tag';
+import BelongsTo from '@vuex-orm/core/lib/attributes/relations/BelongsTo';
 
 const inflection = require('inflection');
 
@@ -280,7 +281,7 @@ export default class QueryBuilder {
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
-        const multiple: boolean = field.constructor.name !== 'BelongsTo';
+        const multiple: boolean = !(field instanceof BelongsTo);
         relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
       }
     });

@@ -1,4 +1,6 @@
 import { Field, ORMModel } from './interfaces';
+import Attr from '@vuex-orm/core/lib/attributes/types/Attr';
+import Increment from '@vuex-orm/core/lib/attributes/types/Increment';
 const inflection = require('inflection');
 
 /**
@@ -30,8 +32,6 @@ export default class Model {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
-      // field.constructor.name is one of Increment, Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
-      // TODO import the classes from Vuex-ORM and use instanceof instead
       if (this.fieldIsAttribute(field) && !name.endsWith('Id')) {
         fields.push(name);
       }
@@ -56,6 +56,7 @@ export default class Model {
   }
 
   private fieldIsAttribute (field: Field): boolean {
-    return field.constructor.name === 'Attr' || field.constructor.name === 'Increment';
+    // field  is one of Increment, Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
+    return field instanceof Attr || field instanceof Increment;
   }
 }
