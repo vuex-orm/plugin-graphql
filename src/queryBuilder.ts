@@ -267,25 +267,43 @@ export default class QueryBuilder {
   /**
    *
    * @param {Model} model
-   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
-   * @returns {Array<String>}
+   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
+   * @returns {string}
    */
-  private buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []) {
+  private buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []): string {
     if (model === null) return '';
 
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
-      if (!this.shouldModelBeIgnored(this.getModel(name), ignoreModels)) {
+      const relatedModel: Model = this.getModel(name);
+
+      if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
+          !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
         const multiple: boolean = field.constructor.name !== 'BelongsTo';
-        relationQueries.push(this.buildField(name, multiple, undefined, ignoreModels));
+        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
       }
     });
 
-    return relationQueries;
+    return relationQueries.join('\n');
   }
 
-  private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>) {
+  /**
+   * Determines if we should eager load (means: add a query field) a related entity. belongsTo related entities
+   * are always eager loaded. Others can be added to the eagerLoad array of the model.
+   *
+   * @param {Model} model The base model
+   * @param {Field} field Relation field
+   * @param {Model} relatedModel Related model
+   * @returns {boolean}
+   */
+  private shouldEagerLoadRelation (model: Model, field: Field, relatedModel: Model): boolean {
+    if (field.constructor.name === 'BelongsTo') return true;
+    const eagerLoadList: Array<String> = model.baseModel.eagerLoad || [];
+    return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
+  }
+
+  private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
     return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
   }
 }

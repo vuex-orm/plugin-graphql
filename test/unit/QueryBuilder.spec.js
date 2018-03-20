@@ -3,47 +3,74 @@ import { Model as ORMModel } from '@vuex-orm/core';
 import QueryBuilder from 'app/queryBuilder';
 import Model from 'app/model';
 import Logger from 'app/logger';
-import gql from 'graphql-tag';
 
 let queryBuilder;
 let store;
+
+// TODO: move this setup to the Helpers file
 
 class User extends ORMModel {
   static entity = 'users';
 
   static fields () {
     return {
-      id: this.attr(null),
+      id: this.increment(null),
       name: this.attr(null),
-      profile: this.hasOne(Profile, 'user_id')
+      posts: this.hasMany(Post, 'userId'),
+      comments: this.hasMany(Comment, 'userId')
     };
   }
 }
 
-class Profile extends ORMModel {
-  static entity = 'profiles';
+class Post extends ORMModel {
+  static entity = 'posts';
+  static eagerLoad = ['comments'];
 
   static fields () {
     return {
-      id: this.attr(null),
-      user_id: this.attr(null)
+      id: this.increment(null),
+      content: this.attr(''),
+      title: this.attr(''),
+      user: this.belongsTo(User, 'userId'),
+      comments: this.hasMany(Comment, 'postId')
+    };
+  }
+}
+
+
+class Comment extends ORMModel {
+  static entity = 'comments';
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      content: this.attr(''),
+      user: this.belongsTo(User, 'userId'),
+      post: this.belongsTo(Post, 'postId')
     };
   }
 }
 
 beforeEach(() => {
-  store = createStore([{ model: User }, { model: Profile }]);
-  store.dispatch('entities/profiles/insert', { data: { id: 1, user_id: 1 }});
-  store.dispatch('entities/users/insert', { data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
+  store = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+  store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
+  store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
+  store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
+  store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
+  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, postId: 1, content: 'Example comment 1' }});
+  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, postId: 1, content: 'Example comment 2' }});
 
   const logger = new Logger(false);
   queryBuilder = new QueryBuilder(logger, (model) => {
     if (typeof model === 'object') return model;
 
-    if (model === 'user' || model === 'users') {
-      return new Model(User);
-    } else {
-      return new Model(Profile);
+    switch(model) {
+      case 'user': return new Model(User);
+      case 'users': return new Model(User);
+      case 'post': return new Model(Post);
+      case 'posts': return new Model(Post);
+      case 'comment': return new Model(Comment);
+      case 'comments': return new Model(Comment);
     }
   });
 });
@@ -79,7 +106,7 @@ describe('QueryBuilder', () => {
     it('transforms models to a useful data hashmap', () => {
       const user = store.getters['entities/users/find']();
       const transformedData = queryBuilder.transformOutgoingData(user);
-      expect(transformedData).toEqual({ name: 'Foo Bar' });
+      expect(transformedData).toEqual({ name: 'Charlie Brown' });
     });
   });
 
@@ -244,20 +271,28 @@ describe('QueryBuilder', () => {
 
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
-      let queries = queryBuilder.buildRelationsQuery(new Model(User));
+      const fields = queryBuilder.buildRelationsQuery(new Model(Comment));
+      const query = QueryBuilder.prettify(`query test { ${fields} }`).trim();
 
-      queries = queries.map(v => QueryBuilder.prettify(`query test { ${v} }`).trim());
-
-      expect(queries).toEqual([`
+      expect(query).toEqual(`
 query test {
-  profiles {
-    nodes {
-      id
-      user_id
+  user {
+    id
+    name
+  }
+  post {
+    id
+    content
+    title
+    comments {
+      nodes {
+        id
+        content
+      }
     }
   }
 }
-      `.trim()]);
+      `.trim());
     });
   });
 
@@ -274,12 +309,6 @@ query users {
     nodes {
       id
       name
-      profiles {
-        nodes {
-          id
-          user_id
-        }
-      }
     }
   }
 }
@@ -292,21 +321,26 @@ query users {
   describe('.buildQuery', () => {
     it('generates a complete query for a model', () => {
       const args = new Map();
-      args.set('age', 32);
+      args.set('title', 'Example Post 1');
 
-      let query = queryBuilder.buildQuery('query', new Model(User), null, args, args);
+      let query = queryBuilder.buildQuery('query', new Model(Post), null, args, true);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-query Users {
-  users {
+query Posts {
+  posts {
     nodes {
       id
-      name
-      profiles {
+      content
+      title
+      user {
+        id
+        name
+      }
+      comments {
         nodes {
           id
-          user_id
+          content
         }
       }
     }
@@ -317,18 +351,24 @@ query Users {
     });
 
     it('generates a complete create mutation query for a model', () => {
-      let query = queryBuilder.buildQuery('mutation', new Model(User), 'createUser', { user: { id: 15, name: 'test' } }, false);
+      const variables = { post: { id: 15, userId: 2, title: 'test', content: 'even more test' } };
+      let query = queryBuilder.buildQuery('mutation', new Model(Post), 'createPost', variables, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation CreateUser($user: UserInput!) {
-  createUser(user: $user) {
+mutation CreatePost($post: PostInput!) {
+  createPost(post: $post) {
     id
-    name
-    profiles {
+    content
+    title
+    user {
+      id
+      name
+    }
+    comments {
       nodes {
         id
-        user_id
+        content
       }
     }
   }
@@ -338,18 +378,24 @@ mutation CreateUser($user: UserInput!) {
     });
 
     it('generates a complete update mutation query for a model', () => {
-      let query = queryBuilder.buildQuery('mutation', new Model(User), 'updateUser', { id: 15, user: { name: 'test' } }, false);
+      const variables = { id: 2, post: { id: 2, userId: 1, title: 'test', content: 'Even more test' } }
+      let query = queryBuilder.buildQuery('mutation', new Model(Post), 'updatePost', variables, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-mutation UpdateUser($id: ID!, $user: UserInput!) {
-  updateUser(id: $id, user: $user) {
+mutation UpdatePost($id: ID!, $post: PostInput!) {
+  updatePost(id: $id, post: $post) {
     id
-    name
-    profiles {
+    content
+    title
+    user {
+      id
+      name
+    }
+    comments {
       nodes {
         id
-        user_id
+        content
       }
     }
   }
@@ -369,12 +415,6 @@ mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
     id
     name
-    profiles {
-      nodes {
-        id
-        user_id
-      }
-    }
   }
 }
       `.trim() + "\n");

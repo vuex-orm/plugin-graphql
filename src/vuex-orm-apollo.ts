@@ -157,7 +157,7 @@ export default class VuexORMApollo {
 
     const model = this.getModel(state.$name);
 
-    return this.mutate(name, args, dispatch, model);
+    return this.mutate(name, args, dispatch, model, false);
   }
 
   /**

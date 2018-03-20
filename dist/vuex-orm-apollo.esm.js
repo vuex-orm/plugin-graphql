@@ -7980,8 +7980,8 @@ var QueryBuilder = /** @class */ (function () {
     /**
      *
      * @param {Model} model
-     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
-     * @returns {Array<String>}
+     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
+     * @returns {string}
      */
     QueryBuilder.prototype.buildRelationsQuery = function (model, ignoreModels) {
         var _this = this;
@@ -7990,12 +7990,29 @@ var QueryBuilder = /** @class */ (function () {
             return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            if (!_this.shouldModelBeIgnored(_this.getModel(name), ignoreModels)) {
+            var relatedModel = _this.getModel(name);
+            if (_this.shouldEagerLoadRelation(model, field, relatedModel) &&
+                !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
                 var multiple = field.constructor.name !== 'BelongsTo';
-                relationQueries.push(_this.buildField(name, multiple, undefined, ignoreModels));
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels));
             }
         });
-        return relationQueries;
+        return relationQueries.join('\n');
+    };
+    /**
+     * Determines if we should eager load (means: add a query field) a related entity. belongsTo related entities
+     * are always eager loaded. Others can be added to the eagerLoad array of the model.
+     *
+     * @param {Model} model The base model
+     * @param {Field} field Relation field
+     * @param {Model} relatedModel Related model
+     * @returns {boolean}
+     */
+    QueryBuilder.prototype.shouldEagerLoadRelation = function (model, field, relatedModel) {
+        if (field.constructor.name === 'BelongsTo')
+            return true;
+        var eagerLoadList = model.baseModel.eagerLoad || [];
+        return eagerLoadList.find(function (n) { return n === relatedModel.singularName || n === relatedModel.pluralName; }) !== undefined;
     };
     QueryBuilder.prototype.shouldModelBeIgnored = function (model, ignoreModels) {
         return ignoreModels.find(function (m) { return m.singularName === model.singularName; }) !== undefined;
@@ -8236,7 +8253,7 @@ var VuexORMApollo = /** @class */ (function () {
                 name = args['mutation'];
                 delete args['mutation'];
                 model = this.getModel(state.$name);
-                return [2 /*return*/, this.mutate(name, args, dispatch, model)];
+                return [2 /*return*/, this.mutate(name, args, dispatch, model, false)];
             });
         });
     };

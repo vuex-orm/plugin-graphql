@@ -5,38 +5,60 @@ import fetchMock from 'fetch-mock';
 
 let store;
 
+class User extends ORMModel {
+  static entity = 'users';
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      name: this.attr(null),
+      posts: this.hasMany(Post, 'userId'),
+      comments: this.hasMany(Comment, 'userId')
+    };
+  }
+}
+
+class Post extends ORMModel {
+  static entity = 'posts';
+  static eagerLoad = ['comments'];
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      content: this.attr(''),
+      title: this.attr(''),
+      userId: this.attr(null),
+      user: this.belongsTo(User, 'userId'),
+      comments: this.hasMany(Comment, 'userId')
+    };
+  }
+}
+
+
+class Comment extends ORMModel {
+  static entity = 'comments';
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      content: this.attr(''),
+      userId: this.attr(null),
+      postId: this.attr(null),
+      user: this.belongsTo(User, 'userId'),
+      post: this.belongsTo(Post, 'postId')
+    };
+  }
+}
+
 describe('VuexORMApollo', () => {
-  class User extends ORMModel {
-    static entity = 'users';
-
-    static fields () {
-      return {
-        id: this.attr(null),
-        name: this.attr(null),
-        posts: this.hasMany(Post, 'userId')
-      };
-    }
-  }
-
-  class Post extends ORMModel {
-    static entity = 'posts';
-
-    static fields () {
-      return {
-        id: this.attr(null),
-        title: this.attr(null),
-        content: this.attr(null),
-        userId: this.attr(null),
-        user: this.belongsTo(User, 'userId')
-      };
-    }
-  }
-
   beforeEach(() => {
-    store = createStore([{ model: User }, { model: Post }]);
-    store.dispatch('entities/users/insert', { data: { id: 1, name: 'Johnny Imba' }});
-    store.dispatch('entities/posts/insert', { data: { id: 1, title: 'Example Post 1', content: 'Foo', userId: 1 }});
-    store.dispatch('entities/posts/insert', { data: { id: 2, title: 'Example Post 2', content: 'Bar', userId: 1 }});
+    store = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+    store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
+    store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
+    store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
+    store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
+    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, postId: 1, content: 'Example comment 1' }});
+    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, postId: 1, content: 'Example comment 2' }});
   });
 
   describe('fetch', () => {
@@ -81,15 +103,6 @@ query User($id: ID!) {
   user(id: $id) {
     id
     name
-    posts {
-      nodes {
-        id
-        title
-        content
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -107,7 +120,7 @@ query User($id: ID!) {
                 {
                   __typename: 'user',
                   id: 1,
-                  name: 'Johnny Imba',
+                  name: 'Charlie Brown',
                   posts: {
                     __typename: 'post',
                     nodes: [
@@ -144,15 +157,6 @@ query Users {
     nodes {
       id
       name
-      posts {
-        nodes {
-          id
-          title
-          content
-          __typename
-        }
-        __typename
-      }
       __typename
     }
     __typename
@@ -171,7 +175,7 @@ query Users {
           createUser: {
             __typename: 'user',
             id: 1,
-            name: 'Johnny Imba',
+            name: 'Charlie Brown',
             posts: {
               __typename: 'post',
               nodes: []
@@ -184,21 +188,12 @@ query Users {
         await store.dispatch('entities/users/persist', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ user: { name: 'Johnny Imba' } });
+      expect(request.variables).toEqual({ user: { name: 'Charlie Brown' } });
       expect(request.query).toEqual(`
 mutation CreateUser($user: UserInput!) {
   createUser(user: $user) {
     id
     name
-    posts {
-      nodes {
-        id
-        title
-        content
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -214,7 +209,7 @@ mutation CreateUser($user: UserInput!) {
           updateUser: {
             __typename: 'user',
             id: 1,
-            name: 'Johnny Imba',
+            name: 'Snoopy',
             posts: {
               __typename: 'post',
               nodes: []
@@ -225,26 +220,17 @@ mutation CreateUser($user: UserInput!) {
 
       const request = await sendWithMockFetch(response, async () => {
         const user = store.getters['entities/users/find'](1);
-        user.name = 'Charlie Brown';
+        user.name = 'Snoopy';
 
         await store.dispatch('entities/users/push', { data: user });
       });
 
-      expect(request.variables).toEqual({ id: 1, user: { name: 'Charlie Brown' } });
+      expect(request.variables).toEqual({ id: 1, user: { name: 'Snoopy' } });
       expect(request.query).toEqual(`
 mutation UpdateUser($id: ID!, $user: UserInput!) {
   updateUser(id: $id, user: $user) {
     id
     name
-    posts {
-      nodes {
-        id
-        title
-        content
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -260,7 +246,7 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
           deleteUser: {
             __typename: 'user',
             id: 1,
-            name: 'Johnny Imba',
+            name: 'Charlie Brown',
             posts: {
               __typename: 'post',
               nodes: []
@@ -279,15 +265,6 @@ mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
     id
     name
-    posts {
-      nodes {
-        id
-        title
-        content
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
@@ -303,7 +280,7 @@ mutation DeleteUser($id: ID!) {
           activateUser: {
             __typename: 'user',
             id: 1,
-            name: 'Johnny Imba',
+            name: 'Charlie Brown',
             posts: {
               __typename: 'post',
               nodes: []
@@ -322,15 +299,6 @@ mutation ActivateUser($id: ID!) {
   activateUser(id: $id) {
     id
     name
-    posts {
-      nodes {
-        id
-        title
-        content
-        __typename
-      }
-      __typename
-    }
     __typename
   }
 }
