@@ -7575,6 +7575,25 @@ var parser_4 = parser.parseConstValue;
 var parser_5 = parser.parseTypeReference;
 var parser_6 = parser.parseNamedType;
 
+/**
+ * Capitalizes the first letter of the given string.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function upcaseFirstLetter(input) {
+    return input.charAt(0).toUpperCase() + input.slice(1);
+}
+/**
+ * Down cases the first letter of the given string.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function downcaseFirstLetter(input) {
+    return input.charAt(0).toLowerCase() + input.slice(1);
+}
+
 var parse = parser.parse;
 
 // Strip insignificant whitespace
@@ -7743,29 +7762,7 @@ gql.disableFragmentWarnings = disableFragmentWarnings;
 
 var src = gql;
 
-/**
- * Capitalizes the first letter of the given string.
- *
- * @param {string} input
- * @returns {string}
- */
-function upcaseFirstLetter(input) {
-    return input.charAt(0).toUpperCase() + input.slice(1);
-}
-/**
- * Down cases the first letter of the given string.
- *
- * @param {string} input
- * @returns {string}
- */
-function downcaseFirstLetter(input) {
-    return input.charAt(0).toLowerCase() + input.slice(1);
-}
-
 var inflection$1 = require('inflection');
-/**
- * This class takes care of everything GraphQL query related, especially the generation of queries out of models
- */
 var QueryBuilder = /** @class */ (function () {
     /**
      * Constructor.
@@ -7785,79 +7782,46 @@ var QueryBuilder = /** @class */ (function () {
         return printer_1(parser_1(query));
     };
     /**
-     * Generates the arguments string for a graphql query based on a given map.
+     * Builds a field for the GraphQL query and a specific model
      *
-     * There are three types of arguments:
-     *
-     * 1) Signatures with simple types (signature = true)
-     *      mutation createUser($name: String!)
-     *
-     * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
-     *      mutation createUser($user: UserInput!)
-     *
-     * 3) Fields with values (signature = false, valuesAsVariables = false)
-     *      query user(id: 15)
-     *
-     * 4) Fields with variables (signature = false, valuesAsVariables = true)
-     *      query user(id: $id)
-     *
-     * 5) Fields with object value (signature = false, valuesAsVariables = false, args = { user: { __type: 'User' }})
-     *      mutation createUser(user: {...})
-     *
-     * @param {Arguments | undefined} args
-     * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
-     * @param {boolean} valuesAsVariables When true and abstract = false, then this method generates filter arguments with
-     *                           variables instead of values
-     * @returns {String}
+     * @param {Model|string} model
+     * @param {boolean} multiple
+     * @param {Arguments} args
+     * @param {Model} rootModel
+     * @param {string} name
+     * @param allowIdFields
+     * @returns {string}
      */
-    QueryBuilder.prototype.buildArguments = function (args, signature, valuesAsVariables, allowIdFields) {
-        if (signature === void 0) { signature = false; }
-        if (valuesAsVariables === void 0) { valuesAsVariables = false; }
+    QueryBuilder.prototype.buildField = function (model, multiple, args, rootModel, name, allowIdFields) {
+        if (multiple === void 0) { multiple = true; }
         if (allowIdFields === void 0) { allowIdFields = false; }
-        var returnValue = '';
-        var first = true;
-        if (args) {
-            Object.keys(args).forEach(function (key) {
-                var value = args[key];
-                // Ignore ids and connections
-                if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
-                    var typeOrValue = '';
-                    if (signature) {
-                        if (typeof value === 'object' && value.__type) {
-                            // Case 2 (User!)
-                            typeOrValue = value.__type + 'Input!';
-                        }
-                        else if (key === 'id') {
-                            // Case 1 (ID!)
-                            typeOrValue = 'ID!';
-                        }
-                        else {
-                            // Case 1 (String!)
-                            typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
-                        }
-                    }
-                    else if (valuesAsVariables) {
-                        // Case 6 (user: $user)
-                        typeOrValue = "$" + key;
-                    }
-                    else {
-                        if (typeof value === 'object' && value.__type) {
-                            // Case 3 ({name: 'Helga Hufflepuff"})
-                            typeOrValue = JSON.stringify(value);
-                        }
-                        else {
-                            // Case 3 ("someValue")
-                            typeOrValue = typeof value === 'number' ? value : "\"" + value + "\"";
-                        }
-                    }
-                    returnValue = "" + returnValue + (first ? '' : ', ') + ((signature ? '$' : '') + key) + ": " + typeOrValue;
-                    first = false;
-                }
-            });
-            if (!first)
-                returnValue = "(" + returnValue + ")";
+        model = this.getModel(model);
+        var params = this.buildArguments(args, false, allowIdFields);
+        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
+        if (multiple) {
+            return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
         }
-        return returnValue;
+        else {
+            return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
+        }
+    };
+    QueryBuilder.prototype.buildQuery = function (type, name, args, model, fields, multiple) {
+        model = model ? this.getModel(model) : null;
+        args = args ? JSON.parse(JSON.stringify(args)) : {};
+        if (!args)
+            throw new Error('args is undefined');
+        if (model && args[model.singularName] && typeof args[model.singularName] === 'object') {
+            args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
+        }
+        multiple = multiple === undefined ? !args['id'] : multiple;
+        if (!name && model)
+            name = (multiple ? model.pluralName : model.singularName);
+        if (!name)
+            throw new Error("Can't determine name for the query! Please provide either name or model");
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true) + " {\n" +
+            ("  " + (model ? this.buildField(model, multiple, args, model, name, true) : fields) + "\n") +
+            "}";
+        return src(query);
     };
     /**
      * Transforms outgoing data. Use for variables param.
@@ -7931,6 +7895,65 @@ var QueryBuilder = /** @class */ (function () {
         return result;
     };
     /**
+     * Generates the arguments string for a graphql query based on a given map.
+     *
+     * There are three types of arguments:
+     *
+     * 1) Signatures with simple types (signature = true)
+     *      mutation createUser($name: String!)
+     *
+     * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
+     *      mutation createUser($user: UserInput!)
+     *
+     * 3) Fields with variables (signature = false, valuesAsVariables = true)
+     *      query user(id: $id)
+     *
+     * @param {Arguments | undefined} args
+     * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
+     * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
+     * @returns {String}
+     */
+    QueryBuilder.prototype.buildArguments = function (args, signature, allowIdFields) {
+        if (signature === void 0) { signature = false; }
+        if (allowIdFields === void 0) { allowIdFields = true; }
+        if (args === undefined)
+            return '';
+        var returnValue = '';
+        var first = true;
+        if (args) {
+            Object.keys(args).forEach(function (key) {
+                var value = args[key];
+                // Ignore ids and connections
+                if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
+                    var typeOrValue = '';
+                    if (signature) {
+                        if (typeof value === 'object' && value.__type) {
+                            // Case 2 (User!)
+                            typeOrValue = value.__type + 'Input!';
+                        }
+                        else if (key === 'id') {
+                            // Case 1 (ID!)
+                            typeOrValue = 'ID!';
+                        }
+                        else {
+                            // Case 1 (String!)
+                            typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
+                        }
+                    }
+                    else {
+                        // Case 3 (user: $user)
+                        typeOrValue = "$" + key;
+                    }
+                    returnValue = "" + returnValue + (first ? '' : ', ') + ((signature ? '$' : '') + key) + ": " + typeOrValue;
+                    first = false;
+                }
+            });
+            if (!first)
+                returnValue = "(" + returnValue + ")";
+        }
+        return returnValue;
+    };
+    /**
      *
      * @param {Model} model
      * @param {Model} rootModel
@@ -7938,80 +7961,16 @@ var QueryBuilder = /** @class */ (function () {
      */
     QueryBuilder.prototype.buildRelationsQuery = function (model, rootModel) {
         var _this = this;
+        if (model === null)
+            return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
             if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
                 var multiple = field.constructor.name !== 'BelongsTo';
-                relationQueries.push(_this.buildField(name, multiple, undefined, false, rootModel || model));
+                relationQueries.push(_this.buildField(name, multiple, undefined, rootModel || model));
             }
         });
         return relationQueries;
-    };
-    /**
-     * Builds a field for the GraphQL query and a specific model
-     * @param {Model|string} model
-     * @param {boolean} multiple
-     * @param {Arguments} args
-     * @param {boolean} withVars
-     * @param {Model} rootModel
-     * @param {string} name
-     * @returns {string}
-     */
-    QueryBuilder.prototype.buildField = function (model, multiple, args, withVars, rootModel, name, allowIdFields) {
-        if (multiple === void 0) { multiple = true; }
-        if (withVars === void 0) { withVars = false; }
-        if (allowIdFields === void 0) { allowIdFields = false; }
-        model = this.getModel(model);
-        var params = this.buildArguments(args, false, withVars, allowIdFields);
-        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
-        if (multiple) {
-            return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
-        }
-        else {
-            return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
-        }
-    };
-    /**
-     * Create a GraphQL query for the given model and arguments.
-     *
-     * @param {string} modelName
-     * @param {Arguments} args
-     * @returns {any}
-     */
-    QueryBuilder.prototype.buildQuery = function (modelName, args) {
-        // Ignore empty args
-        if (args && Object.keys(args).length === 0)
-            args = undefined;
-        var multiple = !(args && args.get('id'));
-        var query = "{ " + this.buildField(modelName, multiple, args) + " }";
-        return src(query);
-    };
-    /**
-     * Generates a mutation query for a model.
-     *
-     * @param {Model} model
-     * @param {string}prefix
-     * @returns {any}
-     *
-     * TODO: Refactor to avoid prefix param
-     */
-    QueryBuilder.prototype.buildMutation = function (model, id, prefix) {
-        if (prefix === void 0) { prefix = 'create'; }
-        var name = "" + prefix + upcaseFirstLetter(model.singularName);
-        var args = (_a = {}, _a[model.singularName] = { __type: upcaseFirstLetter(model.singularName) }, _a);
-        if (prefix === 'delete') {
-            if (!id)
-                throw new Error('No ID given.');
-            args = { id: id };
-        }
-        else if (prefix === 'update') {
-            args['id'] = id;
-        }
-        var signature = this.buildArguments(args, true, false, true);
-        var field = this.buildField(model, false, args, true, model, name, true);
-        var query = "\n        mutation " + name + signature + " {\n          " + field + "\n        }\n      ";
-        return src(query);
-        var _a;
     };
     return QueryBuilder;
 }());
@@ -8163,6 +8122,7 @@ var VuexORMApollo = /** @class */ (function () {
         this.components.subActions.persist = this.persist.bind(this);
         this.components.subActions.push = this.push.bind(this);
         this.components.subActions.destroy = this.destroy.bind(this);
+        this.components.subActions.mutate = this.customMutation.bind(this);
         // this.components.subActions.destroyAll = this.destroyAll.bind(this);
     };
     /**
@@ -8173,15 +8133,18 @@ var VuexORMApollo = /** @class */ (function () {
      * @param {any} dispatch
      * @returns {Promise<void>}
      */
-    VuexORMApollo.prototype.fetch = function (_a) {
-        var state = _a.state, dispatch = _a.dispatch, filter = _a.filter;
+    VuexORMApollo.prototype.fetch = function (_a, filter) {
+        var state = _a.state, dispatch = _a.dispatch;
         return __awaiter(this, void 0, void 0, function () {
-            var query, data;
+            var multiple, model, name, query, data;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        query = this.queryBuilder.buildQuery(state.$name, filter);
-                        return [4 /*yield*/, this.apolloRequest(query)];
+                        multiple = !(filter && filter['id']);
+                        model = this.getModel(state.$name);
+                        name = "" + (multiple ? model.pluralName : model.singularName);
+                        query = this.queryBuilder.buildQuery('query', name, filter, model.singularName);
+                        return [4 /*yield*/, this.apolloRequest(query, filter)];
                     case 1:
                         data = _b.sent();
                         // Insert incoming data into the store
@@ -8206,19 +8169,49 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id;
         return __awaiter(this, void 0, void 0, function () {
-            var model, data;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var model, data, variables, mutationName, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 2];
                         model = this.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
-                        return [4 /*yield*/, this.mutate('create', data, dispatch, model)];
+                        variables = (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
+                        mutationName = "create" + upcaseFirstLetter(model.singularName);
+                        return [4 /*yield*/, this.mutate(mutationName, variables, dispatch, model, false)];
                     case 1:
-                        _c.sent();
+                        _d.sent();
                         // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(id)];
                     case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Will be called, when dispatch('entities/something/mutate') is called.
+     * For custom mutations.
+     *
+     * @param {any} state
+     * @param {any} dispatch
+     * @param {Data} data
+     * @returns {Promise<Data | {}>}
+     */
+    VuexORMApollo.prototype.customMutation = function (_a, args) {
+        var state = _a.state, dispatch = _a.dispatch;
+        return __awaiter(this, void 0, void 0, function () {
+            var name, model;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        name = args['mutation'];
+                        delete args['mutation'];
+                        model = this.getModel(state.$name);
+                        return [4 /*yield*/, this.mutate(name, args, dispatch, model)];
+                    case 1:
+                        _b.sent();
+                        // TODO What would make sense here?
+                        return [2 /*return*/, true];
                 }
             });
         });
@@ -8234,15 +8227,19 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var data = _b.data;
         return __awaiter(this, void 0, void 0, function () {
-            var model;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var model, variables, mutationName, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         if (!data) return [3 /*break*/, 2];
                         model = this.getModel(state.$name);
-                        return [4 /*yield*/, this.mutate('update', data, dispatch, model)];
+                        variables = (_c = {
+                                id: data.id
+                            }, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
+                        mutationName = "update" + upcaseFirstLetter(model.singularName);
+                        return [4 /*yield*/, this.mutate(mutationName, variables, dispatch, model, false)];
                     case 1:
-                        _c.sent();
+                        _d.sent();
                         // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(data.id)];
                     case 2: return [2 /*return*/];
@@ -8262,22 +8259,18 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id;
         return __awaiter(this, void 0, void 0, function () {
-            var model, query;
+            var model, mutationName;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 2];
                         model = this.getModel(state.$name);
-                        query = this.queryBuilder.buildMutation(model, id, 'delete');
-                        // Send GraphQL Mutation
-                        return [4 /*yield*/, this.apolloClient.mutate({
-                                mutation: query,
-                                variables: { where: id }
-                            })];
+                        mutationName = "delete" + upcaseFirstLetter(model.singularName);
+                        return [4 /*yield*/, this.mutate(mutationName, { id: id }, dispatch, model, false)];
                     case 1:
-                        // Send GraphQL Mutation
                         _c.sent();
-                        _c.label = 2;
+                        // TODO what would make sense here?
+                        return [2 /*return*/, true];
                     case 2: return [2 /*return*/];
                 }
             });
@@ -8292,46 +8285,49 @@ var VuexORMApollo = /** @class */ (function () {
      * @param {Model} model
      * @returns {Promise<any>}
      */
-    VuexORMApollo.prototype.mutate = function (action, data, dispatch, model) {
+    VuexORMApollo.prototype.mutate = function (action, variables, dispatch, model, multiple) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, query, variables, response, newData, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var id, query, newData;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        if (!data) return [3 /*break*/, 2];
-                        id = action === 'create' ? undefined : data.id;
-                        query = this.queryBuilder.buildMutation(model, id, action);
-                        variables = (_a = {}, _a[model.singularName] = this.queryBuilder.transformOutgoingData(data), _a);
-                        if (id)
-                            variables['id'] = id;
-                        return [4 /*yield*/, this.apolloClient.mutate({
-                                mutation: query,
-                                variables: variables
-                            })];
+                        if (!variables) return [3 /*break*/, 2];
+                        id = variables.id ? variables.id : undefined;
+                        query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, multiple);
+                        return [4 /*yield*/, this.apolloRequest(query, variables, true)];
                     case 1:
-                        response = _b.sent();
-                        newData = this.queryBuilder.transformIncomingData(response.data, true);
-                        return [2 /*return*/, this.updateData(newData, dispatch, data.id)];
+                        newData = _a.sent();
+                        // TODO: What if there is no id?
+                        return [2 /*return*/, this.updateData(newData, dispatch, id)];
                     case 2: return [2 /*return*/];
                 }
             });
         });
     };
     /**
-     * Sends a query to the GraphQL API via apollo
+     * Sends a request to the GraphQL API via apollo
      * @param query
      * @returns {Promise<Data>}
      */
-    VuexORMApollo.prototype.apolloRequest = function (query) {
+    VuexORMApollo.prototype.apolloRequest = function (query, variables, mutation) {
+        if (mutation === void 0) { mutation = false; }
         return __awaiter(this, void 0, void 0, function () {
             var response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (this.apolloClient).query({ query: query })];
+                    case 0:
+                        if (!mutation) return [3 /*break*/, 2];
+                        return [4 /*yield*/, (this.apolloClient).mutate({ mutation: query, variables: variables })];
                     case 1:
                         response = _a.sent();
-                        // Transform incoming data into something useful
-                        return [2 /*return*/, this.queryBuilder.transformIncomingData(response.data)];
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, (this.apolloClient).query({ query: query, variables: variables })];
+                    case 3:
+                        response = _a.sent();
+                        _a.label = 4;
+                    case 4: 
+                    // Transform incoming data into something useful
+                    return [2 /*return*/, this.queryBuilder.transformIncomingData(response.data, mutation)];
                 }
             });
         });
