@@ -157,10 +157,7 @@ export default class VuexORMApollo {
 
     const model = this.getModel(state.$name);
 
-    await this.mutate(name, args, dispatch, model);
-
-    // TODO What would make sense here?
-    return true;
+    return await this.mutate(name, args, dispatch, model);
   }
 
   /**
@@ -196,14 +193,10 @@ export default class VuexORMApollo {
    * @returns {Promise<void>}
    */
   private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
-
     if (id) {
       const model = this.getModel(state.$name);
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, { id }, dispatch, model, false);
-
-      // TODO what would make sense here?
-      return true;
+      return await this.mutate(mutationName, { id }, dispatch, model, false);
     }
   }
 
