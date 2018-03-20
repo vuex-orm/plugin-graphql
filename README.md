@@ -57,6 +57,7 @@ In your component:
 ## Possible options:
 
 - `database` (required): The Vuex-ORM database.
+- `url` (optional, default: '/graphql'): The URL to the graphql api. Will be passed to apollo-client.
 - `debug` (optional, default: false): Set to true to activate the debug logging.
 
 

@@ -45,7 +45,7 @@ export default class VuexORMApollo {
     this.setupMethods();
 
     this.httpLink = new HttpLink({
-      uri: '/graphql'
+      uri: options.url ? options.url : '/graphql'
     });
 
     this.apolloClient = new ApolloClient({
