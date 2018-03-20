@@ -7763,6 +7763,10 @@ gql.disableFragmentWarnings = disableFragmentWarnings;
 var src = gql;
 
 var inflection$1 = require('inflection');
+/**
+ * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
+ * format of the GraphQL API.
+ */
 var QueryBuilder = /** @class */ (function () {
     /**
      * Constructor.
@@ -7774,7 +7778,7 @@ var QueryBuilder = /** @class */ (function () {
         this.getModel = getModel;
     }
     /**
-     * Takes a string with a graphql query and formats it
+     * Takes a string with a graphql query and formats it. Useful for debug output and the tests.
      * @param {string} query
      * @returns {string}
      */
@@ -7784,13 +7788,17 @@ var QueryBuilder = /** @class */ (function () {
     /**
      * Builds a field for the GraphQL query and a specific model
      *
-     * @param {Model|string} model
-     * @param {boolean} multiple
-     * @param {Arguments} args
-     * @param {Model} rootModel
-     * @param {string} name
-     * @param allowIdFields
+     * @param {Model|string} model The model to use
+     * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
+     * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
+     * @param {Model} rootModel The model of the root query field. Used to avoid endless recursion
+     * @param {string} name Optional name of the field. If not provided, this will be the model name
+     * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
+     *                                See buildArguments
      * @returns {string}
+     *
+     * @todo Do we need the allowIdFields param?
+     * @todo There could be a endless recursion even with rootModel correctly set. We should track an array of models here probably?
      */
     QueryBuilder.prototype.buildField = function (model, multiple, args, rootModel, name, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
@@ -7805,21 +7813,36 @@ var QueryBuilder = /** @class */ (function () {
             return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
         }
     };
-    QueryBuilder.prototype.buildQuery = function (type, name, args, model, fields, multiple) {
-        model = model ? this.getModel(model) : null;
+    /**
+     * Generates a query.
+     * Currently only one root field for the query is possible.
+     * @param {string} type 'mutation' or 'query'
+     * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
+     * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
+     * @param {Arguments} args Arguments for the query
+     * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
+     * @returns {any}
+     */
+    QueryBuilder.prototype.buildQuery = function (type, model, name, args, multiple) {
+        // model
+        model = this.getModel(model);
+        if (!model)
+            throw new Error('No model provided to build the query!');
+        // args
         args = args ? JSON.parse(JSON.stringify(args)) : {};
         if (!args)
             throw new Error('args is undefined');
-        if (model && args[model.singularName] && typeof args[model.singularName] === 'object') {
+        if (args[model.singularName] && typeof args[model.singularName] === 'object') {
             args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
         }
+        // multiple
         multiple = multiple === undefined ? !args['id'] : multiple;
-        if (!name && model)
-            name = (multiple ? model.pluralName : model.singularName);
+        // name
         if (!name)
-            throw new Error("Can't determine name for the query! Please provide either name or model");
+            name = (multiple ? model.pluralName : model.singularName);
+        // build query
         var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true) + " {\n" +
-            ("  " + (model ? this.buildField(model, multiple, args, model, name, true) : fields) + "\n") +
+            ("  " + this.buildField(model, multiple, args, model, name, true) + "\n") +
             "}";
         return src(query);
     };
@@ -7905,7 +7928,7 @@ var QueryBuilder = /** @class */ (function () {
      * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
      *      mutation createUser($user: UserInput!)
      *
-     * 3) Fields with variables (signature = false, valuesAsVariables = true)
+     * 3) Fields with variables (signature = false)
      *      query user(id: $id)
      *
      * @param {Arguments | undefined} args
@@ -8081,7 +8104,7 @@ var VuexORMApollo = /** @class */ (function () {
         this.collectModels();
         this.setupMethods();
         this.httpLink = new HttpLink({
-            uri: '/graphql'
+            uri: options.url ? options.url : '/graphql'
         });
         this.apolloClient = new ApolloClient({
             link: this.httpLink,
@@ -8115,7 +8138,7 @@ var VuexORMApollo = /** @class */ (function () {
         });
     };
     /**
-     * This method will setup following Vuex action: fetch, persist, push, destroy
+     * This method will setup following Vuex action: fetch, persist, push, destroy, mutate
      */
     VuexORMApollo.prototype.setupMethods = function () {
         this.components.subActions.fetch = this.fetch.bind(this);
@@ -8128,9 +8151,9 @@ var VuexORMApollo = /** @class */ (function () {
     /**
      * Will be called, when dispatch('entities/something/fetch') is called.
      *
-     * @param {Arguments} args
-     * @param {any} state
-     * @param {any} dispatch
+     * @param {any} state The Vuex State from Vuex-ORM
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {ActionParams} filter Filter params for the query
      * @returns {Promise<void>}
      */
     VuexORMApollo.prototype.fetch = function (_a, filter) {
@@ -8143,7 +8166,7 @@ var VuexORMApollo = /** @class */ (function () {
                         multiple = !(filter && filter['id']);
                         model = this.getModel(state.$name);
                         name = "" + (multiple ? model.pluralName : model.singularName);
-                        query = this.queryBuilder.buildQuery('query', name, filter, model.singularName);
+                        query = this.queryBuilder.buildQuery('query', model, name, filter);
                         return [4 /*yield*/, this.apolloRequest(query, filter)];
                     case 1:
                         data = _b.sent();
@@ -8160,9 +8183,9 @@ var VuexORMApollo = /** @class */ (function () {
     /**
      * Will be called, when dispatch('entities/something/persist') is called.
      *
-     * @param {any} state
-     * @param {any} dispatch
-     * @param {any} id
+     * @param {any} state The Vuex State from Vuex-ORM
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {string} id ID of the record to persist
      * @returns {Promise<void>}
      */
     VuexORMApollo.prototype.persist = function (_a, _b) {
@@ -8191,36 +8214,28 @@ var VuexORMApollo = /** @class */ (function () {
     /**
      * Will be called, when dispatch('entities/something/mutate') is called.
      * For custom mutations.
-     *
-     * @param {any} state
-     * @param {any} dispatch
-     * @param {Data} data
-     * @returns {Promise<Data | {}>}
+     * @param {any} state The Vuex State from Vuex-ORM
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {Arguments} args Arguments for the mutation. Must contain a 'mutation' field.
+     * @returns {Promise<any>}
      */
     VuexORMApollo.prototype.customMutation = function (_a, args) {
         var state = _a.state, dispatch = _a.dispatch;
         return __awaiter(this, void 0, void 0, function () {
             var name, model;
             return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        name = args['mutation'];
-                        delete args['mutation'];
-                        model = this.getModel(state.$name);
-                        return [4 /*yield*/, this.mutate(name, args, dispatch, model)];
-                    case 1:
-                        _b.sent();
-                        // TODO What would make sense here?
-                        return [2 /*return*/, true];
-                }
+                name = args['mutation'];
+                delete args['mutation'];
+                model = this.getModel(state.$name);
+                return [2 /*return*/, this.mutate(name, args, dispatch, model)];
             });
         });
     };
     /**
      * Will be called, when dispatch('entities/something/push') is called.
-     * @param {any} state
-     * @param {any} dispatch
-     * @param {Data} data
+     * @param {any} state The Vuex State from Vuex-ORM
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {Arguments} data New data to save
      * @returns {Promise<Data | {}>}
      */
     VuexORMApollo.prototype.push = function (_a, _b) {
@@ -8250,9 +8265,9 @@ var VuexORMApollo = /** @class */ (function () {
     /**
      * Will be called, when dispatch('entities/something/destroy') is called.
      *
-     * @param {any} state
-     * @param {any} dispatch
-     * @param {Data} id
+     * @param {any} state The Vuex State from Vuex-ORM
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {string} id ID of the record to delete
      * @returns {Promise<void>}
      */
     VuexORMApollo.prototype.destroy = function (_a, _b) {
@@ -8261,31 +8276,26 @@ var VuexORMApollo = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var model, mutationName;
             return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        if (!id) return [3 /*break*/, 2];
-                        model = this.getModel(state.$name);
-                        mutationName = "delete" + upcaseFirstLetter(model.singularName);
-                        return [4 /*yield*/, this.mutate(mutationName, { id: id }, dispatch, model, false)];
-                    case 1:
-                        _c.sent();
-                        // TODO what would make sense here?
-                        return [2 /*return*/, true];
-                    case 2: return [2 /*return*/];
+                if (id) {
+                    model = this.getModel(state.$name);
+                    mutationName = "delete" + upcaseFirstLetter(model.singularName);
+                    return [2 /*return*/, this.mutate(mutationName, { id: id }, dispatch, model, false)];
                 }
+                return [2 /*return*/];
             });
         });
     };
     /**
-     * Contains the logic to save (persist or push) data.
+     * Sends a mutation.
      *
-     * @param {string} action
-     * @param {Data | undefined} data
-     * @param {Function} dispatch
-     * @param {Model} model
+     * @param {string} name Name of the mutation like 'createUser'
+     * @param {Data | undefined} variables Variables to send with the mutation
+     * @param {Function} dispatch Vuex Dispatch method for the model
+     * @param {Model} model The model this mutation affects.
+     * @param {boolean} multiple See QueryBuilder.buildQuery()
      * @returns {Promise<any>}
      */
-    VuexORMApollo.prototype.mutate = function (action, variables, dispatch, model, multiple) {
+    VuexORMApollo.prototype.mutate = function (name, variables, dispatch, model, multiple) {
         return __awaiter(this, void 0, void 0, function () {
             var id, query, newData;
             return __generator(this, function (_a) {
@@ -8293,12 +8303,13 @@ var VuexORMApollo = /** @class */ (function () {
                     case 0:
                         if (!variables) return [3 /*break*/, 2];
                         id = variables.id ? variables.id : undefined;
-                        query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, multiple);
+                        query = this.queryBuilder.buildQuery('mutation', model, name, variables, multiple);
                         return [4 /*yield*/, this.apolloRequest(query, variables, true)];
                     case 1:
                         newData = _a.sent();
-                        // TODO: What if there is no id?
-                        return [2 /*return*/, this.updateData(newData, dispatch, id)];
+                        if (id)
+                            return [2 /*return*/, this.updateData(newData, dispatch, id)];
+                        return [2 /*return*/, null];
                     case 2: return [2 /*return*/];
                 }
             });
@@ -8306,7 +8317,9 @@ var VuexORMApollo = /** @class */ (function () {
     };
     /**
      * Sends a request to the GraphQL API via apollo
-     * @param query
+     * @param {any} query The query to send (result from gql())
+     * @param {Arguments} variables Optional. The variables to send with the query
+     * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
      * @returns {Promise<Data>}
      */
     VuexORMApollo.prototype.apolloRequest = function (query, variables, mutation) {
@@ -8317,11 +8330,11 @@ var VuexORMApollo = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!mutation) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (this.apolloClient).mutate({ mutation: query, variables: variables })];
+                        return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
                     case 1:
                         response = _a.sent();
                         return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, (this.apolloClient).query({ query: query, variables: variables })];
+                    case 2: return [4 /*yield*/, this.apolloClient.query({ query: query, variables: variables })];
                     case 3:
                         response = _a.sent();
                         _a.label = 4;
@@ -8335,9 +8348,8 @@ var VuexORMApollo = /** @class */ (function () {
     /**
      * Inserts incoming data into the store.
      *
-     * @param {Data} data
-     * @param {Function} dispatch
-     * @param {boolean} update
+     * @param {Data} data New data to insert/update
+     * @param {Function} dispatch Vuex Dispatch method for the model
      */
     VuexORMApollo.prototype.insertData = function (data, dispatch) {
         return __awaiter(this, void 0, void 0, function () {
@@ -8361,8 +8373,8 @@ var VuexORMApollo = /** @class */ (function () {
      * Updates an existing record in the store with new data. This method can only update one single record, so
      * it takes the first record of the first field from the data object!
      * @param {Data} data
-     * @param {Function} dispatch
-     * @param id
+     * @param {Function} dispatch Vuex Dispatch method for the model
+     * @param {string|number} id ID of the record to update
      */
     VuexORMApollo.prototype.updateData = function (data, dispatch, id) {
         return __awaiter(this, void 0, void 0, function () {
