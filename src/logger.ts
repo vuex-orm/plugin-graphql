@@ -1,6 +1,6 @@
 import QueryBuilder from './queryBuilder';
 import { DocumentNode } from 'graphql';
-import {Arguments} from "./interfaces";
+import { Arguments } from './interfaces';
 
 export default class Logger {
   private readonly enabled: boolean;

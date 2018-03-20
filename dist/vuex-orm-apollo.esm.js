@@ -8112,12 +8112,13 @@ var VuexORMApollo = /** @class */ (function () {
         this.collectModels();
         this.setupMethods();
         this.httpLink = new HttpLink({
-            uri: options.url ? options.url : '/graphql'
+            uri: options.url ? options.url : '/graphql',
+            credentials: 'same-origin'
         });
         this.apolloClient = new ApolloClient({
             link: this.httpLink,
             cache: new InMemoryCache(),
-            connectToDevTools: true
+            connectToDevTools: this.debugMode
         });
         this.queryBuilder = new QueryBuilder(this.logger, this.getModel.bind(this));
     }
