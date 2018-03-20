@@ -201,7 +201,7 @@ export default class VuexORMApollo {
       const model = this.getModel(state.$name);
       // TODO use mutate here too
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, { id }, dispatch, model, false)
+      await this.mutate(mutationName, { id }, dispatch, model, false);
 
       // TODO what would make sense here?
       return true;
@@ -224,7 +224,6 @@ export default class VuexORMApollo {
       // TODO what about the query fields?
       const query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, multiple);
 
-
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(query, variables, true);
 
@@ -238,7 +237,7 @@ export default class VuexORMApollo {
    * @param query
    * @returns {Promise<Data>}
    */
-  private async apolloRequest (query: any, variables?: Arguments, mutation:boolean = false): Promise<Data> {
+  private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false): Promise<Data> {
     let response;
 
     if (mutation) {

@@ -32,66 +32,6 @@ export default class QueryBuilder {
   }
 
   /**
-   * Generates the arguments string for a graphql query based on a given map.
-   *
-   * There are three types of arguments:
-   *
-   * 1) Signatures with simple types (signature = true)
-   *      mutation createUser($name: String!)
-   *
-   * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
-   *      mutation createUser($user: UserInput!)
-   *
-   * 3) Fields with variables (signature = false, valuesAsVariables = true)
-   *      query user(id: $id)
-   *
-   * @param {Arguments | undefined} args
-   * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
-   * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
-   * @returns {String}
-   */
-  private buildArguments (args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
-    if (args === null) return '';
-
-    let returnValue: string = '';
-    let first: boolean = true;
-
-    if (args) {
-      Object.keys(args).forEach((key: string) => {
-        let value: any = args[key];
-
-        // Ignore ids and connections
-        if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
-          let typeOrValue: any = '';
-
-          if (signature) {
-            if (typeof value === 'object' && value.__type) {
-              // Case 2 (User!)
-              typeOrValue = value.__type + 'Input!';
-            } else if (key === 'id') {
-              // Case 1 (ID!)
-              typeOrValue = 'ID!';
-            } else {
-              // Case 1 (String!)
-              typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
-            }
-          } else {
-            // Case 3 (user: $user)
-            typeOrValue = `$${key}`;
-          }
-
-          returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`;
-          first = false;
-        }
-      });
-
-      if (!first) returnValue = `(${returnValue})`;
-    }
-
-    return returnValue;
-  }
-
-  /**
    * Builds a field for the GraphQL query and a specific model
    *
    * @param {Model|string} model
@@ -134,32 +74,11 @@ export default class QueryBuilder {
     }
   }
 
-  /**
-   *
-   * @param {Model} model
-   * @param {Model} rootModel
-   * @returns {Array<String>}
-   */
-  private buildRelationsQuery (model: (null | Model), rootModel?: Model) {
-    if (model === null) return '';
-
-    const relationQueries: Array<string> = [];
-
-    model.getRelations().forEach((field: Field, name: string) => {
-      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
-        const multiple: boolean = field.constructor.name !== 'BelongsTo';
-        relationQueries.push(this.buildField(name, multiple, undefined, rootModel || model));
-      }
-    });
-
-    return relationQueries;
-  }
-
   public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, multiple?: boolean) {
     model = model ? this.getModel(model) : null;
 
     args = args ? JSON.parse(JSON.stringify(args)) : {};
-    if (!args) throw new Error("args is undefined");
+    if (!args) throw new Error('args is undefined');
 
     if (model && args[model.singularName] && typeof args[model.singularName] === 'object') {
       args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
@@ -251,5 +170,86 @@ export default class QueryBuilder {
     }
 
     return result;
+  }
+
+  /**
+   * Generates the arguments string for a graphql query based on a given map.
+   *
+   * There are three types of arguments:
+   *
+   * 1) Signatures with simple types (signature = true)
+   *      mutation createUser($name: String!)
+   *
+   * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
+   *      mutation createUser($user: UserInput!)
+   *
+   * 3) Fields with variables (signature = false, valuesAsVariables = true)
+   *      query user(id: $id)
+   *
+   * @param {Arguments | undefined} args
+   * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
+   * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
+   * @returns {String}
+   */
+  private buildArguments (args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
+    if (args === undefined) return '';
+
+    let returnValue: string = '';
+    let first: boolean = true;
+
+    if (args) {
+      Object.keys(args).forEach((key: string) => {
+        let value: any = args[key];
+
+        // Ignore ids and connections
+        if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
+          let typeOrValue: any = '';
+
+          if (signature) {
+            if (typeof value === 'object' && value.__type) {
+              // Case 2 (User!)
+              typeOrValue = value.__type + 'Input!';
+            } else if (key === 'id') {
+              // Case 1 (ID!)
+              typeOrValue = 'ID!';
+            } else {
+              // Case 1 (String!)
+              typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
+            }
+          } else {
+            // Case 3 (user: $user)
+            typeOrValue = `$${key}`;
+          }
+
+          returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`;
+          first = false;
+        }
+      });
+
+      if (!first) returnValue = `(${returnValue})`;
+    }
+
+    return returnValue;
+  }
+
+  /**
+   *
+   * @param {Model} model
+   * @param {Model} rootModel
+   * @returns {Array<String>}
+   */
+  private buildRelationsQuery (model: (null | Model), rootModel?: Model) {
+    if (model === null) return '';
+
+    const relationQueries: Array<string> = [];
+
+    model.getRelations().forEach((field: Field, name: string) => {
+      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
+        const multiple: boolean = field.constructor.name !== 'BelongsTo';
+        relationQueries.push(this.buildField(name, multiple, undefined, rootModel || model));
+      }
+    });
+
+    return relationQueries;
   }
 }
