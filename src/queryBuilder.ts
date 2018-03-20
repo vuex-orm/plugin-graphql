@@ -76,19 +76,21 @@ export default class QueryBuilder {
 
   public buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
     model = this.getModel(model);
+    if (!model) throw new Error("No model provided to build the query!");
 
     args = args ? JSON.parse(JSON.stringify(args)) : {};
     if (!args) throw new Error('args is undefined');
 
-    if (model && args[model.singularName] && typeof args[model.singularName] === 'object') {
+    if (args[model.singularName] && typeof args[model.singularName] === 'object') {
       args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
     }
 
     multiple = multiple === undefined ? !args['id'] : multiple;
 
-    if (!name && model) name = (multiple ? model.pluralName : model.singularName);
-    if (!name) throw new Error("Can't determine name for the query! Please provide either name or model");
+    // name
+    if (!name) name = (multiple ? model.pluralName : model.singularName);
 
+    // build query
     const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
       `  ${this.buildField(model, multiple, args, model, name, true)}\n` +
