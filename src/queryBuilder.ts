@@ -74,8 +74,8 @@ export default class QueryBuilder {
     }
   }
 
-  public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, multiple?: boolean) {
-    model = model ? this.getModel(model) : null;
+  public buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
+    model = this.getModel(model);
 
     args = args ? JSON.parse(JSON.stringify(args)) : {};
     if (!args) throw new Error('args is undefined');
@@ -91,7 +91,7 @@ export default class QueryBuilder {
 
     const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
-      `  ${model ? this.buildField(model, multiple, args, model, name, true) : fields}\n` +
+      `  ${this.buildField(model, multiple, args, model, name, true)}\n` +
       `}`;
 
     return gql(query);

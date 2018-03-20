@@ -108,7 +108,7 @@ export default class VuexORMApollo {
     const multiple: boolean = !(filter && filter['id']);
     const model: Model = this.getModel(state.$name);
     const name: string = `${multiple ? model.pluralName : model.singularName}`;
-    const query = this.queryBuilder.buildQuery('query', name, filter, model.singularName);
+    const query = this.queryBuilder.buildQuery('query', model, name, filter);
 
     // Send the request to the GraphQL API
     const data = await this.apolloRequest(query, filter);
@@ -219,9 +219,7 @@ export default class VuexORMApollo {
   private async mutate (action: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model, multiple?: boolean): Promise<any> {
     if (variables) {
       const id = variables.id ? variables.id : undefined;
-
-      // TODO what about the query fields?
-      const query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, multiple);
+      const query = this.queryBuilder.buildQuery('mutation', model, action, variables, multiple);
 
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(query, variables, true);
