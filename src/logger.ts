@@ -12,7 +12,7 @@ export default class Logger {
 
   public group (...messages: Array<any>): void {
     if (this.enabled) {
-      console.groupCollapsed('[Vuex-ORM-Apollo]', ...messages);
+      console.group('[Vuex-ORM-Apollo]', ...messages);
     }
   }
 
@@ -29,7 +29,7 @@ export default class Logger {
   public logQuery (query: string | DocumentNode, variables?: Arguments) {
     if (this.enabled) {
       try {
-        this.group('Sending GraphQL query ...');
+        this.group('Sending query:');
 
         if (typeof query === 'object' && query.loc) {
           console.log(QueryBuilder.prettify(query.loc.source.body));
