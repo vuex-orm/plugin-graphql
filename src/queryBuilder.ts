@@ -8,8 +8,21 @@ import gql from 'graphql-tag';
 
 const inflection = require('inflection');
 
+/**
+ * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
+ * format of the GraphQL API.
+ */
 export default class QueryBuilder {
+  /**
+   * Logger, is injected into the constructor.
+   */
   private readonly logger: Logger;
+
+  /**
+   * Helper method to get the model by name
+   * @param {Model|string} name
+   * @returns {Model}
+   */
   private readonly getModel: (name: Model | string) => Model;
 
   /**
@@ -23,7 +36,7 @@ export default class QueryBuilder {
   }
 
   /**
-   * Takes a string with a graphql query and formats it
+   * Takes a string with a graphql query and formats it. Useful for debug output and the tests.
    * @param {string} query
    * @returns {string}
    */
@@ -34,13 +47,17 @@ export default class QueryBuilder {
   /**
    * Builds a field for the GraphQL query and a specific model
    *
-   * @param {Model|string} model
-   * @param {boolean} multiple
-   * @param {Arguments} args
-   * @param {Model} rootModel
-   * @param {string} name
-   * @param allowIdFields
+   * @param {Model|string} model The model to use
+   * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
+   * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
+   * @param {Model} rootModel The model of the root query field. Used to avoid endless recursion
+   * @param {string} name Optional name of the field. If not provided, this will be the model name
+   * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
+   *                                See buildArguments
    * @returns {string}
+   *
+   * @todo Do we need the allowIdFields param?
+   * @todo There could be a endless recursion even with rootModel correctly set. We should track an array of models here probably?
    */
   public buildField (model: Model | string,
                      multiple: boolean = true,
@@ -74,10 +91,22 @@ export default class QueryBuilder {
     }
   }
 
+  /**
+   * Generates a query.
+   * Currently only one root field for the query is possible.
+   * @param {string} type 'mutation' or 'query'
+   * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
+   * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
+   * @param {Arguments} args Arguments for the query
+   * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
+   * @returns {any}
+   */
   public buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
+    // model
     model = this.getModel(model);
-    if (!model) throw new Error("No model provided to build the query!");
+    if (!model) throw new Error('No model provided to build the query!');
 
+    // args
     args = args ? JSON.parse(JSON.stringify(args)) : {};
     if (!args) throw new Error('args is undefined');
 
@@ -85,6 +114,7 @@ export default class QueryBuilder {
       args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
     }
 
+    // multiple
     multiple = multiple === undefined ? !args['id'] : multiple;
 
     // name
@@ -185,7 +215,7 @@ export default class QueryBuilder {
    * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
    *      mutation createUser($user: UserInput!)
    *
-   * 3) Fields with variables (signature = false, valuesAsVariables = true)
+   * 3) Fields with variables (signature = false)
    *      query user(id: $id)
    *
    * @param {Arguments | undefined} args

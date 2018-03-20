@@ -83,7 +83,7 @@ export default class VuexORMApollo {
   }
 
   /**
-   * This method will setup following Vuex action: fetch, persist, push, destroy
+   * This method will setup following Vuex action: fetch, persist, push, destroy, mutate
    */
   private setupMethods () {
     this.components.subActions.fetch = this.fetch.bind(this);
@@ -98,12 +98,12 @@ export default class VuexORMApollo {
   /**
    * Will be called, when dispatch('entities/something/fetch') is called.
    *
-   * @param {Arguments} args
-   * @param {any} state
-   * @param {any} dispatch
+   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+   * @param {ActionParams} filter Filter params for the query
    * @returns {Promise<void>}
    */
-  private async fetch ({ state, dispatch }: ActionParams, filter: ActionParams) {
+  private async fetch ({ state, dispatch }: ActionParams, filter: ActionParams): Promise<void> {
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !(filter && filter['id']);
     const model: Model = this.getModel(state.$name);
@@ -120,12 +120,12 @@ export default class VuexORMApollo {
   /**
    * Will be called, when dispatch('entities/something/persist') is called.
    *
-   * @param {any} state
-   * @param {any} dispatch
-   * @param {any} id
+   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+   * @param {string} id ID of the record to persist
    * @returns {Promise<void>}
    */
-  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams) {
+  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
     if (id) {
       const model = this.getModel(state.$name);
       const data = model.baseModel.getters('find')(id);
@@ -145,26 +145,25 @@ export default class VuexORMApollo {
   /**
    * Will be called, when dispatch('entities/something/mutate') is called.
    * For custom mutations.
-   *
-   * @param {any} state
-   * @param {any} dispatch
-   * @param {Data} data
-   * @returns {Promise<Data | {}>}
+   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+   * @param {Arguments} args Arguments for the mutation. Must contain a 'mutation' field.
+   * @returns {Promise<any>}
    */
-  private async customMutation ({ state, dispatch }: ActionParams, args: Arguments) {
+  private async customMutation ({ state, dispatch }: ActionParams, args: Arguments): Promise<any> {
     const name: string = args['mutation'];
     delete args['mutation'];
 
     const model = this.getModel(state.$name);
 
-    return await this.mutate(name, args, dispatch, model);
+    return this.mutate(name, args, dispatch, model);
   }
 
   /**
    * Will be called, when dispatch('entities/something/push') is called.
-   * @param {any} state
-   * @param {any} dispatch
-   * @param {Data} data
+   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+   * @param {Arguments} data New data to save
    * @returns {Promise<Data | {}>}
    */
   private async push ({ state, dispatch }: ActionParams, { data }: ActionParams) {
@@ -187,32 +186,33 @@ export default class VuexORMApollo {
   /**
    * Will be called, when dispatch('entities/something/destroy') is called.
    *
-   * @param {any} state
-   * @param {any} dispatch
-   * @param {Data} id
+   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+   * @param {string} id ID of the record to delete
    * @returns {Promise<void>}
    */
   private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
     if (id) {
       const model = this.getModel(state.$name);
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
-      return await this.mutate(mutationName, { id }, dispatch, model, false);
+      return this.mutate(mutationName, { id }, dispatch, model, false);
     }
   }
 
   /**
-   * Contains the logic to save (persist or push) data.
+   * Sends a mutation.
    *
-   * @param {string} action
-   * @param {Data | undefined} data
-   * @param {Function} dispatch
-   * @param {Model} model
+   * @param {string} name Name of the mutation like 'createUser'
+   * @param {Data | undefined} variables Variables to send with the mutation
+   * @param {Function} dispatch Vuex Dispatch method for the model
+   * @param {Model} model The model this mutation affects.
+   * @param {boolean} multiple See QueryBuilder.buildQuery()
    * @returns {Promise<any>}
    */
-  private async mutate (action: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model, multiple?: boolean): Promise<any> {
+  private async mutate (name: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model, multiple?: boolean): Promise<any> {
     if (variables) {
       const id = variables.id ? variables.id : undefined;
-      const query = this.queryBuilder.buildQuery('mutation', model, action, variables, multiple);
+      const query = this.queryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(query, variables, true);
@@ -224,16 +224,18 @@ export default class VuexORMApollo {
 
   /**
    * Sends a request to the GraphQL API via apollo
-   * @param query
+   * @param {any} query The query to send (result from gql())
+   * @param {Arguments} variables Optional. The variables to send with the query
+   * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
    * @returns {Promise<Data>}
    */
   private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false): Promise<Data> {
     let response;
 
     if (mutation) {
-      response = await (this.apolloClient).mutate({ mutation: query, variables });
+      response = await this.apolloClient.mutate({ mutation: query, variables });
     } else {
-      response = await (this.apolloClient).query({ query, variables });
+      response = await this.apolloClient.query({ query, variables });
     }
 
     // Transform incoming data into something useful
@@ -243,9 +245,8 @@ export default class VuexORMApollo {
   /**
    * Inserts incoming data into the store.
    *
-   * @param {Data} data
-   * @param {Function} dispatch
-   * @param {boolean} update
+   * @param {Data} data New data to insert/update
+   * @param {Function} dispatch Vuex Dispatch method for the model
    */
   private async insertData (data: Data, dispatch: DispatchFunction) {
     Object.keys(data).forEach(async (key) => {
@@ -257,8 +258,8 @@ export default class VuexORMApollo {
    * Updates an existing record in the store with new data. This method can only update one single record, so
    * it takes the first record of the first field from the data object!
    * @param {Data} data
-   * @param {Function} dispatch
-   * @param id
+   * @param {Function} dispatch Vuex Dispatch method for the model
+   * @param {string|number} id ID of the record to update
    */
   private async updateData (data: Data, dispatch: DispatchFunction, id: number | string) {
     // We only take the first field!
