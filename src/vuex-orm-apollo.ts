@@ -130,8 +130,12 @@ export default class VuexORMApollo {
       const model = this.getModel(state.$name);
       const data = model.baseModel.getters('find')(id);
 
+      const variables: Data = {
+        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
+      };
+
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, data, dispatch, model, true, false);
+      await this.mutate(mutationName, variables, dispatch, model, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(id);
@@ -170,9 +174,13 @@ export default class VuexORMApollo {
     if (data) {
       const model = this.getModel(state.$name);
 
+      const variables: Data = {
+        id: data.id,
+        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
+      };
+
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
-      // TODO whats in data? can we determine addModelToArgs from that?
-      await this.mutate(mutationName, data, dispatch, model, true, false);
+      await this.mutate(mutationName, variables, dispatch, model, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(data.id);
@@ -187,16 +195,16 @@ export default class VuexORMApollo {
    * @param {Data} id
    * @returns {Promise<void>}
    */
-  private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<void> {
+  private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
 
     if (id) {
       const model = this.getModel(state.$name);
       // TODO use mutate here too
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
-      const query = this.queryBuilder.buildQuery('mutation', mutationName, { id }, model);
+      await this.mutate(mutationName, { id }, dispatch, model, false)
 
-      // Send GraphQL Mutation
-      await this.apolloRequest(query, { where: id }, true);
+      // TODO what would make sense here?
+      return true;
     }
   }
 
@@ -209,22 +217,19 @@ export default class VuexORMApollo {
    * @param {Model} model
    * @returns {Promise<any>}
    */
-  private async mutate (action: string, data: Data | undefined, dispatch: DispatchFunction, model: Model, addModelToArgs: boolean = false, multiple?: boolean): Promise<any> {
-    if (data) {
-      const id = data.id ? data.id : undefined;
-      const variables: Data = {
-        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
-      };
+  private async mutate (action: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model, multiple?: boolean): Promise<any> {
+    if (variables) {
+      const id = variables.id ? variables.id : undefined;
 
       // TODO what about the query fields?
-      const query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, addModelToArgs, multiple);
+      const query = this.queryBuilder.buildQuery('mutation', action, variables, model, undefined, multiple);
 
-      // TODO don't add id for persist
-      if (id) variables['id'] = id;
 
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(query, variables, true);
-      return this.updateData(newData, dispatch, data.id);
+
+      // TODO: What if there is no id?
+      return this.updateData(newData, dispatch, id);
     }
   }
 

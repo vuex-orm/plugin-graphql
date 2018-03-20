@@ -34,11 +34,11 @@ export function createStore (entities) {
 
 
 export async function sendWithMockFetch(response, callback) {
+  fetchMock.config.overwriteRoutes = true;
   fetchMock.post('/graphql', response);
 
   try {
     await callback();
-
   } catch (error) {
     console.error("An error occured:");
     console.error(error);

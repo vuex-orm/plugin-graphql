@@ -317,7 +317,7 @@ query Users {
     });
 
     it('generates a complete create mutation query for a model', () => {
-      let query = queryBuilder.buildQuery('mutation', 'createUser', { user: { id: 15, name: 'test' } }, new Model(User), undefined, true, false);
+      let query = queryBuilder.buildQuery('mutation', 'createUser', { user: { id: 15, name: 'test' } }, new Model(User), undefined, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -338,7 +338,7 @@ mutation CreateUser($user: UserInput!) {
     });
 
     it('generates a complete update mutation query for a model', () => {
-      let query = queryBuilder.buildQuery('mutation', 'updateUser', { id: 15, user: { name: 'test' } }, new Model(User), undefined, true);
+      let query = queryBuilder.buildQuery('mutation', 'updateUser', { id: 15, user: { name: 'test' } }, new Model(User), undefined, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`

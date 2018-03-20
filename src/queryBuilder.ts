@@ -155,12 +155,15 @@ export default class QueryBuilder {
     return relationQueries;
   }
 
-  public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, addModelToArgs: boolean = false, multiple?: boolean) {
+  public buildQuery (type: string, name?: string, args?: Arguments, model?: (Model | null | string), fields?: string, multiple?: boolean) {
     model = model ? this.getModel(model) : null;
 
     args = args ? JSON.parse(JSON.stringify(args)) : {};
     if (!args) throw new Error("args is undefined");
-    if (addModelToArgs && model) args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
+
+    if (model && args[model.singularName] && typeof args[model.singularName] === 'object') {
+      args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
+    }
 
     multiple = multiple === undefined ? !args['id'] : multiple;
 

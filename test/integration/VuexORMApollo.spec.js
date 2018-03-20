@@ -184,7 +184,7 @@ query Users {
         await store.dispatch('entities/users/persist', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ id: 1, user: { name: 'Johnny Imba' } });
+      expect(request.variables).toEqual({ user: { name: 'Johnny Imba' } });
       expect(request.query).toEqual(`
 mutation CreateUser($user: UserInput!) {
   createUser(user: $user) {
@@ -232,8 +232,8 @@ mutation CreateUser($user: UserInput!) {
 
       expect(request.variables).toEqual({ id: 1, user: { name: 'Charlie Brown' } });
       expect(request.query).toEqual(`
-mutation UpdateUser($user: UserInput!) {
-  updateUser(user: $user) {
+mutation UpdateUser($id: ID!, $user: UserInput!) {
+  updateUser(id: $id, user: $user) {
     id
     name
     posts {
@@ -273,10 +273,53 @@ mutation UpdateUser($user: UserInput!) {
         await store.dispatch('entities/users/destroy', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ where: 1 });
+      expect(request.variables).toEqual({ id: 1 });
       expect(request.query).toEqual(`
 mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
+    id
+    name
+    posts {
+      nodes {
+        id
+        title
+        content
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+  });
+
+
+  describe('customMutation', () => {
+    it('sends the correct query to the API', async () => {
+      const response = {
+        data: {
+          activateUser: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+            posts: {
+              __typename: 'post',
+              nodes: []
+            }
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/users/mutate', { mutation: 'activateUser', id: 1 });
+      });
+
+      expect(request.variables).toEqual({ id: 1 });
+      expect(request.query).toEqual(`
+mutation ActivateUser($id: ID!) {
+  activateUser(id: $id) {
     id
     name
     posts {
