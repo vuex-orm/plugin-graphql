@@ -1,12 +1,14 @@
 # vuex-orm-apollo
 
-[![Travis CI](https://travis-ci.org/phortx/vuex-orm-apollo.svg?branch=master)](https://travis-ci.org/vuex-orm/vuex-orm-apollo)
+[![Travis CI](https://travis-ci.org/vuex-orm/vuex-orm-apollo.svg?branch=master)](https://travis-ci.org/vuex-orm/vuex-orm-apollo)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-[![License](https://img.shields.io/npm/l/@vuex-orm/core.svg)](https://github.com/vuex-orm/vuex-orm/blob/master/LICENSE.md)
+[![License](https://img.shields.io/npm/l/@vuex-orm/vuex-orm-apollo.svg)](https://github.com/vuex-orm/vuex-orm-apollo/blob/master/LICENSE.md)
 
-This Vuex-ORM plugin let's you sync the data against a GraphQL API via Apollo.
+This [Vuex-ORM](https://github.com/vuex-orm/vuex-orm) plugin uses the
+[apollo-client](https://www.apollographql.com/client/) to let you sync your Vuex state with
+a [GraphQL API](http://graphql.org/)
 
-**Warning:** This plugin is still under development, use with care.
+**Warning:** This is a early version of the plugin, please don't use in production yet.
 
 
 ## Usage
@@ -85,20 +87,7 @@ This plugin has an opinion how the GraphQL API schema should look like:
 - The update mutation expects two arguments: The ID and the new record
 - The delete mutation expects the record ID to delete
 
-You can see query examples in the [project wiki](https://github.com/vuex-orm/vuex-orm-apollo/wiki).
-
-
-## Roadmap
-
-- [x] Setup apollo integration
-- [x] Implement fetch action
-- [x] Make sure the reactivity works
-- [x] destroy, push & persist
-- [ ] Playground project (GraphQL API + Vue/Vuex-ORM app)
-- [x] Tests
-- [x] Docs & document schema expectations
-- [ ] Subscriptions
-- [ ] Attach multiple GraphQL APIs with different models in the same app
+You can see query examples in the [project wiki](https://github.com/vuex-orm/vuex-orm-apollo/wiki/Example-Queries).
 
 
 
