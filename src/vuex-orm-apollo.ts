@@ -199,7 +199,6 @@ export default class VuexORMApollo {
 
     if (id) {
       const model = this.getModel(state.$name);
-      // TODO use mutate here too
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, { id }, dispatch, model, false);
 
