@@ -97,6 +97,9 @@ You can see query examples in the [project wiki](https://github.com/vuex-orm/vue
 To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link` in your local
 vuex-orm-apollo directory and run `yarn link @vuex-orm/plugin-apollo` in your project dir.
 
+Remember to run `yarn build` in your vuex-orm-apollo directory and then again `yarn link` in your project after you have
+made changes to the plugin code. You probably have also to restart your webpack server.
+
 
 ```bash
 $ yarn run build

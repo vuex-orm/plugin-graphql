@@ -1,11 +1,13 @@
 import QueryBuilder from './queryBuilder';
 import { DocumentNode } from 'graphql';
+import {Arguments} from "./interfaces";
 
 export default class Logger {
   private readonly enabled: boolean;
 
   public constructor (enabled: boolean) {
     this.enabled = enabled;
+    this.log('Logging is enabled.');
   }
 
   public group (...messages: Array<any>): void {
@@ -24,7 +26,7 @@ export default class Logger {
     }
   }
 
-  public logQuery (query: string | DocumentNode) {
+  public logQuery (query: string | DocumentNode, variables?: Arguments) {
     if (this.enabled) {
       try {
         this.group('Sending query:');
@@ -34,6 +36,8 @@ export default class Logger {
         } else {
           console.log(QueryBuilder.prettify(query as string));
         }
+
+        if (variables) console.log('VARIABLES:', variables);
 
         this.groupEnd();
       } catch (e) {

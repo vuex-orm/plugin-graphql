@@ -232,6 +232,8 @@ export default class VuexORMApollo {
   private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false): Promise<Data> {
     let response;
 
+    this.logger.logQuery(query, variables);
+
     if (mutation) {
       response = await this.apolloClient.mutate({ mutation: query, variables });
     } else {

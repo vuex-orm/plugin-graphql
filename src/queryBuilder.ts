@@ -50,28 +50,28 @@ export default class QueryBuilder {
    * @param {Model|string} model The model to use
    * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
    * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-   * @param {Model} rootModel The model of the root query field. Used to avoid endless recursion
+   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
    * @param {string} name Optional name of the field. If not provided, this will be the model name
    * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
    *                                See buildArguments
    * @returns {string}
    *
    * @todo Do we need the allowIdFields param?
-   * @todo There could be a endless recursion even with rootModel correctly set. We should track an array of models here probably?
    */
   public buildField (model: Model | string,
                      multiple: boolean = true,
                      args?: Arguments,
-                     rootModel?: Model,
+                     ignoreModels: Array<Model> = [],
                      name?: string,
                      allowIdFields: boolean = false): string {
     model = this.getModel(model);
+    ignoreModels.push(model);
 
     let params: string = this.buildArguments(args, false, allowIdFields);
 
     const fields = `
       ${model.getQueryFields().join(' ')}
-      ${this.buildRelationsQuery(model, rootModel)}
+      ${this.buildRelationsQuery(model, ignoreModels)}
     `;
 
     if (multiple) {
@@ -123,7 +123,7 @@ export default class QueryBuilder {
     // build query
     const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
-      `  ${this.buildField(model, multiple, args, model, name, true)}\n` +
+      `  ${this.buildField(model, multiple, args, [], name, true)}\n` +
       `}`;
 
     return gql(query);
@@ -267,21 +267,25 @@ export default class QueryBuilder {
   /**
    *
    * @param {Model} model
-   * @param {Model} rootModel
+   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
    * @returns {Array<String>}
    */
-  private buildRelationsQuery (model: (null | Model), rootModel?: Model) {
+  private buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []) {
     if (model === null) return '';
 
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
-      if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
+      if (!this.shouldModelBeIgnored(this.getModel(name), ignoreModels)) {
         const multiple: boolean = field.constructor.name !== 'BelongsTo';
-        relationQueries.push(this.buildField(name, multiple, undefined, rootModel || model));
+        relationQueries.push(this.buildField(name, multiple, undefined, ignoreModels));
       }
     });
 
     return relationQueries;
+  }
+
+  private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>) {
+    return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
   }
 }

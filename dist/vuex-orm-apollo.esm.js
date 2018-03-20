@@ -7791,21 +7791,22 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Model|string} model The model to use
      * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
      * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-     * @param {Model} rootModel The model of the root query field. Used to avoid endless recursion
+     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
      * @param {string} name Optional name of the field. If not provided, this will be the model name
      * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
      *                                See buildArguments
      * @returns {string}
      *
      * @todo Do we need the allowIdFields param?
-     * @todo There could be a endless recursion even with rootModel correctly set. We should track an array of models here probably?
      */
-    QueryBuilder.prototype.buildField = function (model, multiple, args, rootModel, name, allowIdFields) {
+    QueryBuilder.prototype.buildField = function (model, multiple, args, ignoreModels, name, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
+        if (ignoreModels === void 0) { ignoreModels = []; }
         if (allowIdFields === void 0) { allowIdFields = false; }
         model = this.getModel(model);
+        ignoreModels.push(model);
         var params = this.buildArguments(args, false, allowIdFields);
-        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, rootModel) + "\n    ";
+        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreModels) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
         }
@@ -7842,7 +7843,7 @@ var QueryBuilder = /** @class */ (function () {
             name = (multiple ? model.pluralName : model.singularName);
         // build query
         var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true) + " {\n" +
-            ("  " + this.buildField(model, multiple, args, model, name, true) + "\n") +
+            ("  " + this.buildField(model, multiple, args, [], name, true) + "\n") +
             "}";
         return src(query);
     };
@@ -7979,21 +7980,25 @@ var QueryBuilder = /** @class */ (function () {
     /**
      *
      * @param {Model} model
-     * @param {Model} rootModel
+     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
      * @returns {Array<String>}
      */
-    QueryBuilder.prototype.buildRelationsQuery = function (model, rootModel) {
+    QueryBuilder.prototype.buildRelationsQuery = function (model, ignoreModels) {
         var _this = this;
+        if (ignoreModels === void 0) { ignoreModels = []; }
         if (model === null)
             return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            if (!rootModel || (name !== rootModel.singularName && name !== rootModel.pluralName)) {
+            if (!_this.shouldModelBeIgnored(_this.getModel(name), ignoreModels)) {
                 var multiple = field.constructor.name !== 'BelongsTo';
-                relationQueries.push(_this.buildField(name, multiple, undefined, rootModel || model));
+                relationQueries.push(_this.buildField(name, multiple, undefined, ignoreModels));
             }
         });
         return relationQueries;
+    };
+    QueryBuilder.prototype.shouldModelBeIgnored = function (model, ignoreModels) {
+        return ignoreModels.find(function (m) { return m.singularName === model.singularName; }) !== undefined;
     };
     return QueryBuilder;
 }());
@@ -8001,6 +8006,7 @@ var QueryBuilder = /** @class */ (function () {
 var Logger = /** @class */ (function () {
     function Logger(enabled) {
         this.enabled = enabled;
+        this.log('Logging is enabled.');
     }
     Logger.prototype.group = function () {
         var messages = [];
@@ -8024,7 +8030,7 @@ var Logger = /** @class */ (function () {
             console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
         }
     };
-    Logger.prototype.logQuery = function (query) {
+    Logger.prototype.logQuery = function (query, variables) {
         if (this.enabled) {
             try {
                 this.group('Sending query:');
@@ -8034,6 +8040,8 @@ var Logger = /** @class */ (function () {
                 else {
                     console.log(QueryBuilder.prettify(query));
                 }
+                if (variables)
+                    console.log('VARIABLES:', variables);
                 this.groupEnd();
             }
             catch (e) {
@@ -8329,6 +8337,7 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        this.logger.logQuery(query, variables);
                         if (!mutation) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
                     case 1:
