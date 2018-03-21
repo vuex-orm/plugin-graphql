@@ -48,14 +48,14 @@
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.5.3.tgz#91b728599544efbb7386d8b6633693a3c2e7ade5"
 
-"@vuex-orm/core@^0.20.0":
-  version "0.20.2"
-  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.20.2.tgz#afde15ef5774fb9242c20d9e16d60ab5b0828545"
+"@vuex-orm/core@^0.23.3":
+  version "0.23.3"
+  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.23.3.tgz#0990f62f03a293d01407346638013784e292a062"
   dependencies:
     "@types/lodash-es" "^4.17.0"
-    lodash-es "^4.17.5"
+    lodash-es "^4.17.7"
     normalizr "^3.2.4"
-    vue "^2.5.13"
+    vue "^2.5.16"
     vuex "^3.0.1"
 
 abbrev@1:
@@ -2636,7 +2636,7 @@ locate-path@^2.0.0:
     p-locate "^2.0.0"
     path-exists "^3.0.0"
 
-lodash-es@^4.17.5:
+lodash-es@^4.17.5, lodash-es@^4.17.7:
   version "4.17.7"
   resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.7.tgz#db240a3252c3dd8360201ac9feef91ac977ea856"
 
@@ -4302,7 +4302,7 @@ vue-parser@^1.1.5:
   dependencies:
     parse5 "^3.0.3"
 
-vue@^2.5.13:
+vue@^2.5.13, vue@^2.5.16:
   version "2.5.16"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.16.tgz#07edb75e8412aaeed871ebafa99f4672584a0085"
 
