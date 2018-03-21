@@ -5,7 +5,7 @@ import { print } from 'graphql/language/printer';
 import { Arguments, Data, Field } from './interfaces';
 import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
 import gql from 'graphql-tag';
-import BelongsTo from '@vuex-orm/core/lib/attributes/relations/BelongsTo';
+import { BelongsTo } from '@vuex-orm/core';
 
 const inflection = require('inflection');
 

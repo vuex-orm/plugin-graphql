@@ -1,6 +1,5 @@
 import { Field, ORMModel } from './interfaces';
-import Attr from '@vuex-orm/core/lib/attributes/types/Attr';
-import Increment from '@vuex-orm/core/lib/attributes/types/Increment';
+import { Attr, Increment } from '@vuex-orm/core';
 const inflection = require('inflection');
 
 /**
