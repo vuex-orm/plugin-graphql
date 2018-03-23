@@ -16529,7 +16529,6 @@ var QueryBuilder = /** @class */ (function () {
             return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            _this.logger.log('getting model for field', field, 'with name', name);
             var relatedModel = _this.getModel(name);
             if (_this.shouldEagerLoadRelation(model, field, relatedModel) &&
                 !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
@@ -16903,7 +16902,6 @@ var VuexORMApollo = /** @class */ (function () {
                     case 0:
                         fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
                         this.logger.logQuery(query, variables, fetchPolicy);
-                        console.log('####### fetchPolicy is', fetchPolicy);
                         if (!mutation) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
                     case 1:
