@@ -277,11 +277,12 @@ export default class QueryBuilder {
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
+      this.logger.log('getting model for field', field, 'with name', name);
       const relatedModel: Model = this.getModel(name);
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
-        const multiple: boolean = !(field instanceof BelongsTo);
+        const multiple: boolean = !(field instanceof BelongsTo); // FIXME
         relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
       }
     });

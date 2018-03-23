@@ -65,7 +65,7 @@ export default class VuexORMApollo {
    * @returns {Model}
    */
   public getModel (model: Model | string): Model {
-    if (!(model instanceof Model)) {
+    if (typeof model === 'string') {
       model = this.models.get(inflection.singularize(model)) as Model;
       if (!model) throw new Error(`No such model ${model}!`);
     }

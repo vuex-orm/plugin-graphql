@@ -55,7 +55,6 @@ export default class Model {
   }
 
   private fieldIsAttribute (field: Field): boolean {
-    // field  is one of Increment, Attr, BelongsToMany, BelongsTo, HasMany, HasManyBy, HasOne
-    return field instanceof Attr || field instanceof Increment;
+    return field.localKey === undefined && field.foreignKey === undefined;
   }
 }

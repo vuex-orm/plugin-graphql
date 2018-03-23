@@ -36,6 +36,8 @@ export interface ORMModel {
 }
 
 export interface Field {
-  related: ORMModel;
-  parent: ORMModel;
+  related?: ORMModel;
+  parent?: ORMModel;
+  localKey?: string;
+  foreignKey?: string;
 }
