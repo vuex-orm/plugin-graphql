@@ -33,7 +33,7 @@ export function createStore (entities) {
 
 
 
-export async function sendWithMockFetch(response, callback) {
+export async function sendWithMockFetch(response, callback, dontExpectRequest = false) {
   fetchMock.config.overwriteRoutes = true;
   fetchMock.post('/graphql', response);
 
@@ -47,7 +47,7 @@ export async function sendWithMockFetch(response, callback) {
 
   const request = fetchMock.lastCall();
 
-  if (!request) throw new Error("No request was made!");
+  if (!dontExpectRequest && !request) throw new Error("No request was made!");
 
   fetchMock.restore();
 
@@ -60,5 +60,9 @@ export async function sendWithMockFetch(response, callback) {
       variables: {}
     }
    */
+  if (dontExpectRequest && !request) {
+    return null;
+  }
+
   return JSON.parse(request[1].body);
 }

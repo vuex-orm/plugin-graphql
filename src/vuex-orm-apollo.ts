@@ -1,5 +1,5 @@
 import Model from './model';
-import { ApolloClient } from 'apollo-client';
+import { ApolloClient, FetchPolicy } from 'apollo-client';
 import { HttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { Data, ActionParams, Arguments, ORMModel, DispatchFunction } from './interfaces';
@@ -101,18 +101,21 @@ export default class VuexORMApollo {
    *
    * @param {any} state The Vuex State from Vuex-ORM
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-   * @param {ActionParams} filter Filter params for the query
+   * @param {ActionParams} params
    * @returns {Promise<void>}
    */
-  private async fetch ({ state, dispatch }: ActionParams, filter: ActionParams): Promise<void> {
+  private async fetch ({ state, dispatch }: ActionParams, params?: ActionParams): Promise<void> {
+    const filter = params ? params.filter || {} : {};
+    const bypassCache = params && params.bypassCache;
+
     // When the filter contains an id, we query in singular mode
-    const multiple: boolean = !(filter && filter['id']);
+    const multiple: boolean = !filter['id'];
     const model: Model = this.getModel(state.$name);
     const name: string = `${multiple ? model.pluralName : model.singularName}`;
     const query = this.queryBuilder.buildQuery('query', model, name, filter);
 
     // Send the request to the GraphQL API
-    const data = await this.apolloRequest(query, filter);
+    const data = await this.apolloRequest(query, filter, false, bypassCache as boolean);
 
     // Insert incoming data into the store
     await this.insertData(data, dispatch);
@@ -228,17 +231,20 @@ export default class VuexORMApollo {
    * @param {any} query The query to send (result from gql())
    * @param {Arguments} variables Optional. The variables to send with the query
    * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
+   * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
    * @returns {Promise<Data>}
    */
-  private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false): Promise<Data> {
+  private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false,
+                               bypassCache: boolean = false): Promise<Data> {
     let response;
+    const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
 
-    this.logger.logQuery(query, variables);
+    this.logger.logQuery(query, variables, fetchPolicy);
 
     if (mutation) {
       response = await this.apolloClient.mutate({ mutation: query, variables });
     } else {
-      response = await this.apolloClient.query({ query, variables });
+      response = await this.apolloClient.query({ query, variables, fetchPolicy });
     }
 
     // Transform incoming data into something useful

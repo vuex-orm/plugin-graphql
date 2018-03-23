@@ -1,6 +1,7 @@
 import QueryBuilder from './queryBuilder';
 import { DocumentNode } from 'graphql';
 import { Arguments } from './interfaces';
+import { FetchPolicy } from 'apollo-client';
 
 export default class Logger {
   private readonly enabled: boolean;
@@ -26,7 +27,7 @@ export default class Logger {
     }
   }
 
-  public logQuery (query: string | DocumentNode, variables?: Arguments) {
+  public logQuery (query: string | DocumentNode, variables?: Arguments, fetchPolicy?: FetchPolicy) {
     if (this.enabled) {
       try {
         this.group('Sending query:');
@@ -38,6 +39,7 @@ export default class Logger {
         }
 
         if (variables) console.log('VARIABLES:', variables);
+        if (fetchPolicy) console.log('FETCH POLICY:', fetchPolicy);
 
         this.groupEnd();
       } catch (e) {

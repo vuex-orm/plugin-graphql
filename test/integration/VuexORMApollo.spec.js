@@ -63,6 +63,52 @@ describe('VuexORMApollo', () => {
 
   describe('fetch', () => {
     describe('with ID', () => {
+      it("doesn't cache when bypassCache = true", async () => {
+        const response = {
+          data: {
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Johnny Imba',
+              posts: {
+                __typename: 'post',
+                nodes: [
+                  {
+                    __typename: 'post',
+                    id: 1,
+                    userId: 1,
+                    title: 'Example Post 1',
+                    content: 'Foo'
+                  },
+                  {
+                    __typename: 'post',
+                    id: 2,
+                    userId: 1,
+                    title: 'Example Post 2',
+                    content: 'Bar'
+                  }
+                ]
+              }
+            }
+          }
+        };
+
+        let request = await sendWithMockFetch(response, async () => {
+          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+        });
+        expect(request).not.toEqual(null);
+
+        request = await sendWithMockFetch(response, async () => {
+          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+        }, true);
+        expect(request).toEqual(null);
+
+        request = await sendWithMockFetch(response, async () => {
+          await store.dispatch('entities/users/fetch', { filter: { id: 1 }, bypassCache: true });
+        });
+        expect(request).not.toEqual(null);
+      });
+
       it('sends the correct query to the API', async () => {
         const response = {
           data: {
@@ -94,7 +140,7 @@ describe('VuexORMApollo', () => {
         };
 
         const request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { id: 1 });
+          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
         });
 
         expect(request.variables).toEqual({ id: 1 });
