@@ -290,8 +290,8 @@ export default class QueryBuilder {
   }
 
   /**
-   * Determines if we should eager load (means: add a query field) a related entity. belongsTo related entities
-   * are always eager loaded. Others can be added to the eagerLoad array of the model.
+   * Determines if we should eager load (means: add a query field) a related entity. belongsTo or hasOne related
+   * entities are always eager loaded. Others can be added to the eagerLoad array of the model.
    *
    * @param {Model} model The base model
    * @param {Field} field Relation field
@@ -299,7 +299,9 @@ export default class QueryBuilder {
    * @returns {boolean}
    */
   private shouldEagerLoadRelation (model: Model, field: Field, relatedModel: Model): boolean {
-    if (field.constructor.name === 'BelongsTo') return true;
+    // TODO this kind of relation detection will probably not work in production!
+    // https://github.com/vuex-orm/vuex-orm/issues/127
+    if (field.constructor.name === 'hasOne' || field.constructor.name === 'BelongsTo') return true;
     const eagerLoadList: Array<String> = model.baseModel.eagerLoad || [];
     return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
   }
