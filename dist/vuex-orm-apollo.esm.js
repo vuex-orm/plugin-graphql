@@ -8287,6 +8287,7 @@ var VuexORMApollo = /** @class */ (function () {
     VuexORMApollo.prototype.customMutation = function (_a, args) {
         var state = _a.state, dispatch = _a.dispatch;
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var name, model;
             return __generator(this, function (_b) {
                 name = args['mutation'];
@@ -8295,7 +8296,9 @@ var VuexORMApollo = /** @class */ (function () {
                 // transformOutgoingData()
                 Object.keys(args).forEach(function (key) {
                     var value = args[key];
-                    // TODO
+                    if (value instanceof _this.context.components.Model) {
+                        args[key] = _this.queryBuilder.transformOutgoingData(value);
+                    }
                 });
                 model = this.context.getModel(state.$name);
                 return [2 /*return*/, this.mutate(name, args, dispatch, model, false)];

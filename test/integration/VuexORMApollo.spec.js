@@ -323,9 +323,10 @@ mutation DeleteUser($id: ID!) {
 
   describe('customMutation', () => {
     it('sends the correct query to the API', async () => {
+      const user = store.getters['entities/users/find'](1);
       const response = {
         data: {
-          activateUser: {
+          signupUser: {
             __typename: 'user',
             id: 1,
             name: 'Charlie Brown',
@@ -338,13 +339,14 @@ mutation DeleteUser($id: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/mutate', { mutation: 'activateUser', id: 1 });
+        await store.dispatch('entities/users/mutate', { mutation: 'signupUser', user, captchaToken: '15' });
       });
 
-      expect(request.variables).toEqual({ id: 1 });
+      expect(request.variables.captchaToken).toEqual('15');
+      expect(request.variables.user.name).toEqual(user.name);
       expect(request.query).toEqual(`
-mutation ActivateUser($id: ID!) {
-  activateUser(id: $id) {
+mutation SignupUser($user: UserInput!, $captchaToken: String!) {
+  signupUser(user: $user, captchaToken: $captchaToken) {
     id
     name
     __typename

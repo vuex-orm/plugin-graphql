@@ -140,7 +140,10 @@ export default class VuexORMApollo {
     // transformOutgoingData()
     Object.keys(args).forEach((key: string) => {
       const value: any = args[key];
-      // TODO
+
+      if (value instanceof this.context.components.Model) {
+        args[key] = this.queryBuilder.transformOutgoingData(value);
+      }
     });
 
     const model = this.context.getModel(state.$name);
