@@ -6,6 +6,7 @@ import { Arguments, Data, Field } from './interfaces';
 import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
 import gql from 'graphql-tag';
 import { BelongsTo } from '@vuex-orm/core';
+import Context from './context';
 
 const inflection = require('inflection');
 
@@ -15,25 +16,17 @@ const inflection = require('inflection');
  */
 export default class QueryBuilder {
   /**
-   * Logger, is injected into the constructor.
+   * Context
    */
-  private readonly logger: Logger;
-
-  /**
-   * Helper method to get the model by name
-   * @param {Model|string} name
-   * @returns {Model}
-   */
-  private readonly getModel: (name: Model | string) => Model;
+  private readonly context: Context;
 
   /**
    * Constructor.
    * @param {Logger} logger
    * @param {(name: (Model | string)) => Model} getModel
    */
-  public constructor (logger: Logger, getModel: (name: Model | string) => Model) {
-    this.logger = logger;
-    this.getModel = getModel;
+  public constructor (context: Context) {
+    this.context = context;
   }
 
   /**
@@ -166,8 +159,8 @@ export default class QueryBuilder {
     let result: Data = {};
 
     if (!recursiveCall) {
-      this.logger.group('Transforming incoming data');
-      this.logger.log('Raw data:', data);
+      this.context.logger.group('Transforming incoming data');
+      this.context.logger.log('Raw data:', data);
     }
 
     if (data instanceof Array) {
@@ -198,8 +191,8 @@ export default class QueryBuilder {
     }
 
     if (!recursiveCall) {
-      this.logger.log('Transformed data:', result);
-      this.logger.groupEnd();
+      this.context.logger.log('Transformed data:', result);
+      this.context.logger.groupEnd();
     }
 
     return result;
@@ -308,5 +301,14 @@ export default class QueryBuilder {
 
   private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
     return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
+  }
+
+  /**
+   * Helper method to get the model by name
+   * @param {Model|string} name
+   * @returns {Model}
+   */
+  private getModel (name: Model | string): Model {
+    return this.context.getModel(name);
   }
 }

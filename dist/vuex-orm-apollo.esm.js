@@ -1,51 +1,3 @@
-var inflection = require('inflection');
-/**
- * Own model class with some helpers
- */
-var Model = /** @class */ (function () {
-    function Model(baseModel) {
-        var _this = this;
-        this.fields = new Map();
-        this.baseModel = baseModel;
-        this.singularName = inflection.singularize(this.baseModel.entity);
-        this.pluralName = inflection.pluralize(this.baseModel.entity);
-        var fields = this.baseModel.fields();
-        Object.keys(fields).forEach(function (name) {
-            _this.fields.set(name, fields[name]);
-        });
-    }
-    /**
-     * @returns {Array<string>} field names which should be queried
-     */
-    Model.prototype.getQueryFields = function () {
-        var _this = this;
-        var fields = [];
-        this.fields.forEach(function (field, name) {
-            if (_this.fieldIsAttribute(field) && !name.endsWith('Id')) {
-                fields.push(name);
-            }
-        });
-        return fields;
-    };
-    /**
-     * @returns {Map<string, Field>} all relations of the model which should be queried
-     */
-    Model.prototype.getRelations = function () {
-        var _this = this;
-        var relations = new Map();
-        this.fields.forEach(function (field, name) {
-            if (!_this.fieldIsAttribute(field)) {
-                relations.set(name, field);
-            }
-        });
-        return relations;
-    };
-    Model.prototype.fieldIsAttribute = function (field) {
-        return field.localKey === undefined && field.foreignKey === undefined;
-    };
-    return Model;
-}());
-
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
@@ -16301,7 +16253,7 @@ var __assign$11$1 = (undefined && undefined.__assign) || Object.assign || functi
     return t;
 };
 
-var inflection$1 = require('inflection');
+var inflection = require('inflection');
 /**
  * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
  * format of the GraphQL API.
@@ -16312,9 +16264,8 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Logger} logger
      * @param {(name: (Model | string)) => Model} getModel
      */
-    function QueryBuilder(logger, getModel) {
-        this.logger = logger;
-        this.getModel = getModel;
+    function QueryBuilder(context) {
+        this.context = context;
     }
     /**
      * Takes a string with a graphql query and formats it. Useful for debug output and the tests.
@@ -16420,8 +16371,8 @@ var QueryBuilder = /** @class */ (function () {
         if (recursiveCall === void 0) { recursiveCall = false; }
         var result = {};
         if (!recursiveCall) {
-            this.logger.group('Transforming incoming data');
-            this.logger.log('Raw data:', data);
+            this.context.logger.group('Transforming incoming data');
+            this.context.logger.log('Raw data:', data);
         }
         if (data instanceof Array) {
             result = data.map(function (d) { return _this.transformIncomingData(d, mutationResult, true); });
@@ -16431,7 +16382,7 @@ var QueryBuilder = /** @class */ (function () {
                 if (data[key]) {
                     if (data[key] instanceof Object) {
                         if (data[key].nodes) {
-                            result[inflection$1.pluralize(key)] = _this.transformIncomingData(data[key].nodes, mutationResult, true);
+                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, mutationResult, true);
                         }
                         else {
                             var newKey = key;
@@ -16439,7 +16390,7 @@ var QueryBuilder = /** @class */ (function () {
                                 newKey = newKey.replace(/^(create|update)(.+)/, '$2');
                                 newKey = downcaseFirstLetter(newKey);
                             }
-                            result[inflection$1.singularize(newKey)] = _this.transformIncomingData(data[key], mutationResult, true);
+                            result[inflection.singularize(newKey)] = _this.transformIncomingData(data[key], mutationResult, true);
                         }
                     }
                     else if (key === 'id') {
@@ -16452,8 +16403,8 @@ var QueryBuilder = /** @class */ (function () {
             });
         }
         if (!recursiveCall) {
-            this.logger.log('Transformed data:', result);
-            this.logger.groupEnd();
+            this.context.logger.log('Transformed data:', result);
+            this.context.logger.groupEnd();
         }
         return result;
     };
@@ -16558,6 +16509,14 @@ var QueryBuilder = /** @class */ (function () {
     QueryBuilder.prototype.shouldModelBeIgnored = function (model, ignoreModels) {
         return ignoreModels.find(function (m) { return m.singularName === model.singularName; }) !== undefined;
     };
+    /**
+     * Helper method to get the model by name
+     * @param {Model|string} name
+     * @returns {Model}
+     */
+    QueryBuilder.prototype.getModel = function (name) {
+        return this.context.getModel(name);
+    };
     return QueryBuilder;
 }());
 
@@ -16612,6 +16571,96 @@ var Logger = /** @class */ (function () {
     return Logger;
 }());
 
+var inflection$1 = require('inflection');
+/**
+ * Own model class with some helpers
+ */
+var Model$1 = /** @class */ (function () {
+    function Model(baseModel) {
+        var _this = this;
+        this.fields = new Map();
+        this.baseModel = baseModel;
+        this.singularName = inflection$1.singularize(this.baseModel.entity);
+        this.pluralName = inflection$1.pluralize(this.baseModel.entity);
+        var fields = this.baseModel.fields();
+        Object.keys(fields).forEach(function (name) {
+            _this.fields.set(name, fields[name]);
+        });
+    }
+    /**
+     * @returns {Array<string>} field names which should be queried
+     */
+    Model.prototype.getQueryFields = function () {
+        var _this = this;
+        var fields = [];
+        this.fields.forEach(function (field, name) {
+            if (_this.fieldIsAttribute(field) && !name.endsWith('Id')) {
+                fields.push(name);
+            }
+        });
+        return fields;
+    };
+    /**
+     * @returns {Map<string, Field>} all relations of the model which should be queried
+     */
+    Model.prototype.getRelations = function () {
+        var _this = this;
+        var relations = new Map();
+        this.fields.forEach(function (field, name) {
+            if (!_this.fieldIsAttribute(field)) {
+                relations.set(name, field);
+            }
+        });
+        return relations;
+    };
+    Model.prototype.fieldIsAttribute = function (field) {
+        return field.localKey === undefined && field.foreignKey === undefined;
+    };
+    return Model;
+}());
+
+var inflection$2 = require('inflection');
+var Context = /** @class */ (function () {
+    function Context(components, options) {
+        this.models = new Map();
+        this.debugMode = false;
+        this.components = components;
+        this.options = options;
+        this.database = options.database;
+        this.debugMode = options.debug;
+        this.logger = new Logger(this.debugMode);
+        if (!options.database) {
+            throw new Error('database param is required to initialize vuex-orm-apollo!');
+        }
+        this.collectModels();
+    }
+    /**
+     * Returns a model by name
+     *
+     * @param {Model|string} model
+     * @returns {Model}
+     */
+    Context.prototype.getModel = function (model) {
+        if (typeof model === 'string') {
+            model = this.models.get(inflection$2.singularize(model));
+            if (!model)
+                throw new Error("No such model " + model + "!");
+        }
+        return model;
+    };
+    /**
+     * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
+     */
+    Context.prototype.collectModels = function () {
+        var _this = this;
+        this.database.entities.forEach(function (entity) {
+            var model = new Model$1(entity.model);
+            _this.models.set(model.singularName, model);
+        });
+    };
+    return Context;
+}());
+
 var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -16647,7 +16696,6 @@ var __generator$1 = (undefined && undefined.__generator) || function (thisArg, b
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var inflection$2 = require('inflection');
 /**
  * Plugin class
  */
@@ -16659,17 +16707,7 @@ var VuexORMApollo = /** @class */ (function () {
      * @param options
      */
     function VuexORMApollo(components, options) {
-        this.models = new Map();
-        this.debugMode = false;
-        this.components = components;
-        this.options = options;
-        if (!options.database) {
-            throw new Error('database param is required to initialize vuex-orm-apollo!');
-        }
-        this.database = options.database;
-        this.debugMode = options.debug;
-        this.logger = new Logger(this.debugMode);
-        this.collectModels();
+        this.context = new Context(components, options);
         this.setupMethods();
         this.httpLink = new HttpLink({
             uri: options.url ? options.url : '/graphql',
@@ -16678,43 +16716,38 @@ var VuexORMApollo = /** @class */ (function () {
         this.apolloClient = new ApolloClient({
             link: this.httpLink,
             cache: new InMemoryCache(),
-            connectToDevTools: this.debugMode
+            connectToDevTools: this.context.debugMode
         });
-        this.queryBuilder = new QueryBuilder(this.logger, this.getModel.bind(this));
+        this.queryBuilder = new QueryBuilder(this.context);
     }
     /**
-     * Returns a model by name
-     *
-     * @param {Model|string} model
-     * @returns {Model}
+     * Updates an existing record in the store with new data. This method can only update one single record, so
+     * it takes the first record of the first field from the data object!
+     * @param {Data} data
+     * @param {Function} dispatch Vuex Dispatch method for the model
+     * @param {string|number} id ID of the record to update
      */
-    VuexORMApollo.prototype.getModel = function (model) {
-        if (typeof model === 'string') {
-            model = this.models.get(inflection$2.singularize(model));
-            if (!model)
-                throw new Error("No such model " + model + "!");
-        }
-        return model;
-    };
-    /**
-     * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
-     */
-    VuexORMApollo.prototype.collectModels = function () {
-        var _this = this;
-        this.database.entities.forEach(function (entity) {
-            var model = new Model(entity.model);
-            _this.models.set(model.singularName, model);
+    VuexORMApollo.updateData = function (data, dispatch, id) {
+        return __awaiter$1(this, void 0, void 0, function () {
+            return __generator$1(this, function (_a) {
+                // We only take the first field!
+                data = data[Object.keys(data)[0]];
+                if (data instanceof Array) {
+                    data = data[0];
+                }
+                return [2 /*return*/, dispatch('update', { where: id, data: data })];
+            });
         });
     };
     /**
      * This method will setup following Vuex action: fetch, persist, push, destroy, mutate
      */
     VuexORMApollo.prototype.setupMethods = function () {
-        this.components.subActions.fetch = this.fetch.bind(this);
-        this.components.subActions.persist = this.persist.bind(this);
-        this.components.subActions.push = this.push.bind(this);
-        this.components.subActions.destroy = this.destroy.bind(this);
-        this.components.subActions.mutate = this.customMutation.bind(this);
+        this.context.components.subActions.fetch = this.fetch.bind(this);
+        this.context.components.subActions.persist = this.persist.bind(this);
+        this.context.components.subActions.push = this.push.bind(this);
+        this.context.components.subActions.destroy = this.destroy.bind(this);
+        this.context.components.subActions.mutate = this.customMutation.bind(this);
         // this.components.subActions.destroyAll = this.destroyAll.bind(this);
     };
     /**
@@ -16735,7 +16768,7 @@ var VuexORMApollo = /** @class */ (function () {
                         filter = params ? params.filter || {} : {};
                         bypassCache = params && params.bypassCache;
                         multiple = !filter['id'];
-                        model = this.getModel(state.$name);
+                        model = this.context.getModel(state.$name);
                         name = "" + (multiple ? model.pluralName : model.singularName);
                         query = this.queryBuilder.buildQuery('query', model, name, filter);
                         return [4 /*yield*/, this.apolloRequest(query, filter, false, bypassCache)];
@@ -16768,7 +16801,7 @@ var VuexORMApollo = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 2];
-                        model = this.getModel(state.$name);
+                        model = this.context.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
                         variables = (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
                         mutationName = "create" + upcaseFirstLetter(model.singularName);
@@ -16797,7 +16830,13 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator$1(this, function (_b) {
                 name = args['mutation'];
                 delete args['mutation'];
-                model = this.getModel(state.$name);
+                // There could be anything in the args, but we have to be sure that all records are gone through
+                // transformOutgoingData()
+                Object.keys(args).forEach(function (key) {
+                    var value = args[key];
+                    // TODO
+                });
+                model = this.context.getModel(state.$name);
                 return [2 /*return*/, this.mutate(name, args, dispatch, model, false)];
             });
         });
@@ -16818,7 +16857,7 @@ var VuexORMApollo = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         if (!data) return [3 /*break*/, 2];
-                        model = this.getModel(state.$name);
+                        model = this.context.getModel(state.$name);
                         variables = (_c = {
                                 id: data.id
                             }, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
@@ -16848,7 +16887,7 @@ var VuexORMApollo = /** @class */ (function () {
             var model, mutationName;
             return __generator$1(this, function (_c) {
                 if (id) {
-                    model = this.getModel(state.$name);
+                    model = this.context.getModel(state.$name);
                     mutationName = "delete" + upcaseFirstLetter(model.singularName);
                     return [2 /*return*/, this.mutate(mutationName, { id: id }, dispatch, model, false)];
                 }
@@ -16879,7 +16918,7 @@ var VuexORMApollo = /** @class */ (function () {
                     case 1:
                         newData = _a.sent();
                         if (id)
-                            return [2 /*return*/, this.updateData(newData, dispatch, id)];
+                            return [2 /*return*/, VuexORMApollo.updateData(newData, dispatch, id)];
                         return [2 /*return*/, null];
                     case 2: return [2 /*return*/];
                 }
@@ -16903,7 +16942,7 @@ var VuexORMApollo = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-                        this.logger.logQuery(query, variables, fetchPolicy);
+                        this.context.logger.logQuery(query, variables, fetchPolicy);
                         if (!mutation) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
                     case 1:
@@ -16944,25 +16983,6 @@ var VuexORMApollo = /** @class */ (function () {
             });
         });
     };
-    /**
-     * Updates an existing record in the store with new data. This method can only update one single record, so
-     * it takes the first record of the first field from the data object!
-     * @param {Data} data
-     * @param {Function} dispatch Vuex Dispatch method for the model
-     * @param {string|number} id ID of the record to update
-     */
-    VuexORMApollo.prototype.updateData = function (data, dispatch, id) {
-        return __awaiter$1(this, void 0, void 0, function () {
-            return __generator$1(this, function (_a) {
-                // We only take the first field!
-                data = data[Object.keys(data)[0]];
-                if (data instanceof Array) {
-                    data = data[0];
-                }
-                return [2 /*return*/, dispatch('update', { where: id, data: data })];
-            });
-        });
-    };
     return VuexORMApollo;
 }());
 
@@ -16970,7 +16990,12 @@ var VuexORMApolloPlugin = /** @class */ (function () {
     function VuexORMApolloPlugin() {
     }
     VuexORMApolloPlugin.install = function (components, options) {
-        return new VuexORMApollo(components, options);
+        var plugin = new VuexORMApolloPlugin();
+        return plugin.install(components, options);
+    };
+    VuexORMApolloPlugin.prototype.install = function (components, options) {
+        this.instance = new VuexORMApollo(components, options);
+        return this.instance;
     };
     return VuexORMApolloPlugin;
 }());

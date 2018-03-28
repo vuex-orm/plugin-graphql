@@ -4,6 +4,7 @@ import {createStore, sendWithMockFetch} from "../support/Helpers";
 import fetchMock from 'fetch-mock';
 
 let store;
+let vuexOrmApollo;
 
 class User extends ORMModel {
   static entity = 'users';
@@ -52,7 +53,8 @@ class Comment extends ORMModel {
 
 describe('VuexORMApollo', () => {
   beforeEach(() => {
-    store = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+    [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+
     store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
     store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
     store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});

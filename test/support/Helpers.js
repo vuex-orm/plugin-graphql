@@ -4,6 +4,7 @@ import Vuex from 'vuex';
 import VuexORM, { Database, Model } from '@vuex-orm/core';
 import installVuexORMApollo from 'app';
 import fetchMock from 'fetch-mock';
+import VuexORMApolloPlugin from "app";
 
 Vue.use(Vuex);
 
@@ -24,11 +25,14 @@ export function createStore (entities) {
     database.register(entity.model, entity.module || {})
   });
 
-  VuexORM.use(installVuexORMApollo, { database: database });
+  const plugin = new VuexORMApolloPlugin();
+  VuexORM.use(plugin, { database: database });
 
-  return new Vuex.Store({
+  const store = new Vuex.Store({
     plugins: [VuexORM.install(database)]
   });
+
+  return [store, plugin.instance];
 }
 
 

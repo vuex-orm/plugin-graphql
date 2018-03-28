@@ -3,9 +3,11 @@ import { Model as ORMModel } from '@vuex-orm/core';
 import QueryBuilder from 'app/queryBuilder';
 import Model from 'app/model';
 import Logger from 'app/logger';
+import Context from "app/context";
 
 let queryBuilder;
 let store;
+let vuexOrmApollo;
 
 // TODO: move this setup to the Helpers file
 
@@ -52,7 +54,7 @@ class Comment extends ORMModel {
 }
 
 beforeEach(() => {
-  store = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+  [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Comment }]);
   store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
   store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
   store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
@@ -60,19 +62,7 @@ beforeEach(() => {
   store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, postId: 1, content: 'Example comment 1' }});
   store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, postId: 1, content: 'Example comment 2' }});
 
-  const logger = new Logger(false);
-  queryBuilder = new QueryBuilder(logger, (model) => {
-    if (typeof model === 'object') return model;
-
-    switch(model) {
-      case 'user': return new Model(User);
-      case 'users': return new Model(User);
-      case 'post': return new Model(Post);
-      case 'posts': return new Model(Post);
-      case 'comment': return new Model(Comment);
-      case 'comments': return new Model(Comment);
-    }
-  });
+  queryBuilder = vuexOrmApollo.queryBuilder;
 });
 
 

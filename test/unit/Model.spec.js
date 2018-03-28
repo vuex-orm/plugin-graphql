@@ -3,6 +3,8 @@ import { createStore } from 'test/support/Helpers';
 import { Model as ORMModel } from '@vuex-orm/core';
 
 let model;
+let store;
+let vuexOrmApollo;
 
 class User extends ORMModel {
   static entity = 'users';
@@ -28,7 +30,7 @@ class Profile extends ORMModel {
 }
 
 beforeEach(() => {
-  const store = createStore([{ model: User }, { model: Profile }]);
+  [store, vuexOrmApollo] = createStore([{ model: User }, { model: Profile }]);
   store.dispatch('entities/profiles/insert', { data: { id: 1, user_id: 1 }});
   store.dispatch('entities/users/insert', { data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
 
