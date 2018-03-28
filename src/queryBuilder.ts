@@ -227,8 +227,8 @@ export default class QueryBuilder {
       Object.keys(args).forEach((key: string) => {
         let value: any = args[key];
 
-        // Ignore ids and connections
-        if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
+        // Ignore null fields, ids and connections
+        if (value && !(value instanceof Array || (key === 'id' && !allowIdFields))) {
           let typeOrValue: any = '';
 
           if (signature) {
