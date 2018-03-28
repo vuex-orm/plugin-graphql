@@ -12,6 +12,7 @@ export interface ActionParams {
   filter?: Filter;
   id?: number;
   data?: Data;
+  args?: Arguments;
   bypassCache?: boolean;
 }
 

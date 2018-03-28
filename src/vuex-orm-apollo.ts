@@ -107,17 +107,16 @@ export default class VuexORMApollo {
    * @param {string} id ID of the record to persist
    * @returns {Promise<void>}
    */
-  private async persist ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
+  private async persist ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<any> {
     if (id) {
       const model = this.context.getModel(state.$name);
       const data = model.baseModel.getters('find')(id);
 
-      const variables: Data = {
-        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
-      };
+      args = args || {};
+      args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
 
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, variables, dispatch, model, false);
+      await this.mutate(mutationName, args, dispatch, model, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(id);
@@ -160,17 +159,16 @@ export default class VuexORMApollo {
    * @param {Arguments} data New data to save
    * @returns {Promise<Data | {}>}
    */
-  private async push ({ state, dispatch }: ActionParams, { data }: ActionParams) {
+  private async push ({ state, dispatch }: ActionParams, { data, args }: ActionParams) {
     if (data) {
       const model = this.context.getModel(state.$name);
 
-      const variables: Data = {
-        id: data.id,
-        [model.singularName]: this.queryBuilder.transformOutgoingData(data)
-      };
+      args = args || {};
+      args['id'] = data.id;
+      args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
 
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, variables, dispatch, model, false);
+      await this.mutate(mutationName, args, dispatch, model, false);
 
       // TODO is this really necessary?
       return model.baseModel.getters('find')(data.id);
@@ -185,11 +183,15 @@ export default class VuexORMApollo {
    * @param {string} id ID of the record to delete
    * @returns {Promise<void>}
    */
-  private async destroy ({ state, dispatch }: ActionParams, { id }: ActionParams): Promise<any> {
+  private async destroy ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<any> {
     if (id) {
       const model = this.context.getModel(state.$name);
       const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
-      return this.mutate(mutationName, { id }, dispatch, model, false);
+
+      args = args || {};
+      args['id'] = id;
+
+      return this.mutate(mutationName, args, dispatch, model, false);
     }
   }
 

@@ -803,6 +803,9 @@ function isListValue(value) {
 function isEnumValue(value) {
     return value.kind === 'EnumValue';
 }
+function isNullValue(value) {
+    return value.kind === 'NullValue';
+}
 function valueToObjectRepresentation(argObj, name, value, variables) {
     if (isIntValue(value) || isFloatValue(value)) {
         argObj[name.value] = Number(value.value);
@@ -830,6 +833,9 @@ function valueToObjectRepresentation(argObj, name, value, variables) {
     }
     else if (isEnumValue(value)) {
         argObj[name.value] = value.value;
+    }
+    else if (isNullValue(value)) {
+        argObj[name.value] = null;
     }
     else {
         throw new Error("The inline argument \"" + name.value + "\" of kind \"" + value.kind + "\" is not supported.\n                    Use variables instead of inline arguments to overcome this limitation.");
@@ -859,6 +865,14 @@ function storeKeyNameFromField(field, variables) {
     }
     return getStoreKeyName(field.name.value, argObj, directivesObj);
 }
+var KNOWN_DIRECTIVES = [
+    'connection',
+    'include',
+    'skip',
+    'client',
+    'rest',
+    'export',
+];
 function getStoreKeyName(fieldName, args, directives) {
     if (directives &&
         directives['connection'] &&
@@ -880,11 +894,24 @@ function getStoreKeyName(fieldName, args, directives) {
             return directives['connection']['key'];
         }
     }
+    var completeFieldName = fieldName;
     if (args) {
         var stringifiedArgs = JSON.stringify(args);
-        return fieldName + "(" + stringifiedArgs + ")";
+        completeFieldName += "(" + stringifiedArgs + ")";
     }
-    return fieldName;
+    if (directives) {
+        Object.keys(directives).forEach(function (key) {
+            if (KNOWN_DIRECTIVES.indexOf(key) !== -1)
+                return;
+            if (directives[key] && Object.keys(directives[key]).length) {
+                completeFieldName += "@" + key + "(" + JSON.stringify(directives[key]) + ")";
+            }
+            else {
+                completeFieldName += "@" + key;
+            }
+        });
+    }
+    return completeFieldName;
 }
 function argumentsObjectFromField(field, variables) {
     if (field.arguments && field.arguments.length) {
@@ -956,7 +983,7 @@ function shouldInclude(selection, variables) {
         var evaledValue = false;
         if (!ifValue || ifValue.kind !== 'BooleanValue') {
             if (ifValue.kind !== 'Variable') {
-                throw new Error("Argument for the @" + directiveName + " directive must be a variable or a bool ean value.");
+                throw new Error("Argument for the @" + directiveName + " directive must be a variable or a boolean value.");
             }
             else {
                 evaledValue = variables[ifValue.name.value];
@@ -1203,6 +1230,24 @@ var TYPENAME_FIELD = {
         value: '__typename',
     },
 };
+function isNotEmpty(op, fragments) {
+    return (op.selectionSet.selections.filter(function (selectionSet) {
+        return !(selectionSet &&
+            selectionSet.kind === 'FragmentSpread' &&
+            !isNotEmpty(fragments[selectionSet.name.value], fragments));
+    }).length > 0);
+}
+function getDirectiveMatcher(directives) {
+    return function directiveMatcher(directive) {
+        return directives.some(function (dir) {
+            if (dir.name && dir.name === directive.name.value)
+                return true;
+            if (dir.test && dir.test(directive))
+                return true;
+            return false;
+        });
+    };
+}
 function addTypenameToSelectionSet(selectionSet, isRoot) {
     if (isRoot === void 0) { isRoot = false; }
     if (selectionSet.selections) {
@@ -1240,15 +1285,10 @@ function removeDirectivesFromSelectionSet(directives, selectionSet) {
             !selection ||
             !selection.directives)
             return selection;
+        var directiveMatcher = getDirectiveMatcher(directives);
         var remove;
         selection.directives = selection.directives.filter(function (directive) {
-            var shouldKeep = !directives.some(function (dir) {
-                if (dir.name && dir.name === directive.name.value)
-                    return true;
-                if (dir.test && dir.test(directive))
-                    return true;
-                return false;
-            });
+            var shouldKeep = !directiveMatcher(directive);
             if (!remove && !shouldKeep && agressiveRemove)
                 remove = true;
             return shouldKeep;
@@ -1271,14 +1311,7 @@ function removeDirectivesFromDocument(directives, doc) {
     });
     var operation = getOperationDefinitionOrDie(docClone);
     var fragments = createFragmentMap(getFragmentDefinitions(docClone));
-    var isNotEmpty = function (op) {
-        return op.selectionSet.selections.filter(function (selectionSet) {
-            return !(selectionSet &&
-                selectionSet.kind === 'FragmentSpread' &&
-                !isNotEmpty(fragments[selectionSet.name.value]));
-        }).length > 0;
-    };
-    return isNotEmpty(operation) ? docClone : null;
+    return isNotEmpty(operation, fragments) ? docClone : null;
 }
 var added$1 = new Map();
 function addTypenameToDocument(doc) {
@@ -8223,20 +8256,21 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.persist = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var id = _b.id;
+        var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, data, variables, mutationName, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var model, data, mutationName;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 2];
                         model = this.context.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
-                        variables = (_c = {}, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
+                        args = args || {};
+                        args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
                         mutationName = "create" + upcaseFirstLetter(model.singularName);
-                        return [4 /*yield*/, this.mutate(mutationName, variables, dispatch, model, false)];
+                        return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
-                        _d.sent();
+                        _c.sent();
                         // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(id)];
                     case 2: return [2 /*return*/];
@@ -8284,21 +8318,21 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.push = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var data = _b.data;
+        var data = _b.data, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, variables, mutationName, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var model, mutationName;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (!data) return [3 /*break*/, 2];
                         model = this.context.getModel(state.$name);
-                        variables = (_c = {
-                                id: data.id
-                            }, _c[model.singularName] = this.queryBuilder.transformOutgoingData(data), _c);
+                        args = args || {};
+                        args['id'] = data.id;
+                        args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
                         mutationName = "update" + upcaseFirstLetter(model.singularName);
-                        return [4 /*yield*/, this.mutate(mutationName, variables, dispatch, model, false)];
+                        return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
-                        _d.sent();
+                        _c.sent();
                         // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(data.id)];
                     case 2: return [2 /*return*/];
@@ -8316,14 +8350,16 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.destroy = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var id = _b.id;
+        var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
             var model, mutationName;
             return __generator(this, function (_c) {
                 if (id) {
                     model = this.context.getModel(state.$name);
                     mutationName = "delete" + upcaseFirstLetter(model.singularName);
-                    return [2 /*return*/, this.mutate(mutationName, { id: id }, dispatch, model, false)];
+                    args = args || {};
+                    args['id'] = id;
+                    return [2 /*return*/, this.mutate(mutationName, args, dispatch, model, false)];
                 }
                 return [2 /*return*/];
             });
