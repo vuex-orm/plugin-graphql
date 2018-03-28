@@ -142,7 +142,9 @@ export default class VuexORMApollo {
       const value: any = args[key];
 
       if (value instanceof this.context.components.Model) {
-        args[key] = this.queryBuilder.transformOutgoingData(value);
+        const transformedValue = this.queryBuilder.transformOutgoingData(value);
+        this.context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
+        args[key] = transformedValue;
       }
     });
 

@@ -8297,7 +8297,9 @@ var VuexORMApollo = /** @class */ (function () {
                 Object.keys(args).forEach(function (key) {
                     var value = args[key];
                     if (value instanceof _this.context.components.Model) {
-                        args[key] = _this.queryBuilder.transformOutgoingData(value);
+                        var transformedValue = _this.queryBuilder.transformOutgoingData(value);
+                        _this.context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
+                        args[key] = transformedValue;
                     }
                 });
                 model = this.context.getModel(state.$name);
