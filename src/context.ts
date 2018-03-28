@@ -2,6 +2,7 @@ import Logger from './logger';
 import Model from './model';
 import { ORMModel } from './interfaces';
 import { Components, Options } from '@vuex-orm/core/lib/plugins/use';
+import { downcaseFirstLetter } from './utils';
 const inflection = require('inflection');
 
 export default class Context {
@@ -35,7 +36,7 @@ export default class Context {
    */
   public getModel (model: Model | string): Model {
     if (typeof model === 'string') {
-      const name: string = inflection.singularize(model);
+      const name: string = inflection.singularize(downcaseFirstLetter(model));
       model = this.models.get(name) as Model;
       if (!model) throw new Error(`No such model ${name}!`);
     }

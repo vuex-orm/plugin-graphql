@@ -28,6 +28,7 @@ export interface Arguments extends Object {
 }
 
 export interface ORMModel {
+  name: string;
   entity: string;
   eagerLoad: undefined | Array<string>;
 

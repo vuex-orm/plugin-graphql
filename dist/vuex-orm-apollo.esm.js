@@ -803,9 +803,6 @@ function isListValue(value) {
 function isEnumValue(value) {
     return value.kind === 'EnumValue';
 }
-function isNullValue(value) {
-    return value.kind === 'NullValue';
-}
 function valueToObjectRepresentation(argObj, name, value, variables) {
     if (isIntValue(value) || isFloatValue(value)) {
         argObj[name.value] = Number(value.value);
@@ -833,9 +830,6 @@ function valueToObjectRepresentation(argObj, name, value, variables) {
     }
     else if (isEnumValue(value)) {
         argObj[name.value] = value.value;
-    }
-    else if (isNullValue(value)) {
-        argObj[name.value] = null;
     }
     else {
         throw new Error("The inline argument \"" + name.value + "\" of kind \"" + value.kind + "\" is not supported.\n                    Use variables instead of inline arguments to overcome this limitation.");
@@ -865,14 +859,6 @@ function storeKeyNameFromField(field, variables) {
     }
     return getStoreKeyName(field.name.value, argObj, directivesObj);
 }
-var KNOWN_DIRECTIVES = [
-    'connection',
-    'include',
-    'skip',
-    'client',
-    'rest',
-    'export',
-];
 function getStoreKeyName(fieldName, args, directives) {
     if (directives &&
         directives['connection'] &&
@@ -894,24 +880,11 @@ function getStoreKeyName(fieldName, args, directives) {
             return directives['connection']['key'];
         }
     }
-    var completeFieldName = fieldName;
     if (args) {
         var stringifiedArgs = JSON.stringify(args);
-        completeFieldName += "(" + stringifiedArgs + ")";
+        return fieldName + "(" + stringifiedArgs + ")";
     }
-    if (directives) {
-        Object.keys(directives).forEach(function (key) {
-            if (KNOWN_DIRECTIVES.indexOf(key) !== -1)
-                return;
-            if (directives[key] && Object.keys(directives[key]).length) {
-                completeFieldName += "@" + key + "(" + JSON.stringify(directives[key]) + ")";
-            }
-            else {
-                completeFieldName += "@" + key;
-            }
-        });
-    }
-    return completeFieldName;
+    return fieldName;
 }
 function argumentsObjectFromField(field, variables) {
     if (field.arguments && field.arguments.length) {
@@ -983,7 +956,7 @@ function shouldInclude(selection, variables) {
         var evaledValue = false;
         if (!ifValue || ifValue.kind !== 'BooleanValue') {
             if (ifValue.kind !== 'Variable') {
-                throw new Error("Argument for the @" + directiveName + " directive must be a variable or a boolean value.");
+                throw new Error("Argument for the @" + directiveName + " directive must be a variable or a bool ean value.");
             }
             else {
                 evaledValue = variables[ifValue.name.value];
@@ -1230,24 +1203,6 @@ var TYPENAME_FIELD = {
         value: '__typename',
     },
 };
-function isNotEmpty(op, fragments) {
-    return (op.selectionSet.selections.filter(function (selectionSet) {
-        return !(selectionSet &&
-            selectionSet.kind === 'FragmentSpread' &&
-            !isNotEmpty(fragments[selectionSet.name.value], fragments));
-    }).length > 0);
-}
-function getDirectiveMatcher(directives) {
-    return function directiveMatcher(directive) {
-        return directives.some(function (dir) {
-            if (dir.name && dir.name === directive.name.value)
-                return true;
-            if (dir.test && dir.test(directive))
-                return true;
-            return false;
-        });
-    };
-}
 function addTypenameToSelectionSet(selectionSet, isRoot) {
     if (isRoot === void 0) { isRoot = false; }
     if (selectionSet.selections) {
@@ -1285,10 +1240,15 @@ function removeDirectivesFromSelectionSet(directives, selectionSet) {
             !selection ||
             !selection.directives)
             return selection;
-        var directiveMatcher = getDirectiveMatcher(directives);
         var remove;
         selection.directives = selection.directives.filter(function (directive) {
-            var shouldKeep = !directiveMatcher(directive);
+            var shouldKeep = !directives.some(function (dir) {
+                if (dir.name && dir.name === directive.name.value)
+                    return true;
+                if (dir.test && dir.test(directive))
+                    return true;
+                return false;
+            });
             if (!remove && !shouldKeep && agressiveRemove)
                 remove = true;
             return shouldKeep;
@@ -1311,7 +1271,14 @@ function removeDirectivesFromDocument(directives, doc) {
     });
     var operation = getOperationDefinitionOrDie(docClone);
     var fragments = createFragmentMap(getFragmentDefinitions(docClone));
-    return isNotEmpty(operation, fragments) ? docClone : null;
+    var isNotEmpty = function (op) {
+        return op.selectionSet.selections.filter(function (selectionSet) {
+            return !(selectionSet &&
+                selectionSet.kind === 'FragmentSpread' &&
+                !isNotEmpty(fragments[selectionSet.name.value]));
+        }).length > 0;
+    };
+    return isNotEmpty(operation) ? docClone : null;
 }
 var added$1 = new Map();
 function addTypenameToDocument(doc) {
@@ -7896,8 +7863,8 @@ var QueryBuilder = /** @class */ (function () {
         if (args) {
             Object.keys(args).forEach(function (key) {
                 var value = args[key];
-                // Ignore ids and connections
-                if (!(value instanceof Array || (key === 'id' && !allowIdFields))) {
+                // Ignore null fields, ids and connections
+                if (value && !(value instanceof Array || (key === 'id' && !allowIdFields))) {
                     var typeOrValue = '';
                     if (signature) {
                         if (typeof value === 'object' && value.__type) {
@@ -7939,10 +7906,11 @@ var QueryBuilder = /** @class */ (function () {
             return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            var relatedModel = _this.getModel(name);
+            var relatedModel = _this.getModel(field.related ? field.related.name : name);
             if (_this.shouldEagerLoadRelation(model, field, relatedModel) &&
                 !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
-                var multiple = !(field instanceof _this.context.components.BelongsTo);
+                var multiple = !(field instanceof _this.context.components.BelongsTo ||
+                    field instanceof _this.context.components.HasOne);
                 relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels));
             }
         });
@@ -8102,7 +8070,7 @@ var Context = /** @class */ (function () {
      */
     Context.prototype.getModel = function (model) {
         if (typeof model === 'string') {
-            var name_1 = inflection$2.singularize(model);
+            var name_1 = inflection$2.singularize(downcaseFirstLetter(model));
             model = this.models.get(name_1);
             if (!model)
                 throw new Error("No such model " + name_1 + "!");

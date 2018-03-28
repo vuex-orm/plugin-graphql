@@ -270,11 +270,14 @@ export default class QueryBuilder {
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
-      const relatedModel: Model = this.getModel(name);
+      const relatedModel: Model = this.getModel(field.related ? field.related.name : name);
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
-        const multiple: boolean = !(field instanceof this.context.components.BelongsTo);
+
+        const multiple: boolean = !(field instanceof this.context.components.BelongsTo ||
+          field instanceof this.context.components.HasOne);
+
         relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
       }
     });
