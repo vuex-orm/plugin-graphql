@@ -34,7 +34,7 @@ beforeEach(() => {
   store.dispatch('entities/profiles/insert', { data: { id: 1, user_id: 1 }});
   store.dispatch('entities/users/insert', { data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
 
-  model = new Model(User);
+  model = vuexOrmApollo.context.getModel('user');
 });
 
 describe('Model', () => {

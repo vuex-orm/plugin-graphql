@@ -261,7 +261,7 @@ describe('QueryBuilder', () => {
 
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
-      const fields = queryBuilder.buildRelationsQuery(new Model(Comment));
+      const fields = queryBuilder.buildRelationsQuery(vuexOrmApollo.context.getModel('comment'));
       const query = QueryBuilder.prettify(`query test { ${fields} }`).trim();
 
       expect(query).toEqual(`
@@ -290,7 +290,7 @@ query test {
 
   describe('.buildField', () => {
     it('generates query fields for all model fields and relations', () => {
-      let query = queryBuilder.buildField(new Model(User), true, { age: 32 });
+      let query = queryBuilder.buildField(vuexOrmApollo.context.getModel('user'), true, { age: 32 });
       query = QueryBuilder.prettify(`query users { ${query} }`).trim();
 
       expect(query).toEqual(`
@@ -313,7 +313,7 @@ query users {
       const args = new Map();
       args.set('title', 'Example Post 1');
 
-      let query = queryBuilder.buildQuery('query', new Model(Post), null, args, true);
+      let query = queryBuilder.buildQuery('query', vuexOrmApollo.context.getModel('post'), null, args, true);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -342,7 +342,8 @@ query Posts {
 
     it('generates a complete create mutation query for a model', () => {
       const variables = { post: { id: 15, userId: 2, title: 'test', content: 'even more test' } };
-      let query = queryBuilder.buildQuery('mutation', new Model(Post), 'createPost', variables, false);
+      let post = vuexOrmApollo.context.getModel('post');
+      let query = queryBuilder.buildQuery('mutation', post, 'createPost', variables, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -368,8 +369,9 @@ mutation CreatePost($post: PostInput!) {
     });
 
     it('generates a complete update mutation query for a model', () => {
-      const variables = { id: 2, post: { id: 2, userId: 1, title: 'test', content: 'Even more test' } }
-      let query = queryBuilder.buildQuery('mutation', new Model(Post), 'updatePost', variables, false);
+      const variables = { id: 2, post: { id: 2, userId: 1, title: 'test', content: 'Even more test' } };
+      let post = vuexOrmApollo.context.getModel('post');
+      let query = queryBuilder.buildQuery('mutation', post, 'updatePost', variables, false);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -397,7 +399,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
 
 
     it('generates a complete delete mutation query for a model', () => {
-      let query = queryBuilder.buildQuery('mutation', new Model(User), 'deleteUser', { id: 15 });
+      let query = queryBuilder.buildQuery('mutation', vuexOrmApollo.context.getModel('user'), 'deleteUser', { id: 15 });
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`

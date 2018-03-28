@@ -35,8 +35,9 @@ export default class Context {
    */
   public getModel (model: Model | string): Model {
     if (typeof model === 'string') {
-      model = this.models.get(inflection.singularize(model)) as Model;
-      if (!model) throw new Error(`No such model ${model}!`);
+      const name: string = inflection.singularize(model);
+      model = this.models.get(name) as Model;
+      if (!model) throw new Error(`No such model ${name}!`);
     }
 
     return model;
@@ -47,7 +48,7 @@ export default class Context {
    */
   private collectModels () {
     this.database.entities.forEach((entity: any) => {
-      const model = new Model(entity.model as ORMModel);
+      const model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
     });
   }

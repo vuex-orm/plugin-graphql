@@ -274,7 +274,7 @@ export default class QueryBuilder {
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
-        const multiple: boolean = !(field instanceof BelongsTo); // FIXME
+        const multiple: boolean = !(field instanceof this.context.components.BelongsTo);
         relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
       }
     });
@@ -292,9 +292,10 @@ export default class QueryBuilder {
    * @returns {boolean}
    */
   private shouldEagerLoadRelation (model: Model, field: Field, relatedModel: Model): boolean {
-    // TODO this kind of relation detection will probably not work in production!
-    // https://github.com/vuex-orm/vuex-orm/issues/127
-    if (field.constructor.name === 'hasOne' || field.constructor.name === 'BelongsTo') return true;
+    if (field instanceof this.context.components.HasOne || field instanceof this.context.components.BelongsTo) {
+      return true;
+    }
+
     const eagerLoadList: Array<String> = model.baseModel.eagerLoad || [];
     return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
   }

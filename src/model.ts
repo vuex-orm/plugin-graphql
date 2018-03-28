@@ -1,5 +1,6 @@
 import { Field, ORMModel } from './interfaces';
 import { Attr, Increment } from '@vuex-orm/core';
+import Context from './context';
 const inflection = require('inflection');
 
 /**
@@ -9,10 +10,12 @@ export default class Model {
   public readonly singularName: string;
   public readonly pluralName: string;
   public readonly baseModel: ORMModel;
+  private readonly context: Context;
   private readonly fields: Map<string, Field> = new Map<string, Field>();
 
-  public constructor (baseModel: ORMModel) {
+  public constructor (baseModel: ORMModel, context: Context) {
     this.baseModel = baseModel;
+    this.context = context;
 
     this.singularName = inflection.singularize(this.baseModel.entity);
     this.pluralName = inflection.pluralize(this.baseModel.entity);
@@ -55,6 +58,7 @@ export default class Model {
   }
 
   private fieldIsAttribute (field: Field): boolean {
-    return field.localKey === undefined && field.foreignKey === undefined;
+    return field instanceof this.context.components.Attr ||
+      field instanceof this.context.components.Increment;
   }
 }

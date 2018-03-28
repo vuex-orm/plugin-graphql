@@ -14,7 +14,7 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 export default class VuexORMApollo {
   // Public for testing purposes
   public readonly queryBuilder: QueryBuilder;
-  private readonly context: Context;
+  public readonly context: Context;
   private readonly httpLink: HttpLink;
   private readonly apolloClient: ApolloClient<any>;
 
@@ -135,6 +135,13 @@ export default class VuexORMApollo {
   private async customMutation ({ state, dispatch }: ActionParams, args: Arguments): Promise<any> {
     const name: string = args['mutation'];
     delete args['mutation'];
+
+    // There could be anything in the args, but we have to be sure that all records are gone through
+    // transformOutgoingData()
+    Object.keys(args).forEach((key: string) => {
+      const value: any = args[key];
+      // TODO
+    });
 
     const model = this.context.getModel(state.$name);
 
