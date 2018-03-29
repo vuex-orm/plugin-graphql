@@ -139,8 +139,8 @@ export default class QueryBuilder {
     Object.keys(data).forEach((key) => {
       const value = data[key];
 
-      // Ignore IDs and connections
-      if (!relations.has(key) && key !== 'id') {
+      // Ignore IDs and connections and empty fields
+      if (!relations.has(key) && key !== 'id' && value !== null) {
         returnValue[key] = value;
       }
     });

@@ -7810,8 +7810,8 @@ var QueryBuilder = /** @class */ (function () {
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
             var value = data[key];
-            // Ignore IDs and connections
-            if (!relations.has(key) && key !== 'id') {
+            // Ignore IDs and connections and empty fields
+            if (!relations.has(key) && key !== 'id' && value !== null) {
                 returnValue[key] = value;
             }
         });
