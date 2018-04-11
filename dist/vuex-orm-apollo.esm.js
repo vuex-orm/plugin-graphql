@@ -7939,7 +7939,17 @@ var QueryBuilder = /** @class */ (function () {
             return '';
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
-            var relatedModel = _this.getModel(field.related ? field.related.name : name);
+            var relatedModel;
+            if (field.related) {
+                relatedModel = _this.getModel(field.related.name);
+            }
+            else if (field.parent) {
+                relatedModel = _this.getModel(field.parent.name);
+            }
+            else {
+                relatedModel = _this.getModel(name);
+                _this.context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
+            }
             if (_this.shouldEagerLoadRelation(model, field, relatedModel) &&
                 !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
                 var multiple = !(field instanceof _this.context.components.BelongsTo ||

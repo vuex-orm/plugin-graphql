@@ -270,7 +270,17 @@ export default class QueryBuilder {
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
-      const relatedModel: Model = this.getModel(field.related ? field.related.name : name);
+      let relatedModel: Model;
+
+      if (field.related) {
+        relatedModel = this.getModel(field.related.name);
+      } else if (field.parent) {
+        relatedModel = this.getModel(field.parent.name);
+      } else {
+        relatedModel = this.getModel(name);
+        this.context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name',
+          field);
+      }
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
