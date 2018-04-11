@@ -288,7 +288,7 @@ export default class QueryBuilder {
         const multiple: boolean = !(field instanceof this.context.components.BelongsTo ||
           field instanceof this.context.components.HasOne);
 
-        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels));
+        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels, name));
       }
     });
 

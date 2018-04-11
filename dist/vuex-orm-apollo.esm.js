@@ -7954,7 +7954,7 @@ var QueryBuilder = /** @class */ (function () {
                 !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
                 var multiple = !(field instanceof _this.context.components.BelongsTo ||
                     field instanceof _this.context.components.HasOne);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels));
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels, name));
             }
         });
         return relationQueries.join('\n');
