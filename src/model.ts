@@ -1,5 +1,4 @@
 import { Field, ORMModel } from './interfaces';
-import { Attr, Increment } from '@vuex-orm/core';
 import Context from './context';
 const inflection = require('inflection');
 
