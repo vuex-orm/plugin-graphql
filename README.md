@@ -118,6 +118,7 @@ This plugin has an opinion how the GraphQL API schema should look like:
 - The create mutation expects the new record as argument
 - The update mutation expects two arguments: The ID and the new record
 - The delete mutation expects the record ID to delete
+- Multiple records are within a `nodes` object and filtered by a `filter` argument.
 
 You can see query examples in the [project wiki](https://github.com/vuex-orm/vuex-orm-apollo/wiki/Example-Queries).
 

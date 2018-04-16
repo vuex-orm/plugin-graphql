@@ -61,7 +61,7 @@ export default class QueryBuilder {
     model = this.getModel(model);
     ignoreModels.push(model);
 
-    let params: string = this.buildArguments(args, false, allowIdFields);
+    let params: string = this.buildArguments(args, false, multiple, allowIdFields);
 
     const fields = `
       ${model.getQueryFields().join(' ')}
@@ -116,7 +116,7 @@ export default class QueryBuilder {
 
     // build query
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true)} {\n` +
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true, false)} {\n` +
       `  ${this.buildField(model, multiple, args, [], name, true)}\n` +
       `}`;
 
@@ -212,12 +212,16 @@ export default class QueryBuilder {
    * 3) Fields with variables (signature = false)
    *      query user(id: $id)
    *
+   * 4) Filter fields with variables (signature = false, filter = true)
+   *      query users(filter: { active: $active })
+   *
    * @param {Arguments | undefined} args
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
    * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
    * @returns {String}
    */
-  private buildArguments (args?: Arguments, signature: boolean = false, allowIdFields: boolean = true): string {
+  private buildArguments (args?: Arguments, signature: boolean = false, filter: boolean = false,
+                          allowIdFields: boolean = true): string {
     if (args === undefined) return '';
 
     let returnValue: string = '';
@@ -235,24 +239,32 @@ export default class QueryBuilder {
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
-            } else if (key === 'id') {
+            } else if (key === 'id' || key.endsWith('Id')) {
               // Case 1 (ID!)
               typeOrValue = 'ID!';
             } else {
               // Case 1 (String!)
-              typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
+              if (typeof value === 'number') typeOrValue = 'Int';
+              if (typeof value === 'string') typeOrValue = 'String';
+              if (typeof value === 'boolean') typeOrValue = 'Boolean';
+
+              typeOrValue = typeOrValue + '!';
             }
           } else {
-            // Case 3 (user: $user)
+            // Case 3 or 4
             typeOrValue = `$${key}`;
           }
 
           returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`;
+
           first = false;
         }
       });
 
-      if (!first) returnValue = `(${returnValue})`;
+      if (!first) {
+        if (filter) returnValue = `filter: { ${returnValue} }`;
+        returnValue = `(${returnValue})`;
+      }
     }
 
     return returnValue;

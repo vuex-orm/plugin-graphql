@@ -7754,7 +7754,7 @@ var QueryBuilder = /** @class */ (function () {
         if (allowIdFields === void 0) { allowIdFields = false; }
         model = this.getModel(model);
         ignoreModels.push(model);
-        var params = this.buildArguments(args, false, allowIdFields);
+        var params = this.buildArguments(args, false, multiple, allowIdFields);
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreModels) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
@@ -7791,7 +7791,7 @@ var QueryBuilder = /** @class */ (function () {
         if (!name)
             name = (multiple ? model.pluralName : model.singularName);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true) + " {\n" +
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true, false) + " {\n" +
             ("  " + this.buildField(model, multiple, args, [], name, true) + "\n") +
             "}";
         return src(query);
@@ -7881,13 +7881,17 @@ var QueryBuilder = /** @class */ (function () {
      * 3) Fields with variables (signature = false)
      *      query user(id: $id)
      *
+     * 4) Filter fields with variables (signature = false, filter = true)
+     *      query users(filter: { active: $active })
+     *
      * @param {Arguments | undefined} args
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
      * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
      * @returns {String}
      */
-    QueryBuilder.prototype.buildArguments = function (args, signature, allowIdFields) {
+    QueryBuilder.prototype.buildArguments = function (args, signature, filter, allowIdFields) {
         if (signature === void 0) { signature = false; }
+        if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = true; }
         if (args === undefined)
             return '';
@@ -7904,25 +7908,34 @@ var QueryBuilder = /** @class */ (function () {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
                         }
-                        else if (key === 'id') {
+                        else if (key === 'id' || key.endsWith('Id')) {
                             // Case 1 (ID!)
                             typeOrValue = 'ID!';
                         }
                         else {
                             // Case 1 (String!)
-                            typeOrValue = typeof value === 'number' ? 'Number!' : 'String!';
+                            if (typeof value === 'number')
+                                typeOrValue = 'Int';
+                            if (typeof value === 'string')
+                                typeOrValue = 'String';
+                            if (typeof value === 'boolean')
+                                typeOrValue = 'Boolean';
+                            typeOrValue = typeOrValue + '!';
                         }
                     }
                     else {
-                        // Case 3 (user: $user)
+                        // Case 3 or 4
                         typeOrValue = "$" + key;
                     }
                     returnValue = "" + returnValue + (first ? '' : ', ') + ((signature ? '$' : '') + key) + ": " + typeOrValue;
                     first = false;
                 }
             });
-            if (!first)
+            if (!first) {
+                if (filter)
+                    returnValue = "filter: { " + returnValue + " }";
                 returnValue = "(" + returnValue + ")";
+            }
         }
         return returnValue;
     };

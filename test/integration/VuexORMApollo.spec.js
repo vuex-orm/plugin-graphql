@@ -158,7 +158,63 @@ query User($id: ID!) {
       });
     });
 
-    describe('without ID', () => {
+    describe('without ID but with filter', () => {
+      it('sends the correct query to the API', async () => {
+        const response = {
+          data: {
+            users: {
+              __typename: 'user',
+              nodes: [
+                {
+                  __typename: 'user',
+                  id: 1,
+                  name: 'Charlie Brown',
+                  posts: {
+                    __typename: 'post',
+                    nodes: [
+                      {
+                        __typename: 'post',
+                        id: 1,
+                        userId: 1,
+                        title: 'Example Post 1',
+                        content: 'Foo'
+                      },
+                      {
+                        __typename: 'post',
+                        id: 2,
+                        userId: 1,
+                        title: 'Example Post 2',
+                        content: 'Bar'
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        };
+
+        const request = await sendWithMockFetch(response, async () => {
+          await store.dispatch('entities/users/fetch', { filter: { active: true } });
+        });
+
+        expect(request.variables).toEqual({ active: true });
+        expect(request.query).toEqual(`
+query Users($active: Boolean!) {
+  users(filter: {active: $active}) {
+    nodes {
+      id
+      name
+      __typename
+    }
+    __typename
+  }
+}
+          `.trim() + "\n");
+      });
+    });
+
+    describe('without ID or filter', () => {
       it('sends the correct query to the API', async () => {
         const response = {
           data: {

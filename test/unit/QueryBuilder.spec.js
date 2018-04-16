@@ -76,7 +76,7 @@ describe('QueryBuilder', () => {
         user: { __type: 'User' }
       }, true);
 
-      expect(args).toEqual('($name: String!, $email: String!, $age: Number!, $user: UserInput!)');
+      expect(args).toEqual('($name: String!, $email: String!, $age: Int!, $user: UserInput!)');
     });
 
     it('can generate fields with variables', () => {
@@ -85,9 +85,20 @@ describe('QueryBuilder', () => {
         email: 'example@foo.net',
         age: 32,
         user: { __type: 'User' }
-      }, false, true);
+      }, false, false, true);
 
       expect(args).toEqual('(name: $name, email: $email, age: $age, user: $user)');
+    });
+
+    it('can generate filter field with variables', () => {
+      let args = queryBuilder.buildArguments({
+        name: 'Foo Bar',
+        email: 'example@foo.net',
+        age: 32,
+        user: { __type: 'User' }
+      }, false, true, true);
+
+      expect(args).toEqual('(filter: { name: $name, email: $email, age: $age, user: $user })');
     });
   });
 
@@ -295,7 +306,7 @@ query test {
 
       expect(query).toEqual(`
 query users {
-  users(age: $age) {
+  users(filter: {age: $age}) {
     nodes {
       id
       name
