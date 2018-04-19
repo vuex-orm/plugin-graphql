@@ -251,7 +251,9 @@ export default class VuexORMApollo {
    */
   private async insertData (data: Data, dispatch: DispatchFunction) {
     Object.keys(data).forEach(async (key) => {
-      await dispatch('insertOrUpdate', { data: data[key] });
+      const value = data[key];
+      this.context.logger.log('Inserting records', value);
+      await dispatch('insertOrUpdate', { data:  value });
     });
   }
 }
