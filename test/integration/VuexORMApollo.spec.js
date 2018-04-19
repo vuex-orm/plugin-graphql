@@ -377,27 +377,39 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
 
   describe('$isDirty', () => {
     it('is false for newly created records', async () => {
-      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      expect(user.$isDirty).toBeFalsy();
+
+      user = store.getters['entities/users/find'](user.id);
       expect(user.$isDirty).toBeFalsy();
     });
 
     it('is true for changed but unsaved records', async () => {
-      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
       user.name = 'Snoop Dog';
       expect(user.$isDirty).toBeTruthy();
+
+      user = store.getters['entities/users/find'](user.id);
+      expect(user.$isDirty).toBeFalsy();
     });
 
     it('is false for changed and saved records', async () => {
-      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
       user.name = 'Snoop Dog';
       store.dispatch('entities/users/update', { where: user.id, data: user });
+      expect(user.$isDirty).toBeFalsy();
+
+      user = store.getters['entities/users/find'](user.id);
       expect(user.$isDirty).toBeFalsy();
     });
   });
 
   describe('$isPersisted', () => {
     it('is false for newly created records', async () => {
-      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      expect(user.$isPersisted).toBeFalsy();
+
+      user = store.getters['entities/users/find'](user.id);
       expect(user.$isPersisted).toBeFalsy();
     });
 
