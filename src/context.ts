@@ -26,6 +26,13 @@ export default class Context {
     }
 
     this.collectModels();
+
+    this.logger.group('Context setup');
+    this.logger.log('components', this.components);
+    this.logger.log('options', this.options);
+    this.logger.log('database', this.database);
+    this.logger.log('models', this.models);
+    this.logger.groupEnd();
   }
 
   /**
@@ -49,8 +56,16 @@ export default class Context {
    */
   private collectModels () {
     this.database.entities.forEach((entity: any) => {
-      const model = new Model(entity.model as ORMModel, this);
+      const model: Model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
+
+      this.addFields(model);
     });
+  }
+
+
+  private addFields(model: Model) {
+    // FIXME model.baseModel.fields.push('$isDirty');
+    // FIXME model.baseModel.fields.push('$isPersisted');
   }
 }
