@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/phortx/vuex-orm-apollo.git"
+    "url": "git+https://github.com/vuex-orm/vuex-orm-apollo.git"
   },
   "keywords": [
     "vue",
@@ -32,12 +32,13 @@
     "vuex-plugin",
     "orm",
     "vuex-orm",
-    "vuex-orm-plugin"
+    "vuex-orm-plugin",
+    "graphql"
   ],
   "author": "Benjamin Klein",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/phortx/vuex-orm-apollo/issues"
+    "url": "https://github.com/vuex-orm/vuex-orm-apollo/issues"
   },
   "dependencies": {
     "@types/graphql": "^0.12.3",
