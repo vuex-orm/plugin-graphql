@@ -374,4 +374,92 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
       `.trim() + "\n");
     });
   });
+
+  describe('$isDirty', () => {
+    it('is false for newly created records', async () => {
+      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      expect(user.$isDirty).toBeFalsy();
+    });
+
+    it('is true for changed but unsaved records', async () => {
+      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      user.name = 'Snoop Dog';
+      expect(user.$isDirty).toBeTruthy();
+    });
+
+    it('is false for changed and saved records', async () => {
+      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      user.name = 'Snoop Dog';
+      store.dispatch('entities/users/update', { where: user.id, data: user });
+      expect(user.$isDirty).toBeFalsy();
+    });
+  });
+
+  describe('$isPersisted', () => {
+    it('is false for newly created records', async () => {
+      const user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      expect(user.$isPersisted).toBeFalsy();
+    });
+
+    it('is true for persisted records', async () => {
+      const response = {
+        data: {
+          createUser: {
+            __typename: 'user',
+            id: 1,
+            name: 'Charlie Brown',
+            posts: {
+              __typename: 'post',
+              nodes: []
+            }
+          }
+        }
+      };
+
+      await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/users/persist', { id: 1 });
+      });
+
+      const user = store.getters['entities/users/find'](1);
+      expect(user.$isPersisted).toBeTruthy();
+    });
+
+    it('is true for fetched records', async () => {
+      const response = {
+        data: {
+          user: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+            posts: {
+              __typename: 'post',
+              nodes: [
+                {
+                  __typename: 'post',
+                  id: 1,
+                  userId: 1,
+                  title: 'Example Post 1',
+                  content: 'Foo'
+                },
+                {
+                  __typename: 'post',
+                  id: 2,
+                  userId: 1,
+                  title: 'Example Post 2',
+                  content: 'Bar'
+                }
+              ]
+            }
+          }
+        }
+      };
+
+      await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+      });
+
+      const user = store.getters['entities/users/find'](1);
+      expect(user.$isPersisted).toBeTruthy();
+    });
+  });
 });
