@@ -49,8 +49,16 @@ export default class Context {
    */
   private collectModels () {
     this.database.entities.forEach((entity: any) => {
-      const model = new Model(entity.model as ORMModel, this);
+      const model: Model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
+
+      this.addFields(model);
     });
+  }
+
+
+  private addFields(model: Model) {
+    // FIXME model.baseModel.fields.push('$isDirty');
+    // FIXME model.baseModel.fields.push('$isPersisted');
   }
 }
