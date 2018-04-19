@@ -36,6 +36,7 @@ export interface ORMModel {
   fields (): any;
   dispatch (name: string, ...params: Array<any>): any;
   getters (name: string, ...params: Array<any>): any;
+  attr (defaultValue: any): Field;
 }
 
 export interface Field {

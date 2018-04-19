@@ -59,13 +59,19 @@ export default class Context {
       const model: Model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
 
-      this.addFields(model);
+      this.augmentModel(model);
     });
   }
 
+  private augmentModel (model: Model) {
+    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
 
-  private addFields(model: Model) {
-    // FIXME model.baseModel.fields.push('$isDirty');
-    // FIXME model.baseModel.fields.push('$isPersisted');
+    model.baseModel.fields = () => {
+      const originalFields = originalFieldGenerator();
+
+      originalFields['$isPersisted'] = model.baseModel.attr(false);
+
+      return originalFields;
+    };
   }
 }

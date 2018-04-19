@@ -163,7 +163,7 @@ describe('QueryBuilder', () => {
 
 
   describe('.transformIncomingData', () => {
-    it('transforms incoming data into Vuex-ORM a readable structure', () => {
+    it('transforms incoming data into a Vuex-ORM readable structure', () => {
       const incomingData = {
         "contracts": {
           "nodes": [
@@ -218,8 +218,10 @@ describe('QueryBuilder', () => {
       const expectedData = {
         "contracts": [
           {
+            "$isPersisted": true,
             "contractOptions": [
               {
+                "$isPersisted": true,
                 "description": "Very foo, much more bar",
                 "id": 1,
                 "name": "Foo Bar 1",
@@ -231,8 +233,10 @@ describe('QueryBuilder', () => {
             "slug": "contract-s",
           },
           {
+            "$isPersisted": true,
             "contractOptions": [
               {
+                "$isPersisted": true,
                 "description": "Very foo, much more bar",
                 "id": 1,
                 "name": "Foo Bar 1",
@@ -244,8 +248,10 @@ describe('QueryBuilder', () => {
             "slug": "contract-m",
           },
           {
+            "$isPersisted": true,
             "contractOptions": [
               {
+                "$isPersisted": true,
                 "description": "Very foo, much more bar",
                 "id": 1,
                 "name": "Foo Bar 1",
@@ -266,7 +272,7 @@ describe('QueryBuilder', () => {
 
 
   describe('.transformIncomingData', () => {
-    it('transforms incoming data after a mutation into Vuex-ORM a readable structure', () => {
+    it('transforms incoming data after a mutation into a Vuex-ORM readable structure', () => {
       const incomingData = {
         "createContract": {
           "id": "1",
@@ -286,8 +292,10 @@ describe('QueryBuilder', () => {
       };
       const expectedData = {
         "contract": {
+            "$isPersisted": true,
             "contractOptions": [
               {
+                "$isPersisted": true,
                 "description": "Very foo, much more bar",
                 "id": 1,
                 "name": "Foo Bar 1",
@@ -301,7 +309,9 @@ describe('QueryBuilder', () => {
         };
 
       const model = vuexOrmApollo.context.getModel('contract');
-      expect(queryBuilder.transformIncomingData(incomingData, model, true)).toEqual(expectedData);
+      const transformedData = queryBuilder.transformIncomingData(incomingData, model, true);
+
+      expect(transformedData).toEqual(expectedData);
     });
   });
 

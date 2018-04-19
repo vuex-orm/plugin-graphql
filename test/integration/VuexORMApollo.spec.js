@@ -377,7 +377,7 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
 
   describe('$isDirty', () => {
     it('is false for newly created records', async () => {
-      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
       expect(user.$isDirty).toBeFalsy();
 
       user = store.getters['entities/users/find'](user.id);
@@ -385,7 +385,7 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
     });
 
     it('is true for changed but unsaved records', async () => {
-      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
       user.name = 'Snoop Dog';
       expect(user.$isDirty).toBeTruthy();
 
@@ -394,7 +394,7 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
     });
 
     it('is false for changed and saved records', async () => {
-      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
       user.name = 'Snoop Dog';
       store.dispatch('entities/users/update', { where: user.id, data: user });
       expect(user.$isDirty).toBeFalsy();
@@ -406,7 +406,7 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
 
   describe('$isPersisted', () => {
     it('is false for newly created records', async () => {
-      let user = store.dispatch('entities/users/create', { name: 'Snoopy' });
+      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
       expect(user.$isPersisted).toBeFalsy();
 
       user = store.getters['entities/users/find'](user.id);
