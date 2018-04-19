@@ -26,6 +26,13 @@ export default class Context {
     }
 
     this.collectModels();
+
+    this.logger.group('Context setup');
+    this.logger.log('components', this.components);
+    this.logger.log('options', this.options);
+    this.logger.log('database', this.database);
+    this.logger.log('models', this.models);
+    this.logger.groupEnd();
   }
 
   /**
