@@ -8437,9 +8437,7 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.apolloRequest(model, query, variables, true)];
                     case 1:
                         newData = _a.sent();
-                        if (id)
-                            return [2 /*return*/, VuexORMApollo.updateData(newData, dispatch, id)];
-                        return [2 /*return*/, null];
+                        return [2 /*return*/, this.insertData(newData, dispatch)];
                     case 2: return [2 /*return*/];
                 }
             });
