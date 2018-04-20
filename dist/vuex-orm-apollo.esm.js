@@ -7811,7 +7811,7 @@ var QueryBuilder = /** @class */ (function () {
         Object.keys(data).forEach(function (key) {
             var value = data[key];
             // Ignore IDs and connections and empty fields
-            if (!relations.has(key) && !model.skipField(key) && key !== 'id' && value !== null) {
+            if (!relations.has(key) && !key.startsWith('$') && key !== 'id' && value !== null) {
                 returnValue[key] = value;
             }
         });
@@ -7821,12 +7821,14 @@ var QueryBuilder = /** @class */ (function () {
      * Transforms a set of incoming data to the format vuex-orm requires.
      *
      * @param {Data | Array<Data>} data
+     * @param model
+     * @param mutation required to transform something like `disableUserAddress` to the actual model name.
      * @param {boolean} recursiveCall
      * @returns {Data}
      */
-    QueryBuilder.prototype.transformIncomingData = function (data, mutationResult, recursiveCall) {
+    QueryBuilder.prototype.transformIncomingData = function (data, model, mutation, recursiveCall) {
         var _this = this;
-        if (mutationResult === void 0) { mutationResult = false; }
+        if (mutation === void 0) { mutation = false; }
         if (recursiveCall === void 0) { recursiveCall = false; }
         var result = {};
         if (!recursiveCall) {
@@ -7834,22 +7836,22 @@ var QueryBuilder = /** @class */ (function () {
             this.context.logger.log('Raw data:', data);
         }
         if (data instanceof Array) {
-            result = data.map(function (d) { return _this.transformIncomingData(d, mutationResult, true); });
+            result = data.map(function (d) { return _this.transformIncomingData(d, model, mutation, true); });
         }
         else {
             Object.keys(data).forEach(function (key) {
                 if (data[key]) {
                     if (data[key] instanceof Object) {
                         if (data[key].nodes) {
-                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, mutationResult, true);
+                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, model, mutation, true);
                         }
                         else {
                             var newKey = key;
-                            if (mutationResult) {
-                                newKey = newKey.replace(/^(create|update)(.+)/, '$2');
+                            if (mutation && !recursiveCall) {
+                                newKey = data[key].nodes ? model.pluralName : model.singularName;
                                 newKey = downcaseFirstLetter(newKey);
                             }
-                            result[inflection.singularize(newKey)] = _this.transformIncomingData(data[key], mutationResult, true);
+                            result[newKey] = _this.transformIncomingData(data[key], model, mutation, true);
                         }
                     }
                     else if (key === 'id') {
@@ -8281,7 +8283,7 @@ var VuexORMApollo = /** @class */ (function () {
                         model = this.context.getModel(state.$name);
                         name = "" + (multiple ? model.pluralName : model.singularName);
                         query = this.queryBuilder.buildQuery('query', model, name, filter);
-                        return [4 /*yield*/, this.apolloRequest(query, filter, false, bypassCache)];
+                        return [4 /*yield*/, this.apolloRequest(model, query, filter, false, bypassCache)];
                     case 1:
                         data = _b.sent();
                         // Insert incoming data into the store
@@ -8432,7 +8434,7 @@ var VuexORMApollo = /** @class */ (function () {
                         if (!variables) return [3 /*break*/, 2];
                         id = variables.id ? variables.id : undefined;
                         query = this.queryBuilder.buildQuery('mutation', model, name, variables, multiple);
-                        return [4 /*yield*/, this.apolloRequest(query, variables, true)];
+                        return [4 /*yield*/, this.apolloRequest(model, query, variables, true)];
                     case 1:
                         newData = _a.sent();
                         if (id)
@@ -8445,13 +8447,14 @@ var VuexORMApollo = /** @class */ (function () {
     };
     /**
      * Sends a request to the GraphQL API via apollo
+     * @param model
      * @param {any} query The query to send (result from gql())
      * @param {Arguments} variables Optional. The variables to send with the query
      * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
      * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
      * @returns {Promise<Data>}
      */
-    VuexORMApollo.prototype.apolloRequest = function (query, variables, mutation, bypassCache) {
+    VuexORMApollo.prototype.apolloRequest = function (model, query, variables, mutation, bypassCache) {
         if (mutation === void 0) { mutation = false; }
         if (bypassCache === void 0) { bypassCache = false; }
         return __awaiter(this, void 0, void 0, function () {
@@ -8472,7 +8475,7 @@ var VuexORMApollo = /** @class */ (function () {
                         _a.label = 4;
                     case 4: 
                     // Transform incoming data into something useful
-                    return [2 /*return*/, this.queryBuilder.transformIncomingData(response.data, mutation)];
+                    return [2 /*return*/, this.queryBuilder.transformIncomingData(response.data, model, mutation)];
                 }
             });
         });

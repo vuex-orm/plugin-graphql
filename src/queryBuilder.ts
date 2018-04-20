@@ -152,10 +152,12 @@ export default class QueryBuilder {
    * Transforms a set of incoming data to the format vuex-orm requires.
    *
    * @param {Data | Array<Data>} data
+   * @param model
+   * @param mutation required to transform something like `disableUserAddress` to the actual model name.
    * @param {boolean} recursiveCall
    * @returns {Data}
    */
-  public transformIncomingData (data: Data | Array<Data>, mutationResult: boolean = false, recursiveCall: boolean = false): Data {
+  public transformIncomingData (data: Data | Array<Data>, model: Model, mutation: boolean = false, recursiveCall: boolean = false): Data {
     let result: Data = {};
 
     if (!recursiveCall) {
@@ -164,22 +166,22 @@ export default class QueryBuilder {
     }
 
     if (data instanceof Array) {
-      result = data.map(d => this.transformIncomingData(d, mutationResult, true));
+      result = data.map(d => this.transformIncomingData(d, model, mutation, true));
     } else {
       Object.keys(data).forEach((key) => {
         if (data[key]) {
           if (data[key] instanceof Object) {
             if (data[key].nodes) {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, mutationResult, true);
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, model, mutation, true);
             } else {
               let newKey = key;
 
-              if (mutationResult) {
-                newKey = newKey.replace(/^(create|update)(.+)/, '$2');
+              if (mutation && !recursiveCall) {
+                newKey = data[key].nodes ? model.pluralName : model.singularName;
                 newKey = downcaseFirstLetter(newKey);
               }
 
-              result[inflection.singularize(newKey)] = this.transformIncomingData(data[key], mutationResult, true);
+              result[newKey] = this.transformIncomingData(data[key], model, mutation, true);
             }
           } else if (key === 'id') {
             result[key] = parseInt(data[key], 0);

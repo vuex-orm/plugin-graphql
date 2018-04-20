@@ -93,7 +93,7 @@ export default class VuexORMApollo {
     const query = this.queryBuilder.buildQuery('query', model, name, filter);
 
     // Send the request to the GraphQL API
-    const data = await this.apolloRequest(query, filter, false, bypassCache as boolean);
+    const data = await this.apolloRequest(model, query, filter, false, bypassCache as boolean);
 
     // Insert incoming data into the store
     await this.insertData(data, dispatch);
@@ -211,7 +211,7 @@ export default class VuexORMApollo {
       const query = this.queryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation
-      const newData = await this.apolloRequest(query, variables, true);
+      const newData = await this.apolloRequest(model, query, variables, true);
 
       if (id) return VuexORMApollo.updateData(newData, dispatch, id);
       return null;
@@ -220,13 +220,14 @@ export default class VuexORMApollo {
 
   /**
    * Sends a request to the GraphQL API via apollo
+   * @param model
    * @param {any} query The query to send (result from gql())
    * @param {Arguments} variables Optional. The variables to send with the query
    * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
    * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
    * @returns {Promise<Data>}
    */
-  private async apolloRequest (query: any, variables?: Arguments, mutation: boolean = false,
+  private async apolloRequest (model: Model, query: any, variables?: Arguments, mutation: boolean = false,
                                bypassCache: boolean = false): Promise<Data> {
     let response;
     const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
@@ -240,7 +241,7 @@ export default class VuexORMApollo {
     }
 
     // Transform incoming data into something useful
-    return this.queryBuilder.transformIncomingData(response.data as Data, mutation);
+    return this.queryBuilder.transformIncomingData(response.data as Data, model, mutation);
   }
 
   /**

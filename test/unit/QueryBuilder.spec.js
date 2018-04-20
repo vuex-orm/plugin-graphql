@@ -53,8 +53,58 @@ class Comment extends ORMModel {
   }
 }
 
+class ContractContractOption extends ORMModel {
+  static entity = 'contractContractOptions';
+
+  static primaryKey = ['contractId', 'contractOptionId'];
+
+  static fields () {
+    return {
+      contractId: this.attr(null),
+      contractOptionId: this.attr(null),
+    }
+  }
+}
+
+class Contract extends ORMModel {
+  static entity = 'contracts';
+
+  static fields () {
+    return {
+      id: this.increment(),
+      name: this.attr(''),
+      displayName: this.attr(''),
+      slug: this.attr(''),
+
+      contractOptions: this.belongsToMany(ContractOption, ContractContractOption, 'contractId',
+        'contractOptionId'),
+    }
+  }
+}
+
+
+class ContractOption extends ORMModel {
+  static entity = 'contractOptions';
+
+  static fields () {
+    return {
+      id: this.increment(),
+      name: this.attr(''),
+      description: this.attr(''),
+
+      contracts: this.belongsToMany(Contract, ContractContractOption, 'contractOptionId', 'contractId')
+    }
+  }
+}
+
+
+
 beforeEach(() => {
-  [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+  [store, vuexOrmApollo] = createStore([
+    { model: User }, { model: Post }, { model: Comment }, { model: ContractOption }, { model: Contract },
+    { model: ContractContractOption }
+  ]);
+
   store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
   store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
   store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
@@ -130,9 +180,6 @@ describe('QueryBuilder', () => {
                     "description": "Very foo, much more bar"
                   }
                 ]
-              },
-              "documentReferences": {
-                "nodes": []
               }
             },
             {
@@ -148,9 +195,6 @@ describe('QueryBuilder', () => {
                     "description": "Very foo, much more bar"
                   }
                 ]
-              },
-              "documentReferences": {
-                "nodes": []
               }
             },
             {
@@ -166,9 +210,6 @@ describe('QueryBuilder', () => {
                     "description": "Very foo, much more bar"
                   }
                 ]
-              },
-              "documentReferences": {
-                "nodes": []
               }
             }
           ]
@@ -185,7 +226,6 @@ describe('QueryBuilder', () => {
               },
             ],
             "displayName": "Contract S",
-            "documentReferences": [],
             "id": 1,
             "name": "Contract S",
             "slug": "contract-s",
@@ -199,7 +239,6 @@ describe('QueryBuilder', () => {
               },
             ],
             "displayName": "Contract M",
-            "documentReferences": [],
             "id": 2,
             "name": "Contract M",
             "slug": "contract-m",
@@ -213,7 +252,6 @@ describe('QueryBuilder', () => {
               },
             ],
             "displayName": "Contract L",
-            "documentReferences": [],
             "id": 3,
             "name": "Contract L",
             "slug": "contract-l",
@@ -221,7 +259,8 @@ describe('QueryBuilder', () => {
         ],
       };
 
-      expect(queryBuilder.transformIncomingData(incomingData)).toEqual(expectedData);
+      const model = vuexOrmApollo.context.getModel('contract');
+      expect(queryBuilder.transformIncomingData(incomingData, model, false)).toEqual(expectedData);
     });
   });
 
@@ -242,9 +281,6 @@ describe('QueryBuilder', () => {
                 "description": "Very foo, much more bar"
               }
             ]
-          },
-          "documentReferences": {
-            "nodes": []
           }
         }
       };
@@ -258,14 +294,14 @@ describe('QueryBuilder', () => {
               },
             ],
             "displayName": "Contract S",
-            "documentReferences": [],
             "id": 1,
             "name": "Contract S",
             "slug": "contract-s",
           }
         };
 
-      expect(queryBuilder.transformIncomingData(incomingData, true)).toEqual(expectedData);
+      const model = vuexOrmApollo.context.getModel('contract');
+      expect(queryBuilder.transformIncomingData(incomingData, model, true)).toEqual(expectedData);
     });
   });
 
