@@ -7811,7 +7811,7 @@ var QueryBuilder = /** @class */ (function () {
         Object.keys(data).forEach(function (key) {
             var value = data[key];
             // Ignore IDs and connections and empty fields
-            if (!relations.has(key) && key !== 'id' && value !== null) {
+            if (!relations.has(key) && !model.skipField(key) && key !== 'id' && value !== null) {
                 returnValue[key] = value;
             }
         });
@@ -8013,7 +8013,12 @@ var Logger = /** @class */ (function () {
             messages[_i] = arguments[_i];
         }
         if (this.enabled) {
-            console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+            if (process.env.NODE_ENV === 'test') {
+                console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+            }
+            else {
+                console.groupCollapsed.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+            }
         }
     };
     Logger.prototype.groupEnd = function () {
@@ -8077,11 +8082,31 @@ var Model = /** @class */ (function () {
         var _this = this;
         var fields = [];
         this.fields.forEach(function (field, name) {
-            if (_this.fieldIsAttribute(field) && !name.endsWith('Id')) {
+            if (_this.fieldIsAttribute(field) && !_this.skipField(name)) {
                 fields.push(name);
             }
         });
         return fields;
+    };
+    /**
+     * Tells if a field should be ignored. This is true for fields that start with a `$` and all foreign keys
+     * @param {string} field
+     * @returns {boolean}
+     */
+    Model.prototype.skipField = function (field) {
+        var _this = this;
+        if (field.startsWith('$'))
+            return true;
+        var shouldSkipField = false;
+        this.getRelations().forEach(function (relation) {
+            if ((relation instanceof _this.context.components.BelongsTo || relation instanceof _this.context.components.HasOne) &&
+                relation.foreignKey === field) {
+                shouldSkipField = true;
+                return false;
+            }
+            return true;
+        });
+        return shouldSkipField;
     };
     /**
      * @returns {Map<string, Field>} all relations of the model which should be queried
@@ -8463,9 +8488,13 @@ var VuexORMApollo = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 Object.keys(data).forEach(function (key) { return __awaiter(_this, void 0, void 0, function () {
+                    var value;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
-                            case 0: return [4 /*yield*/, dispatch('insertOrUpdate', { data: data[key] })];
+                            case 0:
+                                value = data[key];
+                                this.context.logger.log('Inserting records', value);
+                                return [4 /*yield*/, dispatch('insertOrUpdate', { data: value })];
                             case 1:
                                 _a.sent();
                                 return [2 /*return*/];

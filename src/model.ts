@@ -33,12 +33,36 @@ export default class Model {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
-      if (this.fieldIsAttribute(field) && !name.endsWith('Id')) {
+      if (this.fieldIsAttribute(field) && !this.skipField(name)) {
         fields.push(name);
       }
     });
 
     return fields;
+  }
+
+  /**
+   * Tells if a field should be ignored. This is true for fields that start with a `$` and all foreign keys
+   * @param {string} field
+   * @returns {boolean}
+   */
+  public skipField (field: string) {
+    if (field.startsWith('$')) return true;
+
+    let shouldSkipField: boolean = false;
+
+    this.getRelations().forEach((relation: Field) => {
+      if (
+        (relation instanceof this.context.components.BelongsTo || relation instanceof this.context.components.HasOne) &&
+        relation.foreignKey === field
+      ) {
+        shouldSkipField = true;
+        return false;
+      }
+      return true;
+    });
+
+    return shouldSkipField;
   }
 
   /**

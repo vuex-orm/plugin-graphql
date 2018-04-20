@@ -29,6 +29,7 @@ class Post extends ORMModel {
       content: this.attr(''),
       title: this.attr(''),
       userId: this.attr(null),
+      otherId: this.attr(0), // This is a field which ends with `Id` but doesn't belong to any relation
       user: this.belongsTo(User, 'userId'),
       comments: this.hasMany(Comment, 'userId')
     };
@@ -64,6 +65,60 @@ describe('VuexORMApollo', () => {
   });
 
   describe('fetch', () => {
+    it('also requests the otherId field', async () => {
+      const response = {
+        data: {
+          post: {
+            __typename: 'post',
+            id: 1,
+            otherId: 13548,
+            title: 'Example Post 1',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: []
+            },
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Johnny Imba',
+            }
+          }
+        }
+      };
+
+      let request = await sendWithMockFetch(response, async () => {
+        await store.dispatch('entities/posts/fetch', { filter: { id: 1 } });
+      });
+      expect(request).not.toEqual(null);
+
+      expect(request.query).toEqual(`
+query Post($id: ID!) {
+  post(id: $id) {
+    id
+    content
+    title
+    otherId
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+        `.trim() + "\n");
+    });
+
+
     describe('with ID', () => {
       it("doesn't cache when bypassCache = true", async () => {
         const response = {
@@ -71,26 +126,7 @@ describe('VuexORMApollo', () => {
             user: {
               __typename: 'user',
               id: 1,
-              name: 'Johnny Imba',
-              posts: {
-                __typename: 'post',
-                nodes: [
-                  {
-                    __typename: 'post',
-                    id: 1,
-                    userId: 1,
-                    title: 'Example Post 1',
-                    content: 'Foo'
-                  },
-                  {
-                    __typename: 'post',
-                    id: 2,
-                    userId: 1,
-                    title: 'Example Post 2',
-                    content: 'Bar'
-                  }
-                ]
-              }
+              name: 'Johnny Imba'
             }
           }
         };
@@ -117,26 +153,7 @@ describe('VuexORMApollo', () => {
             user: {
               __typename: 'user',
               id: 1,
-              name: 'Johnny Imba',
-              posts: {
-                __typename: 'post',
-                nodes: [
-                  {
-                    __typename: 'post',
-                    id: 1,
-                    userId: 1,
-                    title: 'Example Post 1',
-                    content: 'Foo'
-                  },
-                  {
-                    __typename: 'post',
-                    id: 2,
-                    userId: 1,
-                    title: 'Example Post 2',
-                    content: 'Bar'
-                  }
-                ]
-              }
+              name: 'Johnny Imba'
             }
           }
         };
@@ -168,26 +185,7 @@ query User($id: ID!) {
                 {
                   __typename: 'user',
                   id: 1,
-                  name: 'Charlie Brown',
-                  posts: {
-                    __typename: 'post',
-                    nodes: [
-                      {
-                        __typename: 'post',
-                        id: 1,
-                        userId: 1,
-                        title: 'Example Post 1',
-                        content: 'Foo'
-                      },
-                      {
-                        __typename: 'post',
-                        id: 2,
-                        userId: 1,
-                        title: 'Example Post 2',
-                        content: 'Bar'
-                      }
-                    ]
-                  }
+                  name: 'Charlie Brown'
                 }
               ]
             }
@@ -224,26 +222,7 @@ query Users($active: Boolean!) {
                 {
                   __typename: 'user',
                   id: 1,
-                  name: 'Charlie Brown',
-                  posts: {
-                    __typename: 'post',
-                    nodes: [
-                      {
-                        __typename: 'post',
-                        id: 1,
-                        userId: 1,
-                        title: 'Example Post 1',
-                        content: 'Foo'
-                      },
-                      {
-                        __typename: 'post',
-                        id: 2,
-                        userId: 1,
-                        title: 'Example Post 2',
-                        content: 'Bar'
-                      }
-                    ]
-                  }
+                  name: 'Charlie Brown'
                 }
               ]
             }
@@ -279,11 +258,7 @@ query Users {
           createUser: {
             __typename: 'user',
             id: 1,
-            name: 'Charlie Brown',
-            posts: {
-              __typename: 'post',
-              nodes: []
-            }
+            name: 'Charlie Brown'
           }
         }
       };
@@ -313,11 +288,7 @@ mutation CreateUser($user: UserInput!) {
           updateUser: {
             __typename: 'user',
             id: 1,
-            name: 'Snoopy',
-            posts: {
-              __typename: 'post',
-              nodes: []
-            }
+            name: 'Snoopy'
           }
         }
       };
@@ -350,11 +321,7 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
           deleteUser: {
             __typename: 'user',
             id: 1,
-            name: 'Charlie Brown',
-            posts: {
-              __typename: 'post',
-              nodes: []
-            }
+            name: 'Charlie Brown'
           }
         }
       };
@@ -385,11 +352,7 @@ mutation DeleteUser($id: ID!) {
           signupUser: {
             __typename: 'user',
             id: 1,
-            name: 'Charlie Brown',
-            posts: {
-              __typename: 'post',
-              nodes: []
-            }
+            name: 'Charlie Brown'
           }
         }
       };
