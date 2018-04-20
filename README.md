@@ -127,6 +127,13 @@ You can see query examples in the [project wiki](https://github.com/vuex-orm/vue
 
 
 
+## Known issues
+
+- n:m relations and polymorphic relations are untested
+- Each model is only loaded once in the graph
+- Code documentation is deprecated and crappy
+
+
 ## Contribution
 
 To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link` in your local
