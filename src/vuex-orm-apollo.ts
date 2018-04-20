@@ -213,7 +213,11 @@ export default class VuexORMApollo {
       // Send GraphQL Mutation
       const newData = await this.apolloRequest(model, query, variables, true);
 
-      return this.insertData(newData, dispatch);
+      if (name !== `delete${upcaseFirstLetter(model.singularName)}`) {
+        return this.insertData(newData, dispatch);
+      }
+
+      return true;
     }
   }
 

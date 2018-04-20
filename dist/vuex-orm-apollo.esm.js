@@ -8437,7 +8437,10 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.apolloRequest(model, query, variables, true)];
                     case 1:
                         newData = _a.sent();
-                        return [2 /*return*/, this.insertData(newData, dispatch)];
+                        if (name !== "delete" + upcaseFirstLetter(model.singularName)) {
+                            return [2 /*return*/, this.insertData(newData, dispatch)];
+                        }
+                        return [2 /*return*/, true];
                     case 2: return [2 /*return*/];
                 }
             });
