@@ -73,15 +73,15 @@ The following table lists all operations you can use and what they to:
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
 **R**EAD | getters['find'] & getters['findAll'] | dispatch('fetch')
-**C**REATE | dispatch('create) | dispatch('persist')
+**C**REATE | dispatch('create') | dispatch('persist')
 **U**PDATE | dispatch('save') | dispatch('push')
 **D**ELETE | dispatch('delete') | dispatch('destroy')
 
 
 ## Eager Loading
 
-All `belongsTo` related entities are eager loaded when fetch is called. All other related entities have to be added
-to a static field in the model called `eagerLoad` to have them eagerly loaded with fetch.
+All `belongsTo` and `hasOne` related entities are eager loaded when fetch is called. All other related entities have to 
+be added to a static field in the model called `eagerLoad` to have them eagerly loaded with fetch.
 
 Example:
 
@@ -100,6 +100,9 @@ class User extends Model {
   }
 }
 ```
+
+
+## Caching
 
 Apollo-Client caches same queries. To bypass caching set the second param of the `fetch` action to `true`:
 
