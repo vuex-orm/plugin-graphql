@@ -13,7 +13,11 @@ export default class Logger {
 
   public group (...messages: Array<any>): void {
     if (this.enabled) {
-      console.groupCollapsed('[Vuex-ORM-Apollo]', ...messages);
+      if (process.env.NODE_ENV === 'test') {
+        console.group('[Vuex-ORM-Apollo]', ...messages);
+      } else {
+        console.groupCollapsed('[Vuex-ORM-Apollo]', ...messages);
+      }
     }
   }
 

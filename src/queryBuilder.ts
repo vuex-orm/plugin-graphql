@@ -239,7 +239,7 @@ export default class QueryBuilder {
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
-            } else if (key === 'id' || key.endsWith('Id')) {
+            } else if (key === 'id' || key.endsWith('Id')) { // FIXME not all 'xxxId' fields are of type ID!
               // Case 1 (ID!)
               typeOrValue = 'ID!';
             } else {
