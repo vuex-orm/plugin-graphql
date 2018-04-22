@@ -8010,6 +8010,12 @@ var QueryBuilder = /** @class */ (function () {
 
 var Logger = /** @class */ (function () {
     function Logger(enabled) {
+        this.PREFIX = process.env.NODE_ENV === 'test' ? ['[Vuex-ORM-Apollo]'] :
+            [
+                '%c Vuex-ORM: Apollo Plugin %c',
+                'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
+                'background: transparent;'
+            ];
         this.enabled = enabled;
         this.log('Logging is enabled.');
     }
@@ -8020,10 +8026,10 @@ var Logger = /** @class */ (function () {
         }
         if (this.enabled) {
             if (process.env.NODE_ENV === 'test') {
-                console.group.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+                console.group.apply(console, this.PREFIX.concat(messages));
             }
             else {
-                console.groupCollapsed.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+                console.groupCollapsed.apply(console, this.PREFIX.concat(messages));
             }
         }
     };
@@ -8037,19 +8043,21 @@ var Logger = /** @class */ (function () {
             messages[_i] = arguments[_i];
         }
         if (this.enabled) {
-            console.log.apply(console, ['[Vuex-ORM-Apollo]'].concat(messages));
+            console.log.apply(console, this.PREFIX.concat(messages));
         }
     };
     Logger.prototype.logQuery = function (query, variables, fetchPolicy) {
         if (this.enabled) {
             try {
-                this.group('Sending query:');
+                var prettified = '';
                 if (typeof query === 'object' && query.loc) {
-                    console.log(QueryBuilder.prettify(query.loc.source.body));
+                    prettified = QueryBuilder.prettify(query.loc.source.body);
                 }
                 else {
-                    console.log(QueryBuilder.prettify(query));
+                    prettified = QueryBuilder.prettify(query);
                 }
+                this.group('Sending query:', prettified.split('\n')[1].replace('{', '').trim());
+                console.log(prettified);
                 if (variables)
                     console.log('VARIABLES:', variables);
                 if (fetchPolicy)
@@ -8327,11 +8335,11 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, data, mutationName, record;
+            var model, data, mutationName, oldRecord;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        if (!id) return [3 /*break*/, 2];
+                        if (!id) return [3 /*break*/, 4];
                         model = this.context.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
                         args = args || {};
@@ -8340,11 +8348,21 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
                         _c.sent();
-                        record = model.baseModel.getters('find')(id);
-                        record.$isPersisted = true;
-                        record.$dispatch('update', { where: record.id, data: record });
-                        return [2 /*return*/, record];
-                    case 2: return [2 /*return*/];
+                        oldRecord = model.baseModel.getters('find')(id);
+                        this.context.logger.log(oldRecord);
+                        if (!(oldRecord && !oldRecord.$isPersisted)) return [3 /*break*/, 3];
+                        // The server generated another ID, this is very likely to happen.
+                        // in this case this.mutate has inserted a new record instead of updating the existing one.
+                        // We can see that because $isPersisted is still false then.
+                        this.context.logger.log('Dropping deprecated record with ID', oldRecord.id);
+                        return [4 /*yield*/, model.baseModel.dispatch('delete', { where: oldRecord.id })];
+                    case 2:
+                        _c.sent();
+                        _c.label = 3;
+                    case 3: 
+                    // TODO is this save?
+                    return [2 /*return*/, model.baseModel.getters('query')().withAll().last()];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -8404,7 +8422,6 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
                         _c.sent();
-                        // TODO is this really necessary?
                         return [2 /*return*/, model.baseModel.getters('find')(data.id)];
                     case 2: return [2 /*return*/];
                 }
@@ -8452,17 +8469,19 @@ var VuexORMApollo = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!variables) return [3 /*break*/, 2];
+                        if (!variables) return [3 /*break*/, 4];
                         id = variables.id ? variables.id : undefined;
                         query = this.queryBuilder.buildQuery('mutation', model, name, variables, multiple);
                         return [4 /*yield*/, this.apolloRequest(model, query, variables, true)];
                     case 1:
                         newData = _a.sent();
-                        if (name !== "delete" + upcaseFirstLetter(model.singularName)) {
-                            return [2 /*return*/, this.insertData(newData, dispatch)];
-                        }
-                        return [2 /*return*/, true];
-                    case 2: return [2 /*return*/];
+                        if (!(name !== "delete" + upcaseFirstLetter(model.singularName))) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.insertData(newData, dispatch)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/, true]; // FIXME RETURN THE NEW RECORD!!
+                    case 3: return [2 /*return*/, true];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
