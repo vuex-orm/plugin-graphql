@@ -7754,7 +7754,7 @@ var QueryBuilder = /** @class */ (function () {
         if (allowIdFields === void 0) { allowIdFields = false; }
         model = this.getModel(model);
         ignoreModels.push(model);
-        var params = this.buildArguments(args, false, multiple, allowIdFields);
+        var params = this.buildArguments(model, args, false, multiple, allowIdFields);
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreModels) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
@@ -7791,7 +7791,7 @@ var QueryBuilder = /** @class */ (function () {
         if (!name)
             name = (multiple ? model.pluralName : model.singularName);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(args, true, false) + " {\n" +
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, false) + " {\n" +
             ("  " + this.buildField(model, multiple, args, [], name, true) + "\n") +
             "}";
         return src(query);
@@ -7890,12 +7890,14 @@ var QueryBuilder = /** @class */ (function () {
      * 4) Filter fields with variables (signature = false, filter = true)
      *      query users(filter: { active: $active })
      *
+     * @param model
      * @param {Arguments | undefined} args
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
+     * @param filter
      * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
      * @returns {String}
      */
-    QueryBuilder.prototype.buildArguments = function (args, signature, filter, allowIdFields) {
+    QueryBuilder.prototype.buildArguments = function (model, args, signature, filter, allowIdFields) {
         if (signature === void 0) { signature = false; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = true; }
@@ -7906,15 +7908,17 @@ var QueryBuilder = /** @class */ (function () {
         if (args) {
             Object.keys(args).forEach(function (key) {
                 var value = args[key];
+                var isForeignKey = model.skipField(key);
+                var skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
                 // Ignore null fields, ids and connections
-                if (value && !(value instanceof Array || (key === 'id' && !allowIdFields))) {
+                if (value && !(value instanceof Array || skipFieldDueId)) {
                     var typeOrValue = '';
                     if (signature) {
                         if (typeof value === 'object' && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
                         }
-                        else if (key === 'id' || key.endsWith('Id')) {
+                        else if (key === 'id' || isForeignKey) {
                             // Case 1 (ID!)
                             typeOrValue = 'ID!';
                         }
@@ -8349,7 +8353,6 @@ var VuexORMApollo = /** @class */ (function () {
                     case 1:
                         _c.sent();
                         oldRecord = model.baseModel.getters('find')(id);
-                        this.context.logger.log(oldRecord);
                         if (!(oldRecord && !oldRecord.$isPersisted)) return [3 /*break*/, 3];
                         // The server generated another ID, this is very likely to happen.
                         // in this case this.mutate has inserted a new record instead of updating the existing one.

@@ -33,6 +33,8 @@ class Post extends ORMModel {
       id: this.increment(null),
       content: this.attr(''),
       title: this.attr(''),
+      otherId: this.attr(0),
+      userId:  this.attr(0),
       user: this.belongsTo(User, 'userId'),
       comments: this.hasMany(Comment, 'postId')
     };
@@ -47,6 +49,8 @@ class Comment extends ORMModel {
     return {
       id: this.increment(null),
       content: this.attr(''),
+      userId:  this.attr(0),
+      postId:  this.attr(0),
       user: this.belongsTo(User, 'userId'),
       post: this.belongsTo(Post, 'postId')
     };
@@ -119,36 +123,42 @@ beforeEach(() => {
 describe('QueryBuilder', () => {
   describe('.buildArguments', () => {
     it('can generate signatures', () => {
-      let args = queryBuilder.buildArguments({
-        name: 'Foo Bar',
-        email: 'example@foo.net',
-        age: 32,
+      const model = vuexOrmApollo.context.getModel('post');
+      let args = queryBuilder.buildArguments(model, {
+        content: 'Foo Bar',
+        title: 'Example',
+        otherId: 18,
+        userId: 5,
         user: { __type: 'User' }
-      }, true);
+      }, true, false, false);
 
-      expect(args).toEqual('($name: String!, $email: String!, $age: Int!, $user: UserInput!)');
+      expect(args).toEqual('($content: String!, $title: String!, $otherId: Int!, $user: UserInput!)');
     });
 
     it('can generate fields with variables', () => {
-      let args = queryBuilder.buildArguments({
-        name: 'Foo Bar',
-        email: 'example@foo.net',
-        age: 32,
+      const model = vuexOrmApollo.context.getModel('post');
+      let args = queryBuilder.buildArguments(model, {
+        content: 'Foo Bar',
+        title: 'Example',
+        otherId: 18,
+        userId: 5,
         user: { __type: 'User' }
-      }, false, false, true);
+      }, false, false, false);
 
-      expect(args).toEqual('(name: $name, email: $email, age: $age, user: $user)');
+      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, user: $user)');
     });
 
     it('can generate filter field with variables', () => {
-      let args = queryBuilder.buildArguments({
-        name: 'Foo Bar',
-        email: 'example@foo.net',
-        age: 32,
+      const model = vuexOrmApollo.context.getModel('post');
+      let args = queryBuilder.buildArguments(model, {
+        content: 'Foo Bar',
+        title: 'Example',
+        otherId: 18,
+        userId: 5,
         user: { __type: 'User' }
-      }, false, true, true);
+      }, false, true, false);
 
-      expect(args).toEqual('(filter: { name: $name, email: $email, age: $age, user: $user })');
+      expect(args).toEqual('(filter: { content: $content, title: $title, otherId: $otherId, user: $user })');
     });
   });
 
@@ -331,6 +341,7 @@ query test {
     id
     content
     title
+    otherId
     comments {
       nodes {
         id
@@ -380,6 +391,7 @@ query Posts {
       id
       content
       title
+      otherId
       user {
         id
         name
@@ -409,6 +421,7 @@ mutation CreatePost($post: PostInput!) {
     id
     content
     title
+    otherId
     user {
       id
       name
@@ -437,6 +450,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
     id
     content
     title
+    otherId
     user {
       id
       name

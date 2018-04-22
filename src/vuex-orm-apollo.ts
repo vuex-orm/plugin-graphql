@@ -120,7 +120,6 @@ export default class VuexORMApollo {
 
       const oldRecord = model.baseModel.getters('find')(id);
 
-      this.context.logger.log(oldRecord);
       if (oldRecord && !oldRecord.$isPersisted) {
         // The server generated another ID, this is very likely to happen.
         // in this case this.mutate has inserted a new record instead of updating the existing one.

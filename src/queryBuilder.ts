@@ -61,7 +61,7 @@ export default class QueryBuilder {
     model = this.getModel(model);
     ignoreModels.push(model);
 
-    let params: string = this.buildArguments(args, false, multiple, allowIdFields);
+    let params: string = this.buildArguments(model, args, false, multiple, allowIdFields);
 
     const fields = `
       ${model.getQueryFields().join(' ')}
@@ -116,7 +116,7 @@ export default class QueryBuilder {
 
     // build query
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(args, true, false)} {\n` +
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, false)} {\n` +
       `  ${this.buildField(model, multiple, args, [], name, true)}\n` +
       `}`;
 
@@ -220,12 +220,14 @@ export default class QueryBuilder {
    * 4) Filter fields with variables (signature = false, filter = true)
    *      query users(filter: { active: $active })
    *
+   * @param model
    * @param {Arguments | undefined} args
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
+   * @param filter
    * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
    * @returns {String}
    */
-  private buildArguments (args?: Arguments, signature: boolean = false, filter: boolean = false,
+  private buildArguments (model: Model, args?: Arguments, signature: boolean = false, filter: boolean = false,
                           allowIdFields: boolean = true): string {
     if (args === undefined) return '';
 
@@ -236,15 +238,18 @@ export default class QueryBuilder {
       Object.keys(args).forEach((key: string) => {
         let value: any = args[key];
 
+        const isForeignKey = model.skipField(key);
+        const skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
+
         // Ignore null fields, ids and connections
-        if (value && !(value instanceof Array || (key === 'id' && !allowIdFields))) {
+        if (value && !(value instanceof Array || skipFieldDueId)) {
           let typeOrValue: any = '';
 
           if (signature) {
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
-            } else if (key === 'id' || key.endsWith('Id')) { // FIXME not all 'xxxId' fields are of type ID!
+            } else if (key === 'id' || isForeignKey) {
               // Case 1 (ID!)
               typeOrValue = 'ID!';
             } else {
