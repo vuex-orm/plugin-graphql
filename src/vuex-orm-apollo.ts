@@ -118,12 +118,19 @@ export default class VuexORMApollo {
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, args, dispatch, model, false);
 
-      const record = model.baseModel.getters('find')(id);
+      const oldRecord = model.baseModel.getters('find')(id);
 
-      record.$isPersisted = true;
-      record.$dispatch('update', { where: record.id, data: record });
+      this.context.logger.log(oldRecord);
+      if (oldRecord && !oldRecord.$isPersisted) {
+        // The server generated another ID, this is very likely to happen.
+        // in this case this.mutate has inserted a new record instead of updating the existing one.
+        // We can see that because $isPersisted is still false then.
+        this.context.logger.log('Dropping deprecated record with ID', oldRecord.id);
+        await model.baseModel.dispatch('delete', { where: oldRecord.id });
+      }
 
-      return record;
+      // TODO is this save?
+      return model.baseModel.getters('query')().withAll().last();
     }
   }
 
@@ -174,7 +181,6 @@ export default class VuexORMApollo {
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, args, dispatch, model, false);
 
-      // TODO is this really necessary?
       return model.baseModel.getters('find')(data.id);
     }
   }
@@ -218,7 +224,8 @@ export default class VuexORMApollo {
       const newData = await this.apolloRequest(model, query, variables, true);
 
       if (name !== `delete${upcaseFirstLetter(model.singularName)}`) {
-        return this.insertData(newData, dispatch);
+        await this.insertData(newData, dispatch);
+        return true; // FIXME RETURN THE NEW RECORD!!
       }
 
       return true;

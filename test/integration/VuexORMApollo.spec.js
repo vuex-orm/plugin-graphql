@@ -385,12 +385,13 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
     });
 
     it('is true for persisted records', async () => {
+      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
       const response = {
         data: {
           createUser: {
             __typename: 'user',
-            id: 1,
-            name: 'Charlie Brown',
+            id: 15,
+            name: 'Snoopy',
             posts: {
               __typename: 'post',
               nodes: []
@@ -399,11 +400,12 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
         }
       };
 
+      expect(user.$isPersisted).toBeFalsy();
+
       await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/persist', { id: 1 });
+        user = await store.dispatch('entities/users/persist', { id: 1 });
       });
 
-      const user = store.getters['entities/users/find'](1);
       expect(user.$isPersisted).toBeTruthy();
     });
 
