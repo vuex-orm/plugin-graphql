@@ -26,6 +26,13 @@ export default class Context {
     }
 
     this.collectModels();
+
+    this.logger.group('Context setup');
+    this.logger.log('components', this.components);
+    this.logger.log('options', this.options);
+    this.logger.log('database', this.database);
+    this.logger.log('models', this.models);
+    this.logger.groupEnd();
   }
 
   /**
@@ -49,8 +56,22 @@ export default class Context {
    */
   private collectModels () {
     this.database.entities.forEach((entity: any) => {
-      const model = new Model(entity.model as ORMModel, this);
+      const model: Model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
+
+      this.augmentModel(model);
     });
+  }
+
+  private augmentModel (model: Model) {
+    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
+
+    model.baseModel.fields = () => {
+      const originalFields = originalFieldGenerator();
+
+      originalFields['$isPersisted'] = model.baseModel.attr(false);
+
+      return originalFields;
+    };
   }
 }

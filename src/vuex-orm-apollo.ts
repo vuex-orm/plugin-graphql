@@ -118,8 +118,12 @@ export default class VuexORMApollo {
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, args, dispatch, model, false);
 
-      // TODO is this really necessary?
-      return model.baseModel.getters('find')(id);
+      const record = model.baseModel.getters('find')(id);
+
+      record.$isPersisted = true;
+      record.$dispatch('update', { where: record.id, data: record });
+
+      return record;
     }
   }
 

@@ -195,9 +195,12 @@ export default class QueryBuilder {
     if (!recursiveCall) {
       this.context.logger.log('Transformed data:', result);
       this.context.logger.groupEnd();
+    } else {
+      result['$isPersisted'] = true;
     }
 
-    return result;
+    // MAke sure this is really a plain JS object. We had some issues in testing here.
+    return JSON.parse(JSON.stringify(result));
   }
 
   /**

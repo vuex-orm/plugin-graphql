@@ -7867,7 +7867,11 @@ var QueryBuilder = /** @class */ (function () {
             this.context.logger.log('Transformed data:', result);
             this.context.logger.groupEnd();
         }
-        return result;
+        else {
+            result['$isPersisted'] = true;
+        }
+        // MAke sure this is really a plain JS object. We had some issues in testing here.
+        return JSON.parse(JSON.stringify(result));
     };
     /**
      * Generates the arguments string for a graphql query based on a given map.
@@ -8144,6 +8148,12 @@ var Context = /** @class */ (function () {
             throw new Error('database param is required to initialize vuex-orm-apollo!');
         }
         this.collectModels();
+        this.logger.group('Context setup');
+        this.logger.log('components', this.components);
+        this.logger.log('options', this.options);
+        this.logger.log('database', this.database);
+        this.logger.log('models', this.models);
+        this.logger.groupEnd();
     }
     /**
      * Returns a model by name
@@ -8168,7 +8178,16 @@ var Context = /** @class */ (function () {
         this.database.entities.forEach(function (entity) {
             var model = new Model(entity.model, _this);
             _this.models.set(model.singularName, model);
+            _this.augmentModel(model);
         });
+    };
+    Context.prototype.augmentModel = function (model) {
+        var originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
+        model.baseModel.fields = function () {
+            var originalFields = originalFieldGenerator();
+            originalFields['$isPersisted'] = model.baseModel.attr(false);
+            return originalFields;
+        };
     };
     return Context;
 }());
@@ -8308,7 +8327,7 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, data, mutationName;
+            var model, data, mutationName, record;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -8321,8 +8340,10 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
                         _c.sent();
-                        // TODO is this really necessary?
-                        return [2 /*return*/, model.baseModel.getters('find')(id)];
+                        record = model.baseModel.getters('find')(id);
+                        record.$isPersisted = true;
+                        record.$dispatch('update', { where: record.id, data: record });
+                        return [2 /*return*/, record];
                     case 2: return [2 /*return*/];
                 }
             });

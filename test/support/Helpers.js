@@ -2,7 +2,6 @@ import _ from 'lodash';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import VuexORM, { Database, Model } from '@vuex-orm/core';
-import installVuexORMApollo from 'app';
 import fetchMock from 'fetch-mock';
 import VuexORMApolloPlugin from "app";
 

@@ -126,6 +126,12 @@ This plugin has an opinion how the GraphQL API schema should look like:
 You can see query examples in the [project wiki](https://github.com/vuex-orm/vuex-orm-apollo/wiki/Example-Queries).
 
 
+## Special record properties
+
+This plugin adds a special property to your models: `$isPersisted`, which represents if this record is persisted on
+the server. It's true for all records except newly created ones. 
+
+
 
 ## Known issues
 
