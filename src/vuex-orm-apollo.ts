@@ -118,7 +118,7 @@ export default class VuexORMApollo {
       args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
 
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, args, dispatch, model, false);
+      const newRecord = await this.mutate(mutationName, args, dispatch, model, false);
 
       const oldRecord = model.baseModel.getters('find')(id);
 
@@ -130,8 +130,7 @@ export default class VuexORMApollo {
         await model.baseModel.dispatch('delete', { where: oldRecord.id });
       }
 
-      // TODO is this save?
-      return model.baseModel.getters('query')().withAll().last();
+      return newRecord;
     }
   }
 
@@ -181,9 +180,7 @@ export default class VuexORMApollo {
       args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
 
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
-      await this.mutate(mutationName, args, dispatch, model, false);
-
-      return model.baseModel.getters('find')(data.id);
+      return this.mutate(mutationName, args, dispatch, model, false);
     }
   }
 
@@ -226,8 +223,8 @@ export default class VuexORMApollo {
       const newData = await this.apolloRequest(model, query, variables, true);
 
       if (name !== `delete${upcaseFirstLetter(model.singularName)}`) {
-        await this.insertData(newData, dispatch);
-        return true; // FIXME RETURN THE NEW RECORD!!
+        const insertedData: Data = await this.insertData(newData, dispatch);
+        return insertedData[model.pluralName][0];
       }
 
       return true;
@@ -266,11 +263,20 @@ export default class VuexORMApollo {
    * @param {Data} data New data to insert/update
    * @param {Function} dispatch Vuex Dispatch method for the model
    */
-  private async insertData (data: Data, dispatch: DispatchFunction) {
+  private async insertData (data: Data, dispatch: DispatchFunction): Promise<Data> {
+    let insertedData: Data = {};
+
     Object.keys(data).forEach(async (key) => {
       const value = data[key];
       this.context.logger.log('Inserting records', value);
-      await dispatch('insertOrUpdate', { data:  value });
+      const newData = await dispatch('insertOrUpdate', { data:  value });
+
+      Object.keys(newData).forEach((dataKey) => {
+        if (!insertedData[dataKey]) insertedData[dataKey] = [];
+        insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
+      });
     });
+
+    return insertedData;
   }
 }

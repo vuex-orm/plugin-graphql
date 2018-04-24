@@ -8340,7 +8340,7 @@ var VuexORMApollo = /** @class */ (function () {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, data, mutationName, oldRecord;
+            var model, data, mutationName, newRecord, oldRecord;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -8352,7 +8352,7 @@ var VuexORMApollo = /** @class */ (function () {
                         mutationName = "create" + upcaseFirstLetter(model.singularName);
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
-                        _c.sent();
+                        newRecord = _c.sent();
                         oldRecord = model.baseModel.getters('find')(id);
                         if (!(oldRecord && !oldRecord.$isPersisted)) return [3 /*break*/, 3];
                         // The server generated another ID, this is very likely to happen.
@@ -8363,9 +8363,7 @@ var VuexORMApollo = /** @class */ (function () {
                     case 2:
                         _c.sent();
                         _c.label = 3;
-                    case 3: 
-                    // TODO is this save?
-                    return [2 /*return*/, model.baseModel.getters('query')().withAll().last()];
+                    case 3: return [2 /*return*/, newRecord];
                     case 4: return [2 /*return*/];
                 }
             });
@@ -8416,20 +8414,15 @@ var VuexORMApollo = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var model, mutationName;
             return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        if (!data) return [3 /*break*/, 2];
-                        model = this.context.getModel(state.$name);
-                        args = args || {};
-                        args['id'] = data.id;
-                        args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
-                        mutationName = "update" + upcaseFirstLetter(model.singularName);
-                        return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
-                    case 1:
-                        _c.sent();
-                        return [2 /*return*/, model.baseModel.getters('find')(data.id)];
-                    case 2: return [2 /*return*/];
+                if (data) {
+                    model = this.context.getModel(state.$name);
+                    args = args || {};
+                    args['id'] = data.id;
+                    args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
+                    mutationName = "update" + upcaseFirstLetter(model.singularName);
+                    return [2 /*return*/, this.mutate(mutationName, args, dispatch, model, false)];
                 }
+                return [2 /*return*/];
             });
         });
     };
@@ -8470,7 +8463,7 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.prototype.mutate = function (name, variables, dispatch, model, multiple) {
         return __awaiter(this, void 0, void 0, function () {
-            var id, query, newData;
+            var id, query, newData, insertedData;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -8483,8 +8476,8 @@ var VuexORMApollo = /** @class */ (function () {
                         if (!(name !== "delete" + upcaseFirstLetter(model.singularName))) return [3 /*break*/, 3];
                         return [4 /*yield*/, this.insertData(newData, dispatch)];
                     case 2:
-                        _a.sent();
-                        return [2 /*return*/, true]; // FIXME RETURN THE NEW RECORD!!
+                        insertedData = _a.sent();
+                        return [2 /*return*/, insertedData[model.pluralName][0]];
                     case 3: return [2 /*return*/, true];
                     case 4: return [2 /*return*/];
                 }
@@ -8535,9 +8528,11 @@ var VuexORMApollo = /** @class */ (function () {
     VuexORMApollo.prototype.insertData = function (data, dispatch) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
+            var insertedData;
             return __generator(this, function (_a) {
+                insertedData = {};
                 Object.keys(data).forEach(function (key) { return __awaiter(_this, void 0, void 0, function () {
-                    var value;
+                    var value, newData;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
@@ -8545,12 +8540,17 @@ var VuexORMApollo = /** @class */ (function () {
                                 this.context.logger.log('Inserting records', value);
                                 return [4 /*yield*/, dispatch('insertOrUpdate', { data: value })];
                             case 1:
-                                _a.sent();
+                                newData = _a.sent();
+                                Object.keys(newData).forEach(function (dataKey) {
+                                    if (!insertedData[dataKey])
+                                        insertedData[dataKey] = [];
+                                    insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
+                                });
                                 return [2 /*return*/];
                         }
                     });
                 }); });
-                return [2 /*return*/];
+                return [2 /*return*/, insertedData];
             });
         });
     };
