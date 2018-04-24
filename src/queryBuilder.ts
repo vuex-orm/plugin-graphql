@@ -128,11 +128,11 @@ export default class QueryBuilder {
    *
    * Omits relations and id fields.
    *
+   * @param model
    * @param {Data} data
    * @returns {Data}
    */
-  public transformOutgoingData (data: Data): Data {
-    const model: Model = this.getModel(data.$self().entity);
+  public transformOutgoingData (model: Model, data: Data): Data {
     const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
 

@@ -8,6 +8,8 @@ import { upcaseFirstLetter } from './utils';
 import Context from './context';
 import { Components } from '@vuex-orm/core/lib/plugins/use';
 
+const inflection = require('inflection');
+
 /**
  * Plugin class
  */
@@ -113,7 +115,7 @@ export default class VuexORMApollo {
       const data = model.baseModel.getters('find')(id);
 
       args = args || {};
-      args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
+      args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
 
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, args, dispatch, model, false);
@@ -151,7 +153,8 @@ export default class VuexORMApollo {
       const value: any = args[key];
 
       if (value instanceof this.context.components.Model) {
-        const transformedValue = this.queryBuilder.transformOutgoingData(value);
+        const model = this.context.getModel(inflection.singularize(value.$self().entity));
+        const transformedValue = this.queryBuilder.transformOutgoingData(model, value);
         this.context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
         args[key] = transformedValue;
       }
@@ -175,7 +178,7 @@ export default class VuexORMApollo {
 
       args = args || {};
       args['id'] = data.id;
-      args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
+      args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
 
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
       await this.mutate(mutationName, args, dispatch, model, false);

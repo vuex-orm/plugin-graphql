@@ -7801,11 +7801,11 @@ var QueryBuilder = /** @class */ (function () {
      *
      * Omits relations and id fields.
      *
+     * @param model
      * @param {Data} data
      * @returns {Data}
      */
-    QueryBuilder.prototype.transformOutgoingData = function (data) {
-        var model = this.getModel(data.$self().entity);
+    QueryBuilder.prototype.transformOutgoingData = function (model, data) {
         var relations = model.getRelations();
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
@@ -8239,6 +8239,7 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var inflection$3 = require('inflection');
 /**
  * Plugin class
  */
@@ -8347,7 +8348,7 @@ var VuexORMApollo = /** @class */ (function () {
                         model = this.context.getModel(state.$name);
                         data = model.baseModel.getters('find')(id);
                         args = args || {};
-                        args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
+                        args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
                         mutationName = "create" + upcaseFirstLetter(model.singularName);
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
@@ -8391,7 +8392,8 @@ var VuexORMApollo = /** @class */ (function () {
                 Object.keys(args).forEach(function (key) {
                     var value = args[key];
                     if (value instanceof _this.context.components.Model) {
-                        var transformedValue = _this.queryBuilder.transformOutgoingData(value);
+                        var model_1 = _this.context.getModel(inflection$3.singularize(value.$self().entity));
+                        var transformedValue = _this.queryBuilder.transformOutgoingData(model_1, value);
                         _this.context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
                         args[key] = transformedValue;
                     }
@@ -8420,7 +8422,7 @@ var VuexORMApollo = /** @class */ (function () {
                         model = this.context.getModel(state.$name);
                         args = args || {};
                         args['id'] = data.id;
-                        args[model.singularName] = this.queryBuilder.transformOutgoingData(data);
+                        args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
                         mutationName = "update" + upcaseFirstLetter(model.singularName);
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:

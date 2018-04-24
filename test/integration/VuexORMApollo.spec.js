@@ -377,7 +377,8 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
 
   describe('$isPersisted', () => {
     it('is false for newly created records', async () => {
-      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      const insertedData = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      let user = insertedData.users[0];
       expect(user.$isPersisted).toBeFalsy();
 
       user = store.getters['entities/users/find'](user.id);
@@ -385,7 +386,8 @@ mutation SignupUser($user: UserInput!, $captchaToken: String!) {
     });
 
     it('is true for persisted records', async () => {
-      let user = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      const insertedData = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      let user = insertedData.users[0];
       const response = {
         data: {
           createUser: {
