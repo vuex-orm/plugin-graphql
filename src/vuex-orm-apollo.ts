@@ -224,7 +224,14 @@ export default class VuexORMApollo {
 
       if (name !== `delete${upcaseFirstLetter(model.singularName)}`) {
         const insertedData: Data = await this.insertData(newData, dispatch);
-        return insertedData[model.pluralName][0];
+
+        if (insertedData[model.pluralName] && insertedData[model.pluralName][0]) {
+          return insertedData[model.pluralName][0];
+        } else {
+          this.context.logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData,
+            '. Fallback to find()');
+          return model.baseModel.getters('query')().last();
+        }
       }
 
       return true;

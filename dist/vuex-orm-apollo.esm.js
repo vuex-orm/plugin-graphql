@@ -7811,7 +7811,7 @@ var QueryBuilder = /** @class */ (function () {
         Object.keys(data).forEach(function (key) {
             var value = data[key];
             // Ignore IDs and connections and empty fields
-            if (!relations.has(key) && !key.startsWith('$') && key !== 'id' && value !== null) {
+            if (!relations.has(key) && !model.skipField(key) && key !== 'id' && value !== null) {
                 returnValue[key] = value;
             }
         });
@@ -8505,7 +8505,14 @@ var VuexORMApollo = /** @class */ (function () {
                         return [4 /*yield*/, this.insertData(newData, dispatch)];
                     case 2:
                         insertedData = _a.sent();
-                        return [2 /*return*/, insertedData[model.pluralName][0]];
+                        if (insertedData[model.pluralName] && insertedData[model.pluralName][0]) {
+                            return [2 /*return*/, insertedData[model.pluralName][0]];
+                        }
+                        else {
+                            this.context.logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData, '. Fallback to find()');
+                            return [2 /*return*/, model.baseModel.getters('query')().last()];
+                        }
+                        _a.label = 3;
                     case 3: return [2 /*return*/, true];
                     case 4: return [2 /*return*/];
                 }
