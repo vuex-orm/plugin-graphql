@@ -7898,6 +7898,7 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {String}
      */
     QueryBuilder.prototype.buildArguments = function (model, args, signature, filter, allowIdFields) {
+        var _this = this;
         if (signature === void 0) { signature = false; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = true; }
@@ -7924,12 +7925,7 @@ var QueryBuilder = /** @class */ (function () {
                         }
                         else {
                             // Case 1 (String!)
-                            if (typeof value === 'number')
-                                typeOrValue = 'Int';
-                            if (typeof value === 'string')
-                                typeOrValue = 'String';
-                            if (typeof value === 'boolean')
-                                typeOrValue = 'Boolean';
+                            typeOrValue = _this.determineAttributeType(model, key, value);
                             typeOrValue = typeOrValue + '!';
                         }
                     }
@@ -7948,6 +7944,35 @@ var QueryBuilder = /** @class */ (function () {
             }
         }
         return returnValue;
+    };
+    /**
+     * Determines the GraphQL primitive type of a field in the variables hash by the field type or (when
+     * the field type is generic attribute) by the variable type.
+     * @param {Model} model
+     * @param {string} key
+     * @param {string} value
+     * @returns {string}
+     */
+    QueryBuilder.prototype.determineAttributeType = function (model, key, value) {
+        var field = model.fields.get(key);
+        if (field && field instanceof this.context.components.String) {
+            return 'String';
+        }
+        else if (field && field instanceof this.context.components.Number) {
+            return 'Int';
+        }
+        else if (field && field instanceof this.context.components.Boolean) {
+            return 'Boolean';
+        }
+        else {
+            if (typeof value === 'number')
+                return 'Int';
+            if (typeof value === 'string')
+                return 'String';
+            if (typeof value === 'boolean')
+                return 'Boolean';
+        }
+        throw new Error("Can't find suitable graphql type for variable " + key + " for model " + model.singularName);
     };
     /**
      *
@@ -8140,8 +8165,11 @@ var Model = /** @class */ (function () {
         return relations;
     };
     Model.prototype.fieldIsAttribute = function (field) {
-        return field instanceof this.context.components.Attr ||
-            field instanceof this.context.components.Increment;
+        return field instanceof this.context.components.Increment ||
+            field instanceof this.context.components.Attr ||
+            field instanceof this.context.components.String ||
+            field instanceof this.context.components.Number ||
+            field instanceof this.context.components.Boolean;
     };
     return Model;
 }());

@@ -17,7 +17,7 @@ class User extends ORMModel {
   static fields () {
     return {
       id: this.increment(null),
-      name: this.attr(null),
+      name: this.string(null),
       posts: this.hasMany(Post, 'userId'),
       comments: this.hasMany(Comment, 'userId')
     };
@@ -31,10 +31,10 @@ class Post extends ORMModel {
   static fields () {
     return {
       id: this.increment(null),
-      content: this.attr(''),
-      title: this.attr(''),
-      otherId: this.attr(0),
-      userId:  this.attr(0),
+      content: this.string(''),
+      title: this.string(''),
+      otherId: this.number(0),
+      userId:  this.number(0),
       user: this.belongsTo(User, 'userId'),
       comments: this.hasMany(Comment, 'postId')
     };
@@ -48,9 +48,9 @@ class Comment extends ORMModel {
   static fields () {
     return {
       id: this.increment(null),
-      content: this.attr(''),
-      userId:  this.attr(0),
-      postId:  this.attr(0),
+      content: this.string(''),
+      userId:  this.number(0),
+      postId:  this.number(0),
       user: this.belongsTo(User, 'userId'),
       post: this.belongsTo(Post, 'postId')
     };

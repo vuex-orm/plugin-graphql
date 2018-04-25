@@ -48,9 +48,9 @@
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.5.3.tgz#91b728599544efbb7386d8b6633693a3c2e7ade5"
 
-"@vuex-orm/core@^0.24.4":
-  version "0.24.4"
-  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.24.4.tgz#5f29f2fb1a9351e7eff2019b8348b5bc47d258e1"
+"@vuex-orm/core@^0.24.5":
+  version "0.24.5"
+  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.24.5.tgz#ae92fc031c45bb98db68892022c787f92844f962"
 
 abbrev@1:
   version "1.1.1"

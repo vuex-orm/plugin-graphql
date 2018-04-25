@@ -9,8 +9,8 @@ export default class Model {
   public readonly singularName: string;
   public readonly pluralName: string;
   public readonly baseModel: ORMModel;
+  public readonly fields: Map<string, Field> = new Map<string, Field>();
   private readonly context: Context;
-  private readonly fields: Map<string, Field> = new Map<string, Field>();
 
   public constructor (baseModel: ORMModel, context: Context) {
     this.baseModel = baseModel;
@@ -81,7 +81,10 @@ export default class Model {
   }
 
   private fieldIsAttribute (field: Field): boolean {
-    return field instanceof this.context.components.Attr ||
-      field instanceof this.context.components.Increment;
+    return field instanceof this.context.components.Increment ||
+      field instanceof this.context.components.Attr ||
+      field instanceof this.context.components.String ||
+      field instanceof this.context.components.Number ||
+      field instanceof this.context.components.Boolean;
   }
 }

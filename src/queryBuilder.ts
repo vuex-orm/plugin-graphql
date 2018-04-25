@@ -254,10 +254,7 @@ export default class QueryBuilder {
               typeOrValue = 'ID!';
             } else {
               // Case 1 (String!)
-              if (typeof value === 'number') typeOrValue = 'Int';
-              if (typeof value === 'string') typeOrValue = 'String';
-              if (typeof value === 'boolean') typeOrValue = 'Boolean';
-
+              typeOrValue = this.determineAttributeType(model, key, value);
               typeOrValue = typeOrValue + '!';
             }
           } else {
@@ -278,6 +275,32 @@ export default class QueryBuilder {
     }
 
     return returnValue;
+  }
+
+  /**
+   * Determines the GraphQL primitive type of a field in the variables hash by the field type or (when
+   * the field type is generic attribute) by the variable type.
+   * @param {Model} model
+   * @param {string} key
+   * @param {string} value
+   * @returns {string}
+   */
+  private determineAttributeType (model: Model, key: string, value: any): string {
+    const field: undefined | Field = model.fields.get(key);
+
+    if (field && field instanceof this.context.components.String) {
+      return 'String';
+    } else if (field && field instanceof this.context.components.Number) {
+      return 'Int';
+    } else if (field && field instanceof this.context.components.Boolean) {
+      return 'Boolean';
+    } else {
+      if (typeof value === 'number') return 'Int';
+      if (typeof value === 'string') return 'String';
+      if (typeof value === 'boolean') return 'Boolean';
+    }
+
+    throw new Error(`Can't find suitable graphql type for variable ${key} for model ${model.singularName}`);
   }
 
   /**

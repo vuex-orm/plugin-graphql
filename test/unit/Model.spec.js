@@ -11,9 +11,9 @@ class User extends ORMModel {
 
   static fields () {
     return {
-      id: this.attr(null),
-      name: this.attr(null),
-      profile: this.hasOne(Profile, 'user_id')
+      id: this.increment(null),
+      name: this.string(null),
+      profile: this.hasOne(Profile, 'userId')
     };
   }
 }
@@ -23,15 +23,15 @@ class Profile extends ORMModel {
 
   static fields () {
     return {
-      id: this.attr(null),
-      user_id: this.attr(null)
+      id: this.increment(null),
+      userId: this.number(null)
     };
   }
 }
 
 beforeEach(() => {
   [store, vuexOrmApollo] = createStore([{ model: User }, { model: Profile }]);
-  store.dispatch('entities/profiles/insert', { data: { id: 1, user_id: 1 }});
+  store.dispatch('entities/profiles/insert', { data: { id: 1, userId: 1 }});
   store.dispatch('entities/users/insert', { data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
 
   model = vuexOrmApollo.context.getModel('user');
@@ -68,7 +68,7 @@ describe('Model', () => {
 
       expect(relations.has('profile')).toEqual(true);
       expect(relations.get('profile')).toEqual({
-        foreignKey: "user_id", localKey: "id", model: User, "related": Profile
+        foreignKey: "userId", localKey: "id", model: User, "related": Profile
       });
     });
   });
