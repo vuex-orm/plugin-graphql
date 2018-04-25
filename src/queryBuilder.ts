@@ -318,9 +318,9 @@ export default class QueryBuilder {
       let relatedModel: Model;
 
       if (field.related) {
-        relatedModel = this.getModel(field.related.name);
+        relatedModel = this.getModel(field.related.entity);
       } else if (field.parent) {
-        relatedModel = this.getModel(field.parent.name);
+        relatedModel = this.getModel(field.parent.entity);
       } else {
         relatedModel = this.getModel(name);
         this.context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name',

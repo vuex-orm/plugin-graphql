@@ -7989,10 +7989,10 @@ var QueryBuilder = /** @class */ (function () {
         model.getRelations().forEach(function (field, name) {
             var relatedModel;
             if (field.related) {
-                relatedModel = _this.getModel(field.related.name);
+                relatedModel = _this.getModel(field.related.entity);
             }
             else if (field.parent) {
-                relatedModel = _this.getModel(field.parent.name);
+                relatedModel = _this.getModel(field.parent.entity);
             }
             else {
                 relatedModel = _this.getModel(name);
