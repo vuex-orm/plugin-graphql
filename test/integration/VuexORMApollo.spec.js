@@ -11,8 +11,8 @@ class User extends ORMModel {
 
   static fields () {
     return {
-      id: this.increment(null),
-      name: this.string(null),
+      id: this.increment(0),
+      name: this.string(''),
       posts: this.hasMany(Post, 'userId'),
       comments: this.hasMany(Comment, 'userId')
     };
@@ -28,7 +28,7 @@ class Post extends ORMModel {
       id: this.increment(null),
       content: this.string(''),
       title: this.string(''),
-      userId: this.number(null),
+      userId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       user: this.belongsTo(User, 'userId'),
       comments: this.hasMany(Comment, 'userId')
@@ -42,10 +42,10 @@ class Comment extends ORMModel {
 
   static fields () {
     return {
-      id: this.increment(null),
+      id: this.increment(0),
       content: this.string(''),
-      userId: this.number(null),
-      postId: this.number(null),
+      userId: this.number(0),
+      postId: this.number(0),
       user: this.belongsTo(User, 'userId'),
       post: this.belongsTo(Post, 'postId')
     };
@@ -344,30 +344,58 @@ mutation DeleteUser($id: ID!) {
   });
 
 
-  describe('customMutation', () => {
+  describe('custom mutation', () => {
     it('sends the correct query to the API', async () => {
-      const user = store.getters['entities/users/find'](1);
+      const post = store.getters['entities/posts/find'](1);
       const response = {
         data: {
-          signupUser: {
-            __typename: 'user',
+          upvotePost: {
+            __typename: 'post',
             id: 1,
-            name: 'Charlie Brown'
+            otherId: 13548,
+            title: 'Example Post 1',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: []
+            },
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Johnny Imba',
+            }
           }
         }
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/mutate', { mutation: 'signupUser', user, captchaToken: '15' });
+        await store.dispatch('entities/posts/mutate', { mutation: 'upvotePost', post, captchaToken: '15' });
       });
 
       expect(request.variables.captchaToken).toEqual('15');
-      expect(request.variables.user.name).toEqual(user.name);
+      expect(request.variables.post.title).toEqual(post.title);
+      expect(request.variables.post.otherId).toEqual(post.otherId);
+      expect(request.variables.post.userId).toEqual(undefined);
       expect(request.query).toEqual(`
-mutation SignupUser($user: UserInput!, $captchaToken: String!) {
-  signupUser(user: $user, captchaToken: $captchaToken) {
+mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
+  upvotePost(post: $post, captchaToken: $captchaToken) {
     id
-    name
+    content
+    title
+    otherId
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        __typename
+      }
+      __typename
+    }
     __typename
   }
 }
