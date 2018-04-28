@@ -7811,7 +7811,7 @@ var QueryBuilder = /** @class */ (function () {
         Object.keys(data).forEach(function (key) {
             var value = data[key];
             // Ignore IDs and connections and empty fields
-            if (!relations.has(key) && !model.skipField(key) && key !== 'id' && value !== null) {
+            if (!relations.has(key) && !key.startsWith('$') && key !== 'id' && value !== null) {
                 returnValue[key] = value;
             }
         });

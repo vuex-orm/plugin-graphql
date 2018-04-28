@@ -375,7 +375,7 @@ mutation DeleteUser($id: ID!) {
       expect(request.variables.captchaToken).toEqual('15');
       expect(request.variables.post.title).toEqual(post.title);
       expect(request.variables.post.otherId).toEqual(post.otherId);
-      expect(request.variables.post.userId).toEqual(undefined);
+      expect(request.variables.post.userId).toEqual(1);
       expect(request.query).toEqual(`
 mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
   upvotePost(post: $post, captchaToken: $captchaToken) {
