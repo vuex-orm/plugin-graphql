@@ -169,23 +169,25 @@ export default class QueryBuilder {
       result = data.map(d => this.transformIncomingData(d, model, mutation, true));
     } else {
       Object.keys(data).forEach((key) => {
-        if (data[key] instanceof Object) {
-          if (data[key].nodes) {
-            result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, model, mutation, true);
-          } else {
-            let newKey = key;
+        if (data[key] !== undefined && data[key] !== null) {
+          if (data[key] instanceof Object) {
+            if (data[key].nodes) {
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, model, mutation, true);
+            } else {
+              let newKey = key;
 
-            if (mutation && !recursiveCall) {
-              newKey = data[key].nodes ? model.pluralName : model.singularName;
-              newKey = downcaseFirstLetter(newKey);
+              if (mutation && !recursiveCall) {
+                newKey = data[key].nodes ? model.pluralName : model.singularName;
+                newKey = downcaseFirstLetter(newKey);
+              }
+
+              result[newKey] = this.transformIncomingData(data[key], model, mutation, true);
             }
-
-            result[newKey] = this.transformIncomingData(data[key], model, mutation, true);
+          } else if (key === 'id') {
+            result[key] = parseInt(data[key], 0);
+          } else {
+            result[key] = data[key];
           }
-        } else if (key === 'id') {
-          result[key] = parseInt(data[key], 0);
-        } else {
-          result[key] = data[key];
         }
       });
     }
