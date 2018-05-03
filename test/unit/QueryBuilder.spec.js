@@ -182,6 +182,7 @@ describe('QueryBuilder', () => {
               "name": "Contract S",
               "displayName": "Contract S",
               "slug": "contract-s",
+              "checked": false,
               "contractOptions": {
                 "nodes": [
                   {
@@ -197,6 +198,7 @@ describe('QueryBuilder', () => {
               "name": "Contract M",
               "displayName": "Contract M",
               "slug": "contract-m",
+              "checked": true,
               "contractOptions": {
                 "nodes": [
                   {
@@ -212,6 +214,7 @@ describe('QueryBuilder', () => {
               "name": "Contract L",
               "displayName": "Contract L",
               "slug": "contract-l",
+              "checked": false,
               "contractOptions": {
                 "nodes": [
                   {
@@ -229,6 +232,7 @@ describe('QueryBuilder', () => {
         "contracts": [
           {
             "$isPersisted": true,
+            "checked": false,
             "contractOptions": [
               {
                 "$isPersisted": true,
@@ -244,6 +248,7 @@ describe('QueryBuilder', () => {
           },
           {
             "$isPersisted": true,
+            "checked": true,
             "contractOptions": [
               {
                 "$isPersisted": true,
@@ -259,6 +264,7 @@ describe('QueryBuilder', () => {
           },
           {
             "$isPersisted": true,
+            "checked": false,
             "contractOptions": [
               {
                 "$isPersisted": true,

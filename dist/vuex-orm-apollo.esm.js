@@ -7840,26 +7840,24 @@ var QueryBuilder = /** @class */ (function () {
         }
         else {
             Object.keys(data).forEach(function (key) {
-                if (data[key]) {
-                    if (data[key] instanceof Object) {
-                        if (data[key].nodes) {
-                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, model, mutation, true);
-                        }
-                        else {
-                            var newKey = key;
-                            if (mutation && !recursiveCall) {
-                                newKey = data[key].nodes ? model.pluralName : model.singularName;
-                                newKey = downcaseFirstLetter(newKey);
-                            }
-                            result[newKey] = _this.transformIncomingData(data[key], model, mutation, true);
-                        }
-                    }
-                    else if (key === 'id') {
-                        result[key] = parseInt(data[key], 0);
+                if (data[key] instanceof Object) {
+                    if (data[key].nodes) {
+                        result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, model, mutation, true);
                     }
                     else {
-                        result[key] = data[key];
+                        var newKey = key;
+                        if (mutation && !recursiveCall) {
+                            newKey = data[key].nodes ? model.pluralName : model.singularName;
+                            newKey = downcaseFirstLetter(newKey);
+                        }
+                        result[newKey] = _this.transformIncomingData(data[key], model, mutation, true);
                     }
+                }
+                else if (key === 'id') {
+                    result[key] = parseInt(data[key], 0);
+                }
+                else {
+                    result[key] = data[key];
                 }
             });
         }
