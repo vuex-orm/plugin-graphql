@@ -81,9 +81,9 @@
     "tslint-config-standard": "^7.0.0",
     "typescript": "^2.7.1",
     "uglify-js": "^3.3.9",
+    "vuex": "^3.0.1",
     "webpack": "^3.10.0",
-    "webpack-node-externals": "^1.6.0",
-    "vuex": "^3.0.1"
+    "webpack-node-externals": "^1.6.0"
   },
   "nyc": {
     "include": [

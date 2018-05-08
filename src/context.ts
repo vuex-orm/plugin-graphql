@@ -39,13 +39,14 @@ export default class Context {
    * Returns a model by name
    *
    * @param {Model|string} model
+   * @param allowNull
    * @returns {Model}
    */
-  public getModel (model: Model | string): Model {
+  public getModel (model: Model | string, allowNull: boolean = false): Model {
     if (typeof model === 'string') {
       const name: string = inflection.singularize(downcaseFirstLetter(model));
       model = this.models.get(name) as Model;
-      if (!model) throw new Error(`No such model ${name}!`);
+      if (!allowNull && !model) throw new Error(`No such model ${name}!`);
     }
 
     return model;

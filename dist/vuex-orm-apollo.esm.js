@@ -7842,20 +7842,24 @@ var QueryBuilder = /** @class */ (function () {
             Object.keys(data).forEach(function (key) {
                 if (data[key] !== undefined && data[key] !== null) {
                     if (data[key] instanceof Object) {
+                        var localModel = _this.context.getModel(key, true) || model;
                         if (data[key].nodes) {
-                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, model, mutation, true);
+                            result[inflection.pluralize(key)] = _this.transformIncomingData(data[key].nodes, localModel, mutation, true);
                         }
                         else {
                             var newKey = key;
                             if (mutation && !recursiveCall) {
-                                newKey = data[key].nodes ? model.pluralName : model.singularName;
+                                newKey = data[key].nodes ? localModel.pluralName : localModel.singularName;
                                 newKey = downcaseFirstLetter(newKey);
                             }
-                            result[newKey] = _this.transformIncomingData(data[key], model, mutation, true);
+                            result[newKey] = _this.transformIncomingData(data[key], localModel, mutation, true);
                         }
                     }
-                    else if (key === 'id') {
+                    else if (model.fieldIsNumber(model.fields.get(key))) {
                         result[key] = parseInt(data[key], 0);
+                    }
+                    else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
+                        result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
                     }
                     else {
                         result[key] = data[key];
@@ -8164,6 +8168,41 @@ var Model = /** @class */ (function () {
         });
         return relations;
     };
+    /**
+     * This accepts a field like `subjectType` and checks if this just randomly is called `...Type` or it is part
+     * of a polymorph relation.
+     * @param {string} name
+     * @returns {boolean}
+     */
+    Model.prototype.isTypeFieldOfPolymorphRelation = function (name) {
+        var _this = this;
+        var found = false;
+        this.context.models.forEach(function (model) {
+            if (found)
+                return false;
+            model.getRelations().forEach(function (relation) {
+                if (relation instanceof _this.context.components.MorphMany ||
+                    relation instanceof _this.context.components.MorphedByMany ||
+                    relation instanceof _this.context.components.MorphOne ||
+                    relation instanceof _this.context.components.MorphTo ||
+                    relation instanceof _this.context.components.MorphToMany) {
+                    if (relation.type === name && relation.related && relation.related.entity === _this.baseModel.entity) {
+                        found = true;
+                        return false;
+                    }
+                }
+                return true;
+            });
+            return true;
+        });
+        return found;
+    };
+    Model.prototype.fieldIsNumber = function (field) {
+        if (!field)
+            return false;
+        return field instanceof this.context.components.Number ||
+            field instanceof this.context.components.Increment;
+    };
     Model.prototype.fieldIsAttribute = function (field) {
         return field instanceof this.context.components.Increment ||
             field instanceof this.context.components.Attr ||
@@ -8199,13 +8238,15 @@ var Context = /** @class */ (function () {
      * Returns a model by name
      *
      * @param {Model|string} model
+     * @param allowNull
      * @returns {Model}
      */
-    Context.prototype.getModel = function (model) {
+    Context.prototype.getModel = function (model, allowNull) {
+        if (allowNull === void 0) { allowNull = false; }
         if (typeof model === 'string') {
             var name_1 = inflection$2.singularize(downcaseFirstLetter(model));
             model = this.models.get(name_1);
-            if (!model)
+            if (!allowNull && !model)
                 throw new Error("No such model " + name_1 + "!");
         }
         return model;

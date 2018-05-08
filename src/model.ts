@@ -80,6 +80,46 @@ export default class Model {
     return relations;
   }
 
+  /**
+   * This accepts a field like `subjectType` and checks if this just randomly is called `...Type` or it is part
+   * of a polymorph relation.
+   * @param {string} name
+   * @returns {boolean}
+   */
+  public isTypeFieldOfPolymorphRelation (name: string): boolean {
+    let found: boolean = false;
+
+    this.context.models.forEach((model) => {
+      if (found) return false;
+
+      model.getRelations().forEach((relation) => {
+        if (relation instanceof this.context.components.MorphMany ||
+          relation instanceof this.context.components.MorphedByMany ||
+          relation instanceof this.context.components.MorphOne ||
+          relation instanceof this.context.components.MorphTo ||
+          relation instanceof this.context.components.MorphToMany) {
+
+          if (relation.type === name && relation.related && relation.related.entity === this.baseModel.entity) {
+            found = true;
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      return true;
+    });
+
+    return found;
+  }
+
+  public fieldIsNumber (field: Field | undefined): boolean {
+    if (!field) return false;
+    return field instanceof this.context.components.Number ||
+      field instanceof this.context.components.Increment;
+  }
+
   private fieldIsAttribute (field: Field): boolean {
     return field instanceof this.context.components.Increment ||
       field instanceof this.context.components.Attr ||

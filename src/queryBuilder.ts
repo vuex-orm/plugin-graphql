@@ -5,7 +5,6 @@ import { print } from 'graphql/language/printer';
 import { Arguments, Data, Field } from './interfaces';
 import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
 import gql from 'graphql-tag';
-import { BelongsTo } from '@vuex-orm/core';
 import Context from './context';
 
 const inflection = require('inflection');
@@ -171,20 +170,25 @@ export default class QueryBuilder {
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined && data[key] !== null) {
           if (data[key] instanceof Object) {
+            const localModel: Model = this.context.getModel(key, true) || model;
+
             if (data[key].nodes) {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes, model, mutation, true);
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes,
+                localModel, mutation, true);
             } else {
               let newKey = key;
 
               if (mutation && !recursiveCall) {
-                newKey = data[key].nodes ? model.pluralName : model.singularName;
+                newKey = data[key].nodes ? localModel.pluralName : localModel.singularName;
                 newKey = downcaseFirstLetter(newKey);
               }
 
-              result[newKey] = this.transformIncomingData(data[key], model, mutation, true);
+              result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
             }
-          } else if (key === 'id') {
+          } else if (model.fieldIsNumber(model.fields.get(key))) {
             result[key] = parseInt(data[key], 0);
+          } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
+            result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
           } else {
             result[key] = data[key];
           }

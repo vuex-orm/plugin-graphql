@@ -135,7 +135,6 @@ the server. It's true for all records except newly created ones.
 
 ## Known issues
 
-- n:m relations and polymorphic relations are untested
 - Each model is only loaded once in the graph
 - Code documentation is deprecated and crappy
 

@@ -16,10 +16,27 @@ class User extends ORMModel {
 
   static fields () {
     return {
-      id: this.increment(null),
-      name: this.string(null),
+      id: this.increment(0),
+      name: this.string(''),
       posts: this.hasMany(Post, 'userId'),
       comments: this.hasMany(Comment, 'userId')
+    };
+  }
+}
+
+class Video extends ORMModel {
+  static entity = 'videos';
+  static eagerLoad = ['comments'];
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      content: this.string(''),
+      title: this.string(''),
+      userId: this.number(0),
+      otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
+      user: this.belongsTo(User, 'userId'),
+      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
   }
 }
@@ -33,10 +50,10 @@ class Post extends ORMModel {
       id: this.increment(null),
       content: this.string(''),
       title: this.string(''),
-      otherId: this.number(0),
-      userId:  this.number(0),
+      userId: this.number(0),
+      otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       user: this.belongsTo(User, 'userId'),
-      comments: this.hasMany(Comment, 'postId')
+      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
   }
 }
@@ -47,12 +64,13 @@ class Comment extends ORMModel {
 
   static fields () {
     return {
-      id: this.increment(null),
+      id: this.increment(0),
       content: this.string(''),
-      userId:  this.number(0),
-      postId:  this.number(0),
+      userId: this.number(0),
       user: this.belongsTo(User, 'userId'),
-      post: this.belongsTo(Post, 'postId')
+
+      subjectId: this.number(0),
+      subjectType: this.string('')
     };
   }
 }
@@ -105,7 +123,7 @@ class ContractOption extends ORMModel {
 
 beforeEach(() => {
   [store, vuexOrmApollo] = createStore([
-    { model: User }, { model: Post }, { model: Comment }, { model: ContractOption }, { model: Contract },
+    { model: User }, { model: Post }, { model: Video }, { model: Comment }, { model: ContractOption }, { model: Contract },
     { model: ContractContractOption }
   ]);
 
@@ -113,8 +131,10 @@ beforeEach(() => {
   store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
   store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
   store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
-  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, postId: 1, content: 'Example comment 1' }});
-  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, postId: 1, content: 'Example comment 2' }});
+  store.dispatch('entities/videos/insert', { data: { id: 1, userId: 1, title: 'Example video', content: 'Video' }});
+  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
+  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
+  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
 
   queryBuilder = vuexOrmApollo.queryBuilder;
 });
@@ -174,7 +194,7 @@ describe('QueryBuilder', () => {
 
   describe('.transformIncomingData', () => {
     it('transforms incoming data into a Vuex-ORM readable structure', () => {
-      const incomingData = {
+      const incomingData1 = {
         "contracts": {
           "nodes": [
             {
@@ -228,7 +248,7 @@ describe('QueryBuilder', () => {
           ]
         }
       };
-      const expectedData = {
+      const expectedData1 = {
         "contracts": [
           {
             "$isPersisted": true,
@@ -281,8 +301,71 @@ describe('QueryBuilder', () => {
         ],
       };
 
-      const model = vuexOrmApollo.context.getModel('contract');
-      expect(queryBuilder.transformIncomingData(incomingData, model, false)).toEqual(expectedData);
+      const incomingData2 = {
+        "posts": {
+          "nodes": [
+            {
+              "id": "1",
+              "content": "example content",
+              "title": "example title",
+              "user": {
+                "id": "15",
+                "name": "Charly Brown"
+              },
+              "otherId": "4894",
+              "comments": {
+                "nodes": [
+                  {
+                    "id": "42",
+                    "content": "Works!",
+                    "user": {
+                      "id": "14",
+                      "name": "Peppermint Patty"
+                    },
+                    "subjectId": "1",
+                    "subjectType": "Post"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      };
+      const expectedData2 = {
+        "posts": [
+          {
+            "$isPersisted": true,
+            "id": 1,
+            "content": "example content",
+            "title": "example title",
+            "user": {
+              "$isPersisted": true,
+              "id": 15,
+              "name": "Charly Brown"
+            },
+            "otherId": 4894,
+            "comments": [
+              {
+                "$isPersisted": true,
+                "id": 42,
+                "content": "Works!",
+                "user": {
+                  "$isPersisted": true,
+                  "id": 14,
+                  "name": "Peppermint Patty"
+                },
+                "subjectId": 1,
+                "subjectType": "posts"
+              }
+            ]
+          }
+        ]
+      };
+
+      const contract = vuexOrmApollo.context.getModel('contract');
+      const post = vuexOrmApollo.context.getModel('post');
+      expect(queryBuilder.transformIncomingData(incomingData1, contract, false)).toEqual(expectedData1);
+      expect(queryBuilder.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
     });
   });
 
@@ -334,7 +417,7 @@ describe('QueryBuilder', () => {
 
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
-      const fields = queryBuilder.buildRelationsQuery(vuexOrmApollo.context.getModel('comment'));
+      const fields = queryBuilder.buildRelationsQuery(vuexOrmApollo.context.getModel('post'));
       const query = QueryBuilder.prettify(`query test { ${fields} }`).trim();
 
       expect(query).toEqual(`
@@ -343,16 +426,12 @@ query test {
     id
     name
   }
-  post {
-    id
-    content
-    title
-    otherId
-    comments {
-      nodes {
-        id
-        content
-      }
+  comments {
+    nodes {
+      id
+      content
+      subjectId
+      subjectType
     }
   }
 }
@@ -406,6 +485,8 @@ query Posts {
         nodes {
           id
           content
+          subjectId
+          subjectType
         }
       }
     }
@@ -436,6 +517,8 @@ mutation CreatePost($post: PostInput!) {
       nodes {
         id
         content
+        subjectId
+        subjectType
       }
     }
   }
@@ -465,6 +548,8 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
       nodes {
         id
         content
+        subjectId
+        subjectType
       }
     }
   }

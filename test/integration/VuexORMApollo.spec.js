@@ -1,7 +1,5 @@
 import {Model as ORMModel} from "@vuex-orm/core";
-import Vue from 'vue';
 import {createStore, sendWithMockFetch} from "../support/Helpers";
-import fetchMock from 'fetch-mock';
 
 let store;
 let vuexOrmApollo;
@@ -19,6 +17,23 @@ class User extends ORMModel {
   }
 }
 
+class Video extends ORMModel {
+  static entity = 'videos';
+  static eagerLoad = ['comments'];
+
+  static fields () {
+    return {
+      id: this.increment(null),
+      content: this.string(''),
+      title: this.string(''),
+      userId: this.number(0),
+      otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
+      user: this.belongsTo(User, 'userId'),
+      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
+    };
+  }
+}
+
 class Post extends ORMModel {
   static entity = 'posts';
   static eagerLoad = ['comments'];
@@ -31,7 +46,7 @@ class Post extends ORMModel {
       userId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       user: this.belongsTo(User, 'userId'),
-      comments: this.hasMany(Comment, 'userId')
+      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
   }
 }
@@ -45,23 +60,26 @@ class Comment extends ORMModel {
       id: this.increment(0),
       content: this.string(''),
       userId: this.number(0),
-      postId: this.number(0),
       user: this.belongsTo(User, 'userId'),
-      post: this.belongsTo(Post, 'postId')
+
+      subjectId: this.number(0),
+      subjectType: this.string('')
     };
   }
 }
 
 describe('VuexORMApollo', () => {
   beforeEach(() => {
-    [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Comment }]);
+    [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Video }, { model: Comment }]);
 
     store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
     store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
     store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
     store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
-    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, postId: 1, content: 'Example comment 1' }});
-    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, postId: 1, content: 'Example comment 2' }});
+    store.dispatch('entities/videos/insert', { data: { id: 1, userId: 1, title: 'Example video', content: 'Video' }});
+    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
+    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
+    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
   });
 
   describe('fetch', () => {
@@ -70,13 +88,19 @@ describe('VuexORMApollo', () => {
         data: {
           post: {
             __typename: 'post',
-            id: 1,
+            id: 42,
             otherId: 13548,
-            title: 'Example Post 1',
+            title: 'Example Post 5',
             content: 'Foo',
             comments: {
               __typename: 'comment',
-              nodes: []
+              nodes: [{
+                __typename: 'comment',
+                id: 15,
+                content: 'Works!',
+                subjectId: 42,
+                subjectType: 'Post'
+              }]
             },
             user: {
               __typename: 'user',
@@ -88,7 +112,7 @@ describe('VuexORMApollo', () => {
       };
 
       let request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/posts/fetch', { filter: { id: 1 } });
+        await store.dispatch('entities/posts/fetch', { filter: { id: 42 } });
       });
       expect(request).not.toEqual(null);
 
@@ -108,6 +132,8 @@ query Post($id: ID!) {
       nodes {
         id
         content
+        subjectId
+        subjectType
         __typename
       }
       __typename
@@ -116,6 +142,11 @@ query Post($id: ID!) {
   }
 }
         `.trim() + "\n");
+
+      const post = store.getters['entities/posts/query']().withAll().where('id', 42).first();
+      expect(post.title).toEqual('Example Post 5');
+      expect(post.comments.length).toEqual(1);
+      expect(post.comments[0].content).toEqual('Works!');
     });
 
 
@@ -392,6 +423,8 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
       nodes {
         id
         content
+        subjectId
+        subjectType
         __typename
       }
       __typename
