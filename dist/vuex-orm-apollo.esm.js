@@ -779,6 +779,16 @@ function printBlockString(value, isDescription) {
 unwrapExports(printer);
 var printer_1 = printer.print;
 
+var __assign = (undefined && undefined.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+
+
 function isStringValue(value) {
     return value.kind === 'StringValue';
 }
@@ -936,19 +946,20 @@ function isInlineFragment(selection) {
 function isIdValue(idObject) {
     return idObject && idObject.type === 'id';
 }
-function toIdValue(id, generated) {
+function toIdValue(idConfig, generated) {
     if (generated === void 0) { generated = false; }
-    return {
-        type: 'id',
-        id: id,
-        generated: generated,
-    };
+    return __assign({ type: 'id', generated: generated }, (typeof idConfig === 'string'
+        ? { id: idConfig, typename: undefined }
+        : idConfig));
 }
 function isJsonValue(jsonObject) {
     return (jsonObject != null &&
         typeof jsonObject === 'object' &&
         jsonObject.type === 'json');
 }
+/**
+ * Evaluate a ValueNode and yield its value in its natural JS form.
+ */
 
 function getDirectiveInfoFromField(field, variables) {
     if (field.directives && field.directives.length) {
@@ -967,9 +978,12 @@ function shouldInclude(selection, variables) {
     }
     var res = true;
     selection.directives.forEach(function (directive) {
+        // TODO should move this validation to GraphQL validation once that's implemented.
         if (directive.name.value !== 'skip' && directive.name.value !== 'include') {
+            // Just don't worry about directives we don't understand
             return;
         }
+        //evaluate the "if" argument and skip (i.e. return undefined) if it evaluates to true.
         var directiveArguments = directive.arguments || [];
         var directiveName = directive.name.value;
         if (directiveArguments.length !== 1) {
@@ -982,6 +996,7 @@ function shouldInclude(selection, variables) {
         var ifValue = directiveArguments[0].value;
         var evaledValue = false;
         if (!ifValue || ifValue.kind !== 'BooleanValue') {
+            // means it has to be a variable value if this is a valid @skip or @include directive
             if (ifValue.kind !== 'Variable') {
                 throw new Error("Argument for the @" + directiveName + " directive must be a variable or a boolean value.");
             }
@@ -1019,6 +1034,7 @@ function getDirectiveNames(doc) {
     var cached = added.get(doc);
     if (cached)
         return cached;
+    // operation => [names of directives];
     var directives = doc.definitions
         .filter(function (definition) {
         return definition.selectionSet && definition.selectionSet.selections;
@@ -1038,7 +1054,7 @@ function hasDirectives(names, doc) {
     return getDirectiveNames(doc).some(function (name) { return names.indexOf(name) > -1; });
 }
 
-var __assign = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$1 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -1046,25 +1062,58 @@ var __assign = (undefined && undefined.__assign) || Object.assign || function(t)
     }
     return t;
 };
+/**
+ * Returns a query document which adds a single query operation that only
+ * spreads the target fragment inside of it.
+ *
+ * So for example a document of:
+ *
+ * ```graphql
+ * fragment foo on Foo { a b c }
+ * ```
+ *
+ * Turns into:
+ *
+ * ```graphql
+ * { ...foo }
+ *
+ * fragment foo on Foo { a b c }
+ * ```
+ *
+ * The target fragment will either be the only fragment in the document, or a
+ * fragment specified by the provided `fragmentName`. If there is more then one
+ * fragment, but a `fragmentName` was not defined then an error will be thrown.
+ */
 function getFragmentQueryDocument(document, fragmentName) {
     var actualFragmentName = fragmentName;
+    // Build an array of all our fragment definitions that will be used for
+    // validations. We also do some validations on the other definitions in the
+    // document while building this list.
     var fragments = [];
     document.definitions.forEach(function (definition) {
+        // Throw an error if we encounter an operation definition because we will
+        // define our own operation definition later on.
         if (definition.kind === 'OperationDefinition') {
             throw new Error("Found a " + definition.operation + " operation" + (definition.name ? " named '" + definition.name.value + "'" : '') + ". " +
                 'No operations are allowed when using a fragment as a query. Only fragments are allowed.');
         }
+        // Add our definition to the fragments array if it is a fragment
+        // definition.
         if (definition.kind === 'FragmentDefinition') {
             fragments.push(definition);
         }
     });
+    // If the user did not give us a fragment name then let us try to get a
+    // name from a single fragment in the definition.
     if (typeof actualFragmentName === 'undefined') {
         if (fragments.length !== 1) {
             throw new Error("Found " + fragments.length + " fragments. `fragmentName` must be provided when there is not exactly 1 fragment.");
         }
         actualFragmentName = fragments[0].name.value;
     }
-    var query = __assign({}, document, { definitions: [
+    // Generate a query document with an operation that simply spreads the
+    // fragment inside of it.
+    var query = __assign$1({}, document, { definitions: [
             {
                 kind: 'OperationDefinition',
                 operation: 'query',
@@ -1112,6 +1161,7 @@ function getMutationDefinition(doc) {
     }
     return mutationDef;
 }
+// Checks the document for errors and throws an exception if there is an error.
 function checkDocument(doc) {
     if (doc.kind !== 'Document') {
         throw new Error("Expecting a parsed GraphQL document. Perhaps you need to wrap the query string in a \"gql\" tag? http://docs.apollostack.com/apollo-client/core.html#gql");
@@ -1146,6 +1196,7 @@ function getOperationName(doc) {
     })
         .map(function (x) { return x.name.value; })[0] || null);
 }
+// Returns the FragmentDefinitions from a particular document as an array
 function getFragmentDefinitions(doc) {
     return doc.definitions.filter(function (definition) { return definition.kind === 'FragmentDefinition'; });
 }
@@ -1157,6 +1208,11 @@ function getQueryDefinition(doc) {
     return queryDef;
 }
 
+/**
+ * Returns the first operation definition found in this document.
+ * If no operation definition is found, the first fragment definition will be returned.
+ * If no definitions are found, an error will be thrown.
+ */
 function getMainDefinition(queryDoc) {
     checkDocument(queryDoc);
     var fragmentDefinition;
@@ -1171,6 +1227,8 @@ function getMainDefinition(queryDoc) {
             }
         }
         if (definition.kind === 'FragmentDefinition' && !fragmentDefinition) {
+            // we do this because we want to allow multiple fragment definitions
+            // to precede an operation definition.
             fragmentDefinition = definition;
         }
     }
@@ -1179,6 +1237,8 @@ function getMainDefinition(queryDoc) {
     }
     throw new Error('Expected a parsed GraphQL query with a query, mutation, subscription, or a fragment.');
 }
+// Utility function that takes a list of fragment definitions and makes a hash out of them
+// that maps the name of the fragment to the fragment definition.
 function createFragmentMap(fragments) {
     if (fragments === void 0) { fragments = []; }
     var symTable = {};
@@ -1206,11 +1266,20 @@ function getDefaultValues(definition) {
     }
     return {};
 }
+/**
+ * Returns the names of all variables declared by the operation.
+ */
 
+/**
+ * Deeply clones a value to create a new instance.
+ */
 function cloneDeep(value) {
+    // If the value is an array, create a new array where every item has been cloned.
     if (Array.isArray(value)) {
         return value.map(function (item) { return cloneDeep(item); });
     }
+    // If the value is an object, go through all of the object’s properties and add them to a new
+    // object.
     if (value !== null && typeof value === 'object') {
         var nextValue = {};
         for (var key in value) {
@@ -1220,6 +1289,8 @@ function cloneDeep(value) {
         }
         return nextValue;
     }
+    // Otherwise this is some primitive value and it is therefore immutable so we can just return it
+    // directly.
     return value;
 }
 
@@ -1231,9 +1302,13 @@ var TYPENAME_FIELD = {
     },
 };
 function isNotEmpty(op, fragments) {
+    // keep selections that are still valid
     return (op.selectionSet.selections.filter(function (selectionSet) {
+        // anything that doesn't match the compound filter is okay
         return !(selectionSet &&
+            // look into fragments to verify they should stay
             selectionSet.kind === 'FragmentSpread' &&
+            // see if the fragment in the map is valid (recursively)
             !isNotEmpty(fragments[selectionSet.name.value], fragments));
     }).length > 0);
 }
@@ -1261,6 +1336,7 @@ function addTypenameToSelectionSet(selectionSet, isRoot) {
             }
         }
         selectionSet.selections.forEach(function (selection) {
+            // Must not add __typename if we're inside an introspection query
             if (selection.kind === 'Field') {
                 if (selection.name.value.lastIndexOf('__', 0) !== 0 &&
                     selection.selectionSet) {
@@ -1278,6 +1354,7 @@ function addTypenameToSelectionSet(selectionSet, isRoot) {
 function removeDirectivesFromSelectionSet(directives, selectionSet) {
     if (!selectionSet.selections)
         return selectionSet;
+    // if any of the directives are set to remove this selectionSet, remove it
     var agressiveRemove = directives.some(function (dir) { return dir.remove; });
     selectionSet.selections = selectionSet.selections
         .map(function (selection) {
@@ -1355,6 +1432,7 @@ function getEnv() {
     if (typeof process !== 'undefined' && process.env.NODE_ENV) {
         return process.env.NODE_ENV;
     }
+    // default environment
     return 'development';
 }
 function isEnv(env) {
@@ -1384,17 +1462,26 @@ function graphQLResultHasError(result) {
     return result.errors && result.errors.length;
 }
 
+/**
+ * Performs a deep equality check on two JavaScript values.
+ */
 function isEqual(a, b) {
+    // If the two values are strictly equal, we are good.
     if (a === b) {
         return true;
     }
+    // Dates are equivalent if their time values are equal.
     if (a instanceof Date && b instanceof Date) {
         return a.getTime() === b.getTime();
     }
+    // If a and b are both objects, we will compare their properties. This will compare arrays as
+    // well.
     if (a != null &&
         typeof a === 'object' &&
         b != null &&
         typeof b === 'object') {
+        // Compare all of the keys in `a`. If one of the keys has a different value, or that key does
+        // not exist in `b` return false immediately.
         for (var key in a) {
             if (Object.prototype.hasOwnProperty.call(a, key)) {
                 if (!Object.prototype.hasOwnProperty.call(b, key)) {
@@ -1405,16 +1492,20 @@ function isEqual(a, b) {
                 }
             }
         }
+        // Look through all the keys in `b`. If `b` has a key that `a` does not, return false.
         for (var key in b) {
             if (!Object.prototype.hasOwnProperty.call(a, key)) {
                 return false;
             }
         }
+        // If we made it this far the objects are equal!
         return true;
     }
+    // Otherwise the values are not equal.
     return false;
 }
 
+// taken straight from https://github.com/substack/deep-freeze to avoid import hassles with rollup
 function deepFreeze(o) {
     Object.freeze(o);
     Object.getOwnPropertyNames(o).forEach(function (prop) {
@@ -1429,12 +1520,25 @@ function deepFreeze(o) {
 }
 function maybeDeepFreeze(obj) {
     if (isDevelopment() || isTest()) {
-        return deepFreeze(obj);
+        // Polyfilled Symbols potentially cause infinite / very deep recursion while deep freezing
+        // which is known to crash IE11 (https://github.com/apollographql/apollo-client/issues/3043).
+        var symbolIsPolyfilled = typeof Symbol === 'function' && typeof Symbol('') === 'string';
+        if (!symbolIsPolyfilled) {
+            return deepFreeze(obj);
+        }
     }
     return obj;
 }
 
 var haveWarned = Object.create({});
+/**
+ * Print a warning only once in development.
+ * In production no warnings are printed.
+ * In test all warnings are printed.
+ *
+ * @param msg The warning message
+ * @param type warn or error (will call console.warn or console.error)
+ */
 function warnOnceInDevelopment(msg, type) {
     if (type === void 0) { type = 'warn'; }
     if (isProduction()) {
@@ -1454,21 +1558,667 @@ function warnOnceInDevelopment(msg, type) {
     }
 }
 
+/**
+ * The current status of a query’s execution in our system.
+ */
 var NetworkStatus;
 (function (NetworkStatus) {
+    /**
+     * The query has never been run before and the query is now currently running. A query will still
+     * have this network status even if a partial data result was returned from the cache, but a
+     * query was dispatched anyway.
+     */
     NetworkStatus[NetworkStatus["loading"] = 1] = "loading";
+    /**
+     * If `setVariables` was called and a query was fired because of that then the network status
+     * will be `setVariables` until the result of that query comes back.
+     */
     NetworkStatus[NetworkStatus["setVariables"] = 2] = "setVariables";
+    /**
+     * Indicates that `fetchMore` was called on this query and that the query created is currently in
+     * flight.
+     */
     NetworkStatus[NetworkStatus["fetchMore"] = 3] = "fetchMore";
+    /**
+     * Similar to the `setVariables` network status. It means that `refetch` was called on a query
+     * and the refetch request is currently in flight.
+     */
     NetworkStatus[NetworkStatus["refetch"] = 4] = "refetch";
+    /**
+     * Indicates that a polling query is currently in flight. So for example if you are polling a
+     * query every 10 seconds then the network status will switch to `poll` every 10 seconds whenever
+     * a poll request has been sent but not resolved.
+     */
     NetworkStatus[NetworkStatus["poll"] = 6] = "poll";
+    /**
+     * No request is in flight for this query, and no errors happened. Everything is OK.
+     */
     NetworkStatus[NetworkStatus["ready"] = 7] = "ready";
+    /**
+     * No request is in flight for this query, but one or more errors were detected.
+     */
     NetworkStatus[NetworkStatus["error"] = 8] = "error";
 })(NetworkStatus || (NetworkStatus = {}));
+/**
+ * Returns true if there is currently a network request in flight according to a given network
+ * status.
+ */
 function isNetworkRequestInFlight(networkStatus) {
     return networkStatus < 7;
 }
 
-var Observable = require('zen-observable');
+var Observable_1 = createCommonjsModule(function (module, exports) {
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// === Symbol Support ===
+
+var hasSymbols = function () {
+  return typeof Symbol === 'function';
+};
+var hasSymbol = function (name) {
+  return hasSymbols() && Boolean(Symbol[name]);
+};
+var getSymbol = function (name) {
+  return hasSymbol(name) ? Symbol[name] : '@@' + name;
+};
+
+if (hasSymbols() && !hasSymbol('observable')) {
+  Symbol.observable = Symbol('observable');
+}
+
+// === Abstract Operations ===
+
+function getMethod(obj, key) {
+  var value = obj[key];
+
+  if (value == null) return undefined;
+
+  if (typeof value !== 'function') throw new TypeError(value + ' is not a function');
+
+  return value;
+}
+
+function getSpecies(obj) {
+  var ctor = obj.constructor;
+  if (ctor !== undefined) {
+    ctor = ctor[getSymbol('species')];
+    if (ctor === null) {
+      ctor = undefined;
+    }
+  }
+  return ctor !== undefined ? ctor : Observable;
+}
+
+function isObservable(x) {
+  return x instanceof Observable; // SPEC: Brand check
+}
+
+function hostReportError(e) {
+  if (hostReportError.log) {
+    hostReportError.log(e);
+  } else {
+    setTimeout(function () {
+      throw e;
+    });
+  }
+}
+
+function enqueue(fn) {
+  Promise.resolve().then(function () {
+    try {
+      fn();
+    } catch (e) {
+      hostReportError(e);
+    }
+  });
+}
+
+function cleanupSubscription(subscription) {
+  var cleanup = subscription._cleanup;
+  if (cleanup === undefined) return;
+
+  subscription._cleanup = undefined;
+
+  if (!cleanup) {
+    return;
+  }
+
+  try {
+    if (typeof cleanup === 'function') {
+      cleanup();
+    } else {
+      var unsubscribe = getMethod(cleanup, 'unsubscribe');
+      if (unsubscribe) {
+        unsubscribe.call(cleanup);
+      }
+    }
+  } catch (e) {
+    hostReportError(e);
+  }
+}
+
+function closeSubscription(subscription) {
+  subscription._observer = undefined;
+  subscription._queue = undefined;
+  subscription._state = 'closed';
+}
+
+function flushSubscription(subscription) {
+  var queue = subscription._queue;
+  if (!queue) {
+    return;
+  }
+  subscription._queue = undefined;
+  subscription._state = 'ready';
+  for (var i = 0; i < queue.length; ++i) {
+    notifySubscription(subscription, queue[i].type, queue[i].value);
+    if (subscription._state === 'closed') break;
+  }
+}
+
+function notifySubscription(subscription, type, value) {
+  subscription._state = 'running';
+
+  var observer = subscription._observer;
+
+  try {
+    var m = getMethod(observer, type);
+    switch (type) {
+      case 'next':
+        if (m) m.call(observer, value);
+        break;
+      case 'error':
+        closeSubscription(subscription);
+        if (m) m.call(observer, value);else throw value;
+        break;
+      case 'complete':
+        closeSubscription(subscription);
+        if (m) m.call(observer);
+        break;
+    }
+  } catch (e) {
+    hostReportError(e);
+  }
+
+  if (subscription._state === 'closed') cleanupSubscription(subscription);else if (subscription._state === 'running') subscription._state = 'ready';
+}
+
+function onNotify(subscription, type, value) {
+  if (subscription._state === 'closed') return;
+
+  if (subscription._state === 'buffering') {
+    subscription._queue.push({ type: type, value: value });
+    return;
+  }
+
+  if (subscription._state !== 'ready') {
+    subscription._state = 'buffering';
+    subscription._queue = [{ type: type, value: value }];
+    enqueue(function () {
+      return flushSubscription(subscription);
+    });
+    return;
+  }
+
+  notifySubscription(subscription, type, value);
+}
+
+var Subscription = function () {
+  function Subscription(observer, subscriber) {
+    _classCallCheck(this, Subscription);
+
+    // ASSERT: observer is an object
+    // ASSERT: subscriber is callable
+
+    this._cleanup = undefined;
+    this._observer = observer;
+    this._queue = undefined;
+    this._state = 'initializing';
+
+    var subscriptionObserver = new SubscriptionObserver(this);
+
+    try {
+      this._cleanup = subscriber.call(undefined, subscriptionObserver);
+    } catch (e) {
+      subscriptionObserver.error(e);
+    }
+
+    if (this._state === 'initializing') this._state = 'ready';
+  }
+
+  _createClass(Subscription, [{
+    key: 'unsubscribe',
+    value: function unsubscribe() {
+      if (this._state !== 'closed') {
+        closeSubscription(this);
+        cleanupSubscription(this);
+      }
+    }
+  }, {
+    key: 'closed',
+    get: function () {
+      return this._state === 'closed';
+    }
+  }]);
+
+  return Subscription;
+}();
+
+var SubscriptionObserver = function () {
+  function SubscriptionObserver(subscription) {
+    _classCallCheck(this, SubscriptionObserver);
+
+    this._subscription = subscription;
+  }
+
+  _createClass(SubscriptionObserver, [{
+    key: 'next',
+    value: function next(value) {
+      onNotify(this._subscription, 'next', value);
+    }
+  }, {
+    key: 'error',
+    value: function error(value) {
+      onNotify(this._subscription, 'error', value);
+    }
+  }, {
+    key: 'complete',
+    value: function complete() {
+      onNotify(this._subscription, 'complete');
+    }
+  }, {
+    key: 'closed',
+    get: function () {
+      return this._subscription._state === 'closed';
+    }
+  }]);
+
+  return SubscriptionObserver;
+}();
+
+var Observable = exports.Observable = function () {
+  function Observable(subscriber) {
+    _classCallCheck(this, Observable);
+
+    if (!(this instanceof Observable)) throw new TypeError('Observable cannot be called as a function');
+
+    if (typeof subscriber !== 'function') throw new TypeError('Observable initializer must be a function');
+
+    this._subscriber = subscriber;
+  }
+
+  _createClass(Observable, [{
+    key: 'subscribe',
+    value: function subscribe(observer) {
+      if (typeof observer !== 'object' || observer === null) {
+        observer = {
+          next: observer,
+          error: arguments[1],
+          complete: arguments[2]
+        };
+      }
+      return new Subscription(observer, this._subscriber);
+    }
+  }, {
+    key: 'forEach',
+    value: function forEach(fn) {
+      var _this = this;
+
+      return new Promise(function (resolve, reject) {
+        if (typeof fn !== 'function') {
+          reject(new TypeError(fn + ' is not a function'));
+          return;
+        }
+
+        function done() {
+          subscription.unsubscribe();
+          resolve();
+        }
+
+        var subscription = _this.subscribe({
+          next: function (value) {
+            try {
+              fn(value, done);
+            } catch (e) {
+              reject(e);
+              subscription.unsubscribe();
+            }
+          },
+
+          error: reject,
+          complete: resolve
+        });
+      });
+    }
+  }, {
+    key: 'map',
+    value: function map(fn) {
+      var _this2 = this;
+
+      if (typeof fn !== 'function') throw new TypeError(fn + ' is not a function');
+
+      var C = getSpecies(this);
+
+      return new C(function (observer) {
+        return _this2.subscribe({
+          next: function (value) {
+            try {
+              value = fn(value);
+            } catch (e) {
+              return observer.error(e);
+            }
+            observer.next(value);
+          },
+          error: function (e) {
+            observer.error(e);
+          },
+          complete: function () {
+            observer.complete();
+          }
+        });
+      });
+    }
+  }, {
+    key: 'filter',
+    value: function filter(fn) {
+      var _this3 = this;
+
+      if (typeof fn !== 'function') throw new TypeError(fn + ' is not a function');
+
+      var C = getSpecies(this);
+
+      return new C(function (observer) {
+        return _this3.subscribe({
+          next: function (value) {
+            try {
+              if (!fn(value)) return;
+            } catch (e) {
+              return observer.error(e);
+            }
+            observer.next(value);
+          },
+          error: function (e) {
+            observer.error(e);
+          },
+          complete: function () {
+            observer.complete();
+          }
+        });
+      });
+    }
+  }, {
+    key: 'reduce',
+    value: function reduce(fn) {
+      var _this4 = this;
+
+      if (typeof fn !== 'function') throw new TypeError(fn + ' is not a function');
+
+      var C = getSpecies(this);
+      var hasSeed = arguments.length > 1;
+      var hasValue = false;
+      var seed = arguments[1];
+      var acc = seed;
+
+      return new C(function (observer) {
+        return _this4.subscribe({
+          next: function (value) {
+            var first = !hasValue;
+            hasValue = true;
+
+            if (!first || hasSeed) {
+              try {
+                acc = fn(acc, value);
+              } catch (e) {
+                return observer.error(e);
+              }
+            } else {
+              acc = value;
+            }
+          },
+          error: function (e) {
+            observer.error(e);
+          },
+          complete: function () {
+            if (!hasValue && !hasSeed) return observer.error(new TypeError('Cannot reduce an empty sequence'));
+
+            observer.next(acc);
+            observer.complete();
+          }
+        });
+      });
+    }
+  }, {
+    key: 'concat',
+    value: function concat() {
+      var _this5 = this;
+
+      for (var _len = arguments.length, sources = Array(_len), _key = 0; _key < _len; _key++) {
+        sources[_key] = arguments[_key];
+      }
+
+      var C = getSpecies(this);
+
+      return new C(function (observer) {
+        var subscription = void 0;
+
+        function startNext(next) {
+          subscription = next.subscribe({
+            next: function (v) {
+              observer.next(v);
+            },
+            error: function (e) {
+              observer.error(e);
+            },
+            complete: function () {
+              if (sources.length === 0) {
+                subscription = undefined;
+                observer.complete();
+              } else {
+                startNext(C.from(sources.shift()));
+              }
+            }
+          });
+        }
+
+        startNext(_this5);
+
+        return function () {
+          if (subscription) {
+            subscription = undefined;
+            subscription.unsubscribe();
+          }
+        };
+      });
+    }
+  }, {
+    key: 'flatMap',
+    value: function flatMap(fn) {
+      var _this6 = this;
+
+      if (typeof fn !== 'function') throw new TypeError(fn + ' is not a function');
+
+      var C = getSpecies(this);
+
+      return new C(function (observer) {
+        var subscriptions = [];
+
+        var outer = _this6.subscribe({
+          next: function (value) {
+            if (fn) {
+              try {
+                value = fn(value);
+              } catch (e) {
+                return observer.error(e);
+              }
+            }
+
+            var inner = C.from(value).subscribe({
+              next: function (value) {
+                observer.next(value);
+              },
+              error: function (e) {
+                observer.error(e);
+              },
+              complete: function () {
+                var i = subscriptions.indexOf(inner);
+                if (i >= 0) subscriptions.splice(i, 1);
+                completeIfDone();
+              }
+            });
+
+            subscriptions.push(inner);
+          },
+          error: function (e) {
+            observer.error(e);
+          },
+          complete: function () {
+            completeIfDone();
+          }
+        });
+
+        function completeIfDone() {
+          if (outer.closed && subscriptions.length === 0) observer.complete();
+        }
+
+        return function () {
+          subscriptions.forEach(function (s) {
+            return s.unsubscribe();
+          });
+          outer.unsubscribe();
+        };
+      });
+    }
+  }, {
+    key: getSymbol('observable'),
+    value: function () {
+      return this;
+    }
+  }], [{
+    key: 'from',
+    value: function from(x) {
+      var C = typeof this === 'function' ? this : Observable;
+
+      if (x == null) throw new TypeError(x + ' is not an object');
+
+      var method = getMethod(x, getSymbol('observable'));
+      if (method) {
+        var observable = method.call(x);
+
+        if (Object(observable) !== observable) throw new TypeError(observable + ' is not an object');
+
+        if (isObservable(observable) && observable.constructor === C) return observable;
+
+        return new C(function (observer) {
+          return observable.subscribe(observer);
+        });
+      }
+
+      if (hasSymbol('iterator')) {
+        method = getMethod(x, getSymbol('iterator'));
+        if (method) {
+          return new C(function (observer) {
+            enqueue(function () {
+              if (observer.closed) return;
+              var _iteratorNormalCompletion = true;
+              var _didIteratorError = false;
+              var _iteratorError = undefined;
+
+              try {
+                for (var _iterator = method.call(x)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                  var item = _step.value;
+
+                  observer.next(item);
+                  if (observer.closed) return;
+                }
+              } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+              } finally {
+                try {
+                  if (!_iteratorNormalCompletion && _iterator.return) {
+                    _iterator.return();
+                  }
+                } finally {
+                  if (_didIteratorError) {
+                    throw _iteratorError;
+                  }
+                }
+              }
+
+              observer.complete();
+            });
+          });
+        }
+      }
+
+      if (Array.isArray(x)) {
+        return new C(function (observer) {
+          enqueue(function () {
+            if (observer.closed) return;
+            for (var i = 0; i < x.length; ++i) {
+              observer.next(x[i]);
+              if (observer.closed) return;
+            }
+            observer.complete();
+          });
+        });
+      }
+
+      throw new TypeError(x + ' is not observable');
+    }
+  }, {
+    key: 'of',
+    value: function of() {
+      for (var _len2 = arguments.length, items = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        items[_key2] = arguments[_key2];
+      }
+
+      var C = typeof this === 'function' ? this : Observable;
+
+      return new C(function (observer) {
+        enqueue(function () {
+          if (observer.closed) return;
+          for (var i = 0; i < items.length; ++i) {
+            observer.next(items[i]);
+            if (observer.closed) return;
+          }
+          observer.complete();
+        });
+      });
+    }
+  }, {
+    key: getSymbol('species'),
+    get: function () {
+      return this;
+    }
+  }]);
+
+  return Observable;
+}();
+
+if (hasSymbols()) {
+  Object.defineProperty(Observable, Symbol('extensions'), {
+    value: {
+      symbol: getSymbol('observable'),
+      hostReportError: hostReportError
+    },
+    configurabe: true
+  });
+}
+});
+
+unwrapExports(Observable_1);
+var Observable_2 = Observable_1.Observable;
+
+var zenObservable = Observable_1.Observable;
+
+var Observable$1 = zenObservable;
 
 var __extends = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -1480,7 +2230,7 @@ var __extends = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$1 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$2 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -1504,7 +2254,7 @@ function validateOperation(operation) {
     }
     return operation;
 }
-var LinkError = (function (_super) {
+var LinkError = /** @class */ (function (_super) {
     __extends(LinkError, _super);
     function LinkError(message, link) {
         var _this = _super.call(this, message) || this;
@@ -1517,10 +2267,11 @@ function isTerminating(link) {
     return link.request.length <= 1;
 }
 
+// backwards compat
 
 
 function fromError(errorValue) {
-    return new Observable(function (observer) {
+    return new Observable$1(function (observer) {
         observer.error(errorValue);
     });
 }
@@ -1531,6 +2282,7 @@ function transformOperation(operation) {
         operationName: operation.operationName,
         query: operation.query,
     };
+    // best guess at an operation name
     if (!transformedOperation.operationName) {
         transformedOperation.operationName =
             typeof transformedOperation.query !== 'string'
@@ -1540,16 +2292,16 @@ function transformOperation(operation) {
     return transformedOperation;
 }
 function createOperation(starting, operation) {
-    var context = __assign$1({}, starting);
+    var context = __assign$2({}, starting);
     var setContext = function (next) {
         if (typeof next === 'function') {
-            context = __assign$1({}, context, next(context));
+            context = __assign$2({}, context, next(context));
         }
         else {
-            context = __assign$1({}, context, next);
+            context = __assign$2({}, context, next);
         }
     };
-    var getContext = function () { return (__assign$1({}, context)); };
+    var getContext = function () { return (__assign$2({}, context)); };
     Object.defineProperty(operation, 'setContext', {
         enumerable: false,
         value: setContext,
@@ -1565,15 +2317,17 @@ function createOperation(starting, operation) {
     return operation;
 }
 function getKey(operation) {
+    // XXX we're assuming here that variables will be serialized in the same order.
+    // that might not always be true
     return printer_1(operation.query) + "|" + JSON.stringify(operation.variables) + "|" + operation.operationName;
 }
 
-var passthrough = function (op, forward) { return (forward ? forward(op) : Observable.of()); };
+var passthrough = function (op, forward) { return (forward ? forward(op) : Observable$1.of()); };
 var toLink = function (handler) {
     return typeof handler === 'function' ? new ApolloLink(handler) : handler;
 };
 var empty = function () {
-    return new ApolloLink(function (op, forward) { return Observable.of(); });
+    return new ApolloLink(function (op, forward) { return Observable$1.of(); });
 };
 var from = function (links) {
     if (links.length === 0)
@@ -1587,18 +2341,19 @@ var split = function (test, left, right) {
     if (isTerminating(leftLink) && isTerminating(rightLink)) {
         return new ApolloLink(function (operation) {
             return test(operation)
-                ? leftLink.request(operation) || Observable.of()
-                : rightLink.request(operation) || Observable.of();
+                ? leftLink.request(operation) || Observable$1.of()
+                : rightLink.request(operation) || Observable$1.of();
         });
     }
     else {
         return new ApolloLink(function (operation, forward) {
             return test(operation)
-                ? leftLink.request(operation, forward) || Observable.of()
-                : rightLink.request(operation, forward) || Observable.of();
+                ? leftLink.request(operation, forward) || Observable$1.of()
+                : rightLink.request(operation, forward) || Observable$1.of();
         });
     }
 };
+// join two Links together
 var concat = function (first, second) {
     var firstLink = toLink(first);
     if (isTerminating(firstLink)) {
@@ -1608,18 +2363,18 @@ var concat = function (first, second) {
     var nextLink = toLink(second);
     if (isTerminating(nextLink)) {
         return new ApolloLink(function (operation) {
-            return firstLink.request(operation, function (op) { return nextLink.request(op) || Observable.of(); }) || Observable.of();
+            return firstLink.request(operation, function (op) { return nextLink.request(op) || Observable$1.of(); }) || Observable$1.of();
         });
     }
     else {
         return new ApolloLink(function (operation, forward) {
             return (firstLink.request(operation, function (op) {
-                return nextLink.request(op, forward) || Observable.of();
-            }) || Observable.of());
+                return nextLink.request(op, forward) || Observable$1.of();
+            }) || Observable$1.of());
         });
     }
 };
-var ApolloLink = (function () {
+var ApolloLink = /** @class */ (function () {
     function ApolloLink(request) {
         if (request)
             this.request = request;
@@ -1641,7 +2396,7 @@ var ApolloLink = (function () {
     return ApolloLink;
 }());
 function execute(link, operation) {
-    return (link.request(createOperation(operation.context, transformOperation(validateOperation(operation)))) || Observable.of());
+    return (link.request(createOperation(operation.context, transformOperation(validateOperation(operation)))) || Observable$1.of());
 }
 
 function symbolObservablePonyfill(root) {
@@ -1689,7 +2444,10 @@ var __extends$1 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var Observable$2 = (function (_super) {
+// This simplified polyfill attempts to follow the ECMAScript Observable proposal.
+// See https://github.com/zenparsing/es-observable
+// rxjs interopt
+var Observable$3 = (function (_super) {
     __extends$1(Observable$$1, _super);
     function Observable$$1() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -1698,7 +2456,7 @@ var Observable$2 = (function (_super) {
         return this;
     };
     return Observable$$1;
-}(Observable));
+}(Observable$1));
 
 var __extends$2 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -1713,8 +2471,13 @@ var __extends$2 = (undefined && undefined.__extends) || (function () {
 function isApolloError(err) {
     return err.hasOwnProperty('graphQLErrors');
 }
+// Sets the error message on this error according to the
+// the GraphQL and network errors that are present.
+// If the error message has already been set through the
+// constructor or otherwise, this function is a nop.
 var generateErrorMessage = function (err) {
     var message = '';
+    // If we have GraphQL errors present, add that to the error message.
     if (Array.isArray(err.graphQLErrors) && err.graphQLErrors.length !== 0) {
         err.graphQLErrors.forEach(function (graphQLError) {
             var errorMessage = graphQLError
@@ -1726,11 +2489,15 @@ var generateErrorMessage = function (err) {
     if (err.networkError) {
         message += 'Network error: ' + err.networkError.message + '\n';
     }
+    // strip newline from the end of the message
     message = message.replace(/\n$/, '');
     return message;
 };
 var ApolloError = (function (_super) {
     __extends$2(ApolloError, _super);
+    // Constructs an instance of ApolloError given a GraphQLError
+    // or a network error. Note that one of these has to be a valid
+    // value or the constructed error will be meaningless.
     function ApolloError(_a) {
         var graphQLErrors = _a.graphQLErrors, networkError = _a.networkError, errorMessage = _a.errorMessage, extraInfo = _a.extraInfo;
         var _this = _super.call(this, errorMessage) || this;
@@ -1743,6 +2510,7 @@ var ApolloError = (function (_super) {
             _this.message = errorMessage;
         }
         _this.extraInfo = extraInfo;
+        Object.setPrototypeOf(_this, ApolloError.prototype);
         return _this;
     }
     return ApolloError;
@@ -1765,7 +2533,7 @@ var __extends$3 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$2 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$3 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -1788,14 +2556,18 @@ var ObservableQuery = (function (_super) {
         var _this = _super.call(this, function (observer) {
             return _this.onSubscribe(observer);
         }) || this;
+        // active state
         _this.isCurrentlyPolling = false;
         _this.isTornDown = false;
+        // query information
         _this.options = options;
         _this.variables = options.variables || {};
         _this.queryId = scheduler.queryManager.generateQueryId();
         _this.shouldSubscribe = shouldSubscribe;
+        // related classes
         _this.scheduler = scheduler;
         _this.queryManager = scheduler.queryManager;
+        // interal data stores
         _this.observers = [];
         _this.subscriptionHandles = [];
         return _this;
@@ -1807,6 +2579,16 @@ var ObservableQuery = (function (_super) {
             var observer = {
                 next: function (result) {
                     resolve(result);
+                    // Stop the query within the QueryManager if we can before
+                    // this function returns.
+                    //
+                    // We do this in order to prevent observers piling up within
+                    // the QueryManager. Notice that we only fully unsubscribe
+                    // from the subscription in a setTimeout(..., 0)  call. This call can
+                    // actually be handled by the browser at a much later time. If queries
+                    // are fired in the meantime, observers that should have been removed
+                    // from the QueryManager will continue to fire, causing an unnecessary
+                    // performance hit.
                     if (!that.observers.some(function (obs) { return obs !== observer; })) {
                         that.queryManager.removeQuery(that.queryId);
                     }
@@ -1821,6 +2603,12 @@ var ObservableQuery = (function (_super) {
             subscription = that.subscribe(observer);
         });
     };
+    /**
+     * Return the result of the query from the local cache as well as some fetching status
+     * `loading` and `networkStatus` allow to know if a request is in flight
+     * `partial` lets you know if the result from the local cache is complete or partial
+     * @return {result: Object, loading: boolean, networkStatus: number, partial: boolean}
+     */
     ObservableQuery.prototype.currentResult = function () {
         if (this.isTornDown) {
             return {
@@ -1845,8 +2633,16 @@ var ObservableQuery = (function (_super) {
         var _a = this.queryManager.getCurrentQueryResult(this), data = _a.data, partial = _a.partial;
         var queryLoading = !queryStoreValue ||
             queryStoreValue.networkStatus === NetworkStatus.loading;
+        // We need to be careful about the loading state we show to the user, to try
+        // and be vaguely in line with what the user would have seen from .subscribe()
+        // but to still provide useful information synchronously when the query
+        // will not end up hitting the server.
+        // See more: https://github.com/apollostack/apollo-client/issues/707
+        // Basically: is there a query in flight right now (modolo the next tick)?
         var loading = (this.options.fetchPolicy === 'network-only' && queryLoading) ||
             (partial && this.options.fetchPolicy !== 'cache-only');
+        // if there is nothing in the query store, it means this query hasn't fired yet or it has been cleaned up. Therefore the
+        // network status is dependent on queryLoading.
         var networkStatus;
         if (queryStoreValue) {
             networkStatus = queryStoreValue.networkStatus;
@@ -1866,10 +2662,12 @@ var ObservableQuery = (function (_super) {
         }
         if (!partial) {
             var stale = false;
-            this.lastResult = __assign$2({}, result, { stale: stale });
+            this.lastResult = __assign$3({}, result, { stale: stale });
         }
-        return __assign$2({}, result, { partial: partial });
+        return __assign$3({}, result, { partial: partial });
     };
+    // Returns the last result that observer.next was called with. This is not the same as
+    // currentResult! If you're not sure which you need, then you probably need currentResult.
     ObservableQuery.prototype.getLastResult = function () {
         return this.lastResult;
     };
@@ -1882,22 +2680,30 @@ var ObservableQuery = (function (_super) {
         this.isTornDown = false;
     };
     ObservableQuery.prototype.refetch = function (variables) {
-        if (this.options.fetchPolicy === 'cache-only') {
+        var fetchPolicy = this.options.fetchPolicy;
+        // early return if trying to read from cache during refetch
+        if (fetchPolicy === 'cache-only') {
             return Promise.reject(new Error('cache-only fetchPolicy option should not be used together with query refetch.'));
         }
         if (!isEqual(this.variables, variables)) {
-            this.variables = __assign$2({}, this.variables, variables);
+            // update observable variables
+            this.variables = __assign$3({}, this.variables, variables);
         }
         if (!isEqual(this.options.variables, this.variables)) {
-            this.options.variables = __assign$2({}, this.options.variables, this.variables);
+            // Update the existing options with new variables
+            this.options.variables = __assign$3({}, this.options.variables, this.variables);
         }
-        var combinedOptions = __assign$2({}, this.options, { fetchPolicy: 'network-only' });
+        // Override fetchPolicy for this call only
+        // only network-only and no-cache are safe to use
+        var isNetworkFetchPolicy = fetchPolicy === 'network-only' || fetchPolicy === 'no-cache';
+        var combinedOptions = __assign$3({}, this.options, { fetchPolicy: isNetworkFetchPolicy ? fetchPolicy : 'network-only' });
         return this.queryManager
             .fetchQuery(this.queryId, combinedOptions, FetchType.refetch)
             .then(function (result) { return maybeDeepFreeze(result); });
     };
     ObservableQuery.prototype.fetchMore = function (fetchMoreOptions) {
         var _this = this;
+        // early return if no update Query
         if (!fetchMoreOptions.updateQuery) {
             throw new Error('updateQuery option is required. This function defines how to update the query data with the new results.');
         }
@@ -1906,10 +2712,12 @@ var ObservableQuery = (function (_super) {
             var qid = _this.queryManager.generateQueryId();
             var combinedOptions;
             if (fetchMoreOptions.query) {
+                // fetch a new query
                 combinedOptions = fetchMoreOptions;
             }
             else {
-                combinedOptions = __assign$2({}, _this.options, fetchMoreOptions, { variables: __assign$2({}, _this.variables, fetchMoreOptions.variables) });
+                // fetch the same query with a possibly new variables
+                combinedOptions = __assign$3({}, _this.options, fetchMoreOptions, { variables: __assign$3({}, _this.variables, fetchMoreOptions.variables) });
             }
             combinedOptions.fetchPolicy = 'network-only';
             return _this.queryManager.fetchQuery(qid, combinedOptions, FetchType.normal, _this.queryId);
@@ -1925,6 +2733,9 @@ var ObservableQuery = (function (_super) {
             return fetchMoreResult;
         });
     };
+    // XXX the subscription variables are separate from the query variables.
+    // if you want to update subscription variables, right now you have to do that separately,
+    // and you can only do it by stopping the subscription and then subscribing again with new variables.
     ObservableQuery.prototype.subscribeToMore = function (options) {
         var _this = this;
         var subscription = this.queryManager
@@ -1961,15 +2772,18 @@ var ObservableQuery = (function (_super) {
             }
         };
     };
+    // Note: if the query is not active (there are no subscribers), the promise
+    // will return null immediately.
     ObservableQuery.prototype.setOptions = function (opts) {
         var oldOptions = this.options;
-        this.options = __assign$2({}, this.options, opts);
+        this.options = __assign$3({}, this.options, opts);
         if (opts.pollInterval) {
             this.startPolling(opts.pollInterval);
         }
         else if (opts.pollInterval === 0) {
             this.stopPolling();
         }
+        // If fetchPolicy went from cache-only to something else, or from something else to network-only
         var tryFetch = (oldOptions.fetchPolicy !== 'network-only' &&
             opts.fetchPolicy === 'network-only') ||
             (oldOptions.fetchPolicy === 'cache-only' &&
@@ -1979,12 +2793,36 @@ var ObservableQuery = (function (_super) {
             false;
         return this.setVariables(this.options.variables, tryFetch, opts.fetchResults);
     };
+    /**
+     * Update the variables of this observable query, and fetch the new results
+     * if they've changed. If you want to force new results, use `refetch`.
+     *
+     * Note: if the variables have not changed, the promise will return the old
+     * results immediately, and the `next` callback will *not* fire.
+     *
+     * Note: if the query is not active (there are no subscribers), the promise
+     * will return null immediately.
+     *
+     * @param variables: The new set of variables. If there are missing variables,
+     * the previous values of those variables will be used.
+     *
+     * @param tryFetch: Try and fetch new results even if the variables haven't
+     * changed (we may still just hit the store, but if there's nothing in there
+     * this will refetch)
+     *
+     * @param fetchResults: Option to ignore fetching results when updating variables
+     *
+     */
     ObservableQuery.prototype.setVariables = function (variables, tryFetch, fetchResults) {
         if (tryFetch === void 0) { tryFetch = false; }
         if (fetchResults === void 0) { fetchResults = true; }
+        // since setVariables restarts the subscription, we reset the tornDown status
         this.isTornDown = false;
-        var newVariables = __assign$2({}, this.variables, variables);
+        var newVariables = variables ? variables : this.variables;
         if (isEqual(newVariables, this.variables) && !tryFetch) {
+            // If we have no observers, then we don't actually want to make a network
+            // request. As soon as someone observes the query, the request will kick
+            // off. For now, we just store any changes. (See #1077)
             if (this.observers.length === 0 || !fetchResults) {
                 return new Promise(function (resolve) { return resolve(); });
             }
@@ -1994,11 +2832,13 @@ var ObservableQuery = (function (_super) {
             this.lastVariables = this.variables;
             this.variables = newVariables;
             this.options.variables = newVariables;
+            // See comment above
             if (this.observers.length === 0) {
                 return new Promise(function (resolve) { return resolve(); });
             }
+            // Use the same options as before, but with new variables
             return this.queryManager
-                .fetchQuery(this.queryId, __assign$2({}, this.options, { variables: this.variables }))
+                .fetchQuery(this.queryId, __assign$3({}, this.options, { variables: this.variables }))
                 .then(function (result) { return maybeDeepFreeze(result); });
         }
     };
@@ -2034,6 +2874,8 @@ var ObservableQuery = (function (_super) {
     };
     ObservableQuery.prototype.onSubscribe = function (observer) {
         var _this = this;
+        // Zen Observable has its own error function, in order to log correctly
+        // we need to declare a custom error if nothing is passed
         if (observer._subscription &&
             observer._subscription._observer &&
             !observer._subscription._observer.error) {
@@ -2042,10 +2884,12 @@ var ObservableQuery = (function (_super) {
             };
         }
         this.observers.push(observer);
+        // Deliver initial result
         if (observer.next && this.lastResult)
             observer.next(this.lastResult);
         if (observer.error && this.lastError)
             observer.error(this.lastError);
+        // setup the query if it hasn't been done before
         if (this.observers.length === 1)
             this.setUpQuery();
         return function () {
@@ -2086,6 +2930,7 @@ var ObservableQuery = (function (_super) {
             this.scheduler.stopPollingQuery(this.queryId);
             this.isCurrentlyPolling = false;
         }
+        // stop all active GraphQL subscriptions
         this.subscriptionHandles.forEach(function (sub) { return sub.unsubscribe(); });
         this.subscriptionHandles = [];
         this.queryManager.removeObservableQuery(this.queryId);
@@ -2093,7 +2938,7 @@ var ObservableQuery = (function (_super) {
         this.observers = [];
     };
     return ObservableQuery;
-}(Observable$2));
+}(Observable$3));
 
 var __extends$4 = (undefined && undefined.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -2105,7 +2950,10 @@ var __extends$4 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var DedupLink = (function (_super) {
+/*
+ * Expects context to contain the forceFetch field if no dedup
+ */
+var DedupLink = /** @class */ (function (_super) {
     __extends$4(DedupLink, _super);
     function DedupLink() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -2115,6 +2963,7 @@ var DedupLink = (function (_super) {
     }
     DedupLink.prototype.request = function (operation, forward) {
         var _this = this;
+        // sometimes we might not want to deduplicate a request, for example when we want to force fetch it.
         if (operation.getContext().forceFetch) {
             return forward(operation);
         }
@@ -2125,9 +2974,13 @@ var DedupLink = (function (_super) {
             return prev;
         };
         if (!this.inFlightRequestObservables.get(key)) {
+            // this is a new request, i.e. we haven't deduplicated it yet
+            // call the next link
             var singleObserver_1 = forward(operation);
             var subscription_1;
-            var sharedObserver = new Observable(function (observer) {
+            var sharedObserver = new Observable$1(function (observer) {
+                // this will still be called by each subscriber regardless of
+                // deduplication status
                 var prev = _this.subscribers.get(key);
                 if (!prev)
                     prev = { next: [], error: [], complete: [] };
@@ -2162,12 +3015,19 @@ var DedupLink = (function (_super) {
             });
             this.inFlightRequestObservables.set(key, sharedObserver);
         }
+        // return shared Observable
         return this.inFlightRequestObservables.get(key);
     };
     return DedupLink;
 }(ApolloLink));
 
-var __assign$3 = (undefined && undefined.__assign) || Object.assign || function(t) {
+// The QueryScheduler is supposed to be a mechanism that schedules polling queries such that
+// they are clustered into the time slots of the QueryBatcher and are batched together. It
+// also makes sure that for a given polling query, if one instance of the query is inflight,
+// another instance will not be fired until the query returns or times out. We do this because
+// another query fires while one is already in flight, the data will stay in the "loading" state
+// even after the first query has returned.
+var __assign$4 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -2178,9 +3038,15 @@ var __assign$3 = (undefined && undefined.__assign) || Object.assign || function(
 var QueryScheduler = (function () {
     function QueryScheduler(_a) {
         var queryManager = _a.queryManager, ssrMode = _a.ssrMode;
+        // Map going from queryIds to query options that are in flight.
         this.inFlightQueries = {};
+        // Map going from query ids to the query options associated with those queries. Contains all of
+        // the queries, both in flight and not in flight.
         this.registeredQueries = {};
+        // Map going from polling interval with to the query ids that fire on that interval.
+        // These query ids are associated with a set of options in the this.registeredQueries.
         this.intervalQueries = {};
+        // Map going from polling interval widths to polling timers.
         this.pollingTimers = {};
         this.ssrMode = false;
         this.queryManager = queryManager;
@@ -2209,6 +3075,7 @@ var QueryScheduler = (function () {
         if (!options.pollInterval) {
             throw new Error('Attempted to start a polling query without a polling interval.');
         }
+        // Do not poll in SSR mode
         if (this.ssrMode)
             return queryId;
         this.registeredQueries[queryId] = options;
@@ -2219,21 +3086,39 @@ var QueryScheduler = (function () {
         return queryId;
     };
     QueryScheduler.prototype.stopPollingQuery = function (queryId) {
+        // Remove the query options from one of the registered queries.
+        // The polling function will then take care of not firing it anymore.
         delete this.registeredQueries[queryId];
     };
+    // Fires the all of the queries on a particular interval. Called on a setInterval.
     QueryScheduler.prototype.fetchQueriesOnInterval = function (interval) {
         var _this = this;
+        // XXX this "filter" here is nasty, because it does two things at the same time.
+        // 1. remove queries that have stopped polling
+        // 2. call fetchQueries for queries that are polling and not in flight.
+        // TODO: refactor this to make it cleaner
         this.intervalQueries[interval] = this.intervalQueries[interval].filter(function (queryId) {
+            // If queryOptions can't be found from registeredQueries or if it has a
+            // different interval, it means that this queryId is no longer registered
+            // and should be removed from the list of queries firing on this interval.
+            //
+            // We don't remove queries from intervalQueries immediately in
+            // stopPollingQuery so that we can keep the timer consistent when queries
+            // are removed and replaced, and to avoid quadratic behavior when stopping
+            // many queries.
             if (!(_this.registeredQueries.hasOwnProperty(queryId) &&
                 _this.registeredQueries[queryId].pollInterval === interval)) {
                 return false;
             }
+            // Don't fire this instance of the polling query is one of the instances is already in
+            // flight.
             if (_this.checkInFlight(queryId)) {
                 return true;
             }
             var queryOptions = _this.registeredQueries[queryId];
-            var pollingOptions = __assign$3({}, queryOptions);
+            var pollingOptions = __assign$4({}, queryOptions);
             pollingOptions.fetchPolicy = 'network-only';
+            // don't let unhandled rejections happen
             _this.fetchQuery(queryId, pollingOptions, FetchType.poll).catch(function () { });
             return true;
         });
@@ -2242,23 +3127,30 @@ var QueryScheduler = (function () {
             delete this.intervalQueries[interval];
         }
     };
+    // Adds a query on a particular interval to this.intervalQueries and then fires
+    // that query with all the other queries executing on that interval. Note that the query id
+    // and query options must have been added to this.registeredQueries before this function is called.
     QueryScheduler.prototype.addQueryOnInterval = function (queryId, queryOptions) {
         var _this = this;
         var interval = queryOptions.pollInterval;
         if (!interval) {
             throw new Error("A poll interval is required to start polling query with id '" + queryId + "'.");
         }
+        // If there are other queries on this interval, this query will just fire with those
+        // and we don't need to create a new timer.
         if (this.intervalQueries.hasOwnProperty(interval.toString()) &&
             this.intervalQueries[interval].length > 0) {
             this.intervalQueries[interval].push(queryId);
         }
         else {
             this.intervalQueries[interval] = [queryId];
+            // set up the timer for the function that will handle this interval
             this.pollingTimers[interval] = setInterval(function () {
                 _this.fetchQueriesOnInterval(interval);
             }, interval);
         }
     };
+    // Used only for unit testing.
     QueryScheduler.prototype.registerPollingQuery = function (queryOptions) {
         if (!queryOptions.pollInterval) {
             throw new Error('Attempted to register a non-polling query with the scheduler.');
@@ -2311,7 +3203,7 @@ var MutationStore = (function () {
     return MutationStore;
 }());
 
-var __assign$4 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$5 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -2331,7 +3223,12 @@ var QueryStore = (function () {
     };
     QueryStore.prototype.initQuery = function (query) {
         var previousQuery = this.store[query.queryId];
-        if (previousQuery && previousQuery.queryString !== query.queryString) {
+        if (previousQuery &&
+            previousQuery.document !== query.document &&
+            printer_1(previousQuery.document) !== printer_1(query.document)) {
+            // XXX we're throwing an error here to catch bugs where a query gets overwritten by a new one.
+            // we should implement a separate action for refetching so that QUERY_INIT may never overwrite
+            // an existing query (see also: https://github.com/apollostack/apollo-client/issues/732)
             throw new Error('Internal Error: may not update existing query string in store');
         }
         var isSetVariables = false;
@@ -2344,6 +3241,7 @@ var QueryStore = (function () {
                 previousVariables = previousQuery.variables;
             }
         }
+        // TODO break this out into a separate function
         var networkStatus;
         if (isSetVariables) {
             networkStatus = NetworkStatus.setVariables;
@@ -2353,6 +3251,7 @@ var QueryStore = (function () {
         }
         else if (query.isRefetch) {
             networkStatus = NetworkStatus.refetch;
+            // TODO: can we determine setVariables here if it's a refetch and the variables have changed?
         }
         else {
             networkStatus = NetworkStatus.loading;
@@ -2361,8 +3260,10 @@ var QueryStore = (function () {
         if (previousQuery && previousQuery.graphQLErrors) {
             graphQLErrors = previousQuery.graphQLErrors;
         }
+        // XXX right now if QUERY_INIT is fired twice, like in a refetch situation, we just overwrite
+        // the store. We probably want a refetch action instead, because I suspect that if you refetch
+        // before the initial fetch is done, you'll get an error.
         this.store[query.queryId] = {
-            queryString: query.queryString,
             document: query.document,
             variables: query.variables,
             previousVariables: previousVariables,
@@ -2371,6 +3272,13 @@ var QueryStore = (function () {
             networkStatus: networkStatus,
             metadata: query.metadata,
         };
+        // If the action had a `moreForQueryId` property then we need to set the
+        // network status on that query as well to `fetchMore`.
+        //
+        // We have a complement to this if statement in the query result and query
+        // error action branch, but importantly *not* in the client result branch.
+        // This is because the implementation of `fetchMore` *always* sets
+        // `fetchPolicy` to `network-only` so we would never have a client result.
         if (typeof query.fetchMoreForQueryId === 'string') {
             this.store[query.fetchMoreForQueryId].networkStatus =
                 NetworkStatus.fetchMore;
@@ -2384,6 +3292,9 @@ var QueryStore = (function () {
             result.errors && result.errors.length ? result.errors : [];
         this.store[queryId].previousVariables = null;
         this.store[queryId].networkStatus = NetworkStatus.ready;
+        // If we have a `fetchMoreForQueryId` then we need to update the network
+        // status for that query. See the branch for query initialization for more
+        // explanation about this process.
         if (typeof fetchMoreForQueryId === 'string') {
             this.store[fetchMoreForQueryId].networkStatus = NetworkStatus.ready;
         }
@@ -2393,8 +3304,11 @@ var QueryStore = (function () {
             return;
         this.store[queryId].networkError = error;
         this.store[queryId].networkStatus = NetworkStatus.error;
+        // If we have a `fetchMoreForQueryId` then we need to update the network
+        // status for that query. See the branch for query initialization for more
+        // explanation about this process.
         if (typeof fetchMoreForQueryId === 'string') {
-            this.markQueryError(fetchMoreForQueryId, error, undefined);
+            this.markQueryResultClient(fetchMoreForQueryId, true);
         }
     };
     QueryStore.prototype.markQueryResultClient = function (queryId, complete) {
@@ -2411,19 +3325,21 @@ var QueryStore = (function () {
     };
     QueryStore.prototype.reset = function (observableQueryIds) {
         var _this = this;
+        // keep only the queries with query ids that are associated with observables
         this.store = Object.keys(this.store)
             .filter(function (queryId) {
             return observableQueryIds.indexOf(queryId) > -1;
         })
             .reduce(function (res, key) {
-            res[key] = __assign$4({}, _this.store[key], { networkStatus: NetworkStatus.loading });
+            // XXX set loading to true so listeners don't trigger unless they want results with partial data
+            res[key] = __assign$5({}, _this.store[key], { networkStatus: NetworkStatus.loading });
             return res;
         }, {});
     };
     return QueryStore;
 }());
 
-var __assign$5 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$6 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -2445,9 +3361,18 @@ var QueryManager = (function () {
         var link = _a.link, _b = _a.queryDeduplication, queryDeduplication = _b === void 0 ? false : _b, store = _a.store, _c = _a.onBroadcast, onBroadcast = _c === void 0 ? function () { return undefined; } : _c, _d = _a.ssrMode, ssrMode = _d === void 0 ? false : _d;
         this.mutationStore = new MutationStore();
         this.queryStore = new QueryStore();
+        // let's not start at zero to avoid pain with bad checks
         this.idCounter = 1;
+        // XXX merge with ObservableQuery but that needs to be expanded to support mutations and
+        // subscriptions as well
         this.queries = new Map();
+        // A map going from a requestId to a promise that has not yet been resolved. We use this to keep
+        // track of queries that are inflight and reject them in case some
+        // destabalizing action occurs (e.g. reset of the Apollo store).
         this.fetchQueryPromises = new Map();
+        // A map going from the name of a query to an observer issued for it by watchQuery. This is
+        // generally used to refetches for refetchQueries and to update mutation results through
+        // updateQueries.
         this.queryIdsByName = {};
         this.link = link;
         this.deduplicator = ApolloLink.from([new DedupLink(), link]);
@@ -2470,6 +3395,7 @@ var QueryManager = (function () {
         mutation = cache.transformDocument(mutation), variables = assign({}, getDefaultValues(getMutationDefinition(mutation)), variables);
         var mutationString = printer_1(mutation);
         this.setQuery(mutationId, function () { return ({ document: mutation }); });
+        // Create a map of update queries by id to the query instead of by name.
         var generateUpdateQueriesInfo = function () {
             var ret = {};
             if (updateQueriesByName) {
@@ -2497,10 +3423,10 @@ var QueryManager = (function () {
         return new Promise(function (resolve, reject) {
             var storeResult;
             var error;
-            var operation = _this.buildOperationForLink(mutation, variables, __assign$5({}, context, { optimisticResponse: optimisticResponse }));
+            var operation = _this.buildOperationForLink(mutation, variables, __assign$6({}, context, { optimisticResponse: optimisticResponse }));
             execute(_this.link, operation).subscribe({
                 next: function (result) {
-                    if (result.errors && errorPolicy === 'none') {
+                    if (graphQLResultHasError(result) && errorPolicy === 'none') {
                         error = new ApolloError({
                             graphQLErrors: result.errors,
                         });
@@ -2544,6 +3470,8 @@ var QueryManager = (function () {
                         reject(error);
                         return;
                     }
+                    // allow for conditional refetches
+                    // XXX do we want to make this the only API one day?
                     if (typeof refetchQueries === 'function')
                         refetchQueries = refetchQueries(storeResult);
                     refetchQueries.forEach(function (refetchQuery) {
@@ -2558,7 +3486,9 @@ var QueryManager = (function () {
                         });
                     });
                     _this.setQuery(mutationId, function () { return ({ document: undefined }); });
-                    if (errorPolicy === 'ignore' && storeResult && storeResult.errors) {
+                    if (errorPolicy === 'ignore' &&
+                        storeResult &&
+                        graphQLResultHasError(storeResult)) {
                         delete storeResult.errors;
                     }
                     resolve(storeResult);
@@ -2566,13 +3496,20 @@ var QueryManager = (function () {
             });
         });
     };
-    QueryManager.prototype.fetchQuery = function (queryId, options, fetchType, fetchMoreForQueryId) {
+    QueryManager.prototype.fetchQuery = function (queryId, options, fetchType, 
+        // This allows us to track if this is a query spawned by a `fetchMore`
+        // call for another query. We need this data to compute the `fetchMore`
+        // network status for the query this is fetching for.
+        fetchMoreForQueryId) {
         var _this = this;
         var _a = options.variables, variables = _a === void 0 ? {} : _a, _b = options.metadata, metadata = _b === void 0 ? null : _b, _c = options.fetchPolicy, fetchPolicy = _c === void 0 ? 'cache-first' : _c;
         var cache = this.dataStore.getCache();
         var query = cache.transformDocument(options.query);
         var storeResult;
         var needToFetch = fetchPolicy === 'network-only' || fetchPolicy === 'no-cache';
+        // If this is not a force fetch, we want to diff the query against the
+        // store before we fetch it from the network interface.
+        // TODO we hit the cache even if the policy is network-first. This could be unnecessary if the network is up.
         if (fetchType !== FetchType.refetch &&
             fetchPolicy !== 'network-only' &&
             fetchPolicy !== 'no-cache') {
@@ -2582,14 +3519,18 @@ var QueryManager = (function () {
                 returnPartialData: true,
                 optimistic: false,
             }), complete = _d.complete, result = _d.result;
+            // If we're in here, only fetch if we have missing fields
             needToFetch = !complete || fetchPolicy === 'cache-and-network';
             storeResult = result;
         }
         var shouldFetch = needToFetch && fetchPolicy !== 'cache-only' && fetchPolicy !== 'standby';
+        // we need to check to see if this is an operation that uses the @live directive
         if (hasDirectives(['live'], query))
             shouldFetch = true;
         var requestId = this.generateRequestId();
+        // set up a watcher to listen to cache updates
         var cancel = this.updateQueryWatch(queryId, query, options);
+        // Initialize query in store with unique requestId
         this.setQuery(queryId, function () { return ({
             document: query,
             lastRequestId: requestId,
@@ -2599,7 +3540,6 @@ var QueryManager = (function () {
         this.invalidate(true, fetchMoreForQueryId);
         this.queryStore.initQuery({
             queryId: queryId,
-            queryString: printer_1(query),
             document: query,
             storePreviousVariables: shouldFetch,
             variables: variables,
@@ -2609,6 +3549,8 @@ var QueryManager = (function () {
             fetchMoreForQueryId: fetchMoreForQueryId,
         });
         this.broadcastQueries();
+        // If there is no part of the query we need to fetch from the server (or,
+        // fetchPolicy is cache-only), we just write the store result as the final result.
         var shouldDispatchClientResult = !shouldFetch || fetchPolicy === 'cache-and-network';
         if (shouldDispatchClientResult) {
             this.queryStore.markQueryResultClient(queryId, !shouldFetch);
@@ -2623,6 +3565,8 @@ var QueryManager = (function () {
                 options: options,
                 fetchMoreForQueryId: fetchMoreForQueryId,
             }).catch(function (error) {
+                // This is for the benefit of `refetch` promises, which currently don't get their errors
+                // through the store like watchQuery observers do
                 if (isApolloError(error)) {
                     throw error;
                 }
@@ -2637,26 +3581,38 @@ var QueryManager = (function () {
                     throw new ApolloError({ networkError: error });
                 }
             });
+            // we don't return the promise for cache-and-network since it is already
+            // returned below from the cache
             if (fetchPolicy !== 'cache-and-network') {
                 return networkResult;
             }
             else {
+                // however we need to catch the error so it isn't unhandled in case of
+                // network error
                 networkResult.catch(function () { });
             }
         }
+        // If we have no query to send to the server, we should return the result
+        // found within the store.
         return Promise.resolve({ data: storeResult });
     };
+    // Returns a query listener that will update the given observer based on the
+    // results (or lack thereof) for a particular query.
     QueryManager.prototype.queryListenerForObserver = function (queryId, options, observer) {
         var _this = this;
         var previouslyHadError = false;
         return function (queryStoreValue, newData) {
+            // we're going to take a look at the data, so the query is no longer invalidated
             _this.invalidate(false, queryId);
+            // The query store value can be undefined in the event of a store
+            // reset.
             if (!queryStoreValue)
                 return;
             var observableQuery = _this.getQuery(queryId).observableQuery;
             var fetchPolicy = observableQuery
                 ? observableQuery.options.fetchPolicy
                 : options.fetchPolicy;
+            // don't watch the store for queries on standby
             if (fetchPolicy === 'standby')
                 return;
             var errorPolicy = observableQuery
@@ -2669,6 +3625,14 @@ var QueryManager = (function () {
             var shouldNotifyIfLoading = (!newData && queryStoreValue.previousVariables != null) ||
                 fetchPolicy === 'cache-only' ||
                 fetchPolicy === 'cache-and-network';
+            // if this caused by a cache broadcast but the query is still in flight
+            // don't notify the observer
+            // if (
+            //   isCacheBroadcast &&
+            //   isNetworkRequestInFlight(queryStoreValue.networkStatus)
+            // ) {
+            //   shouldNotifyIfLoading = false;
+            // }
             var networkStatusChanged = Boolean(lastResult &&
                 queryStoreValue.networkStatus !== lastResult.networkStatus);
             var errorStatusChanged = errorPolicy &&
@@ -2678,6 +3642,8 @@ var QueryManager = (function () {
             if (!isNetworkRequestInFlight(queryStoreValue.networkStatus) ||
                 (networkStatusChanged && options.notifyOnNetworkStatusChange) ||
                 shouldNotifyIfLoading) {
+                // If we have either a GraphQL error or a network error, we create
+                // an error and tell the observer about it.
                 if (((!errorPolicy || errorPolicy === 'none') &&
                     queryStoreValue.graphQLErrors &&
                     queryStoreValue.graphQLErrors.length > 0) ||
@@ -2692,19 +3658,22 @@ var QueryManager = (function () {
                             observer.error(apolloError_1);
                         }
                         catch (e) {
+                            // Throw error outside this control flow to avoid breaking Apollo's state
                             setTimeout(function () {
                                 throw e;
                             }, 0);
                         }
                     }
                     else {
+                        // Throw error outside this control flow to avoid breaking Apollo's state
                         setTimeout(function () {
                             throw apolloError_1;
                         }, 0);
                         if (!isProduction()) {
+                            /* tslint:disable-next-line */
                             console.info('An unhandled error was thrown because no error handler is registered ' +
                                 'for the query ' +
-                                queryStoreValue.queryString);
+                                printer_1(queryStoreValue.document));
                         }
                     }
                     return;
@@ -2713,6 +3682,7 @@ var QueryManager = (function () {
                     var data = void 0;
                     var isMissing = void 0;
                     if (newData) {
+                        // clear out the latest new data, since we're now using it
                         _this.setQuery(queryId, function () { return ({ newData: null }); });
                         data = newData.result;
                         isMissing = !newData.complete ? !newData.complete : false;
@@ -2735,6 +3705,9 @@ var QueryManager = (function () {
                         }
                     }
                     var resultFromStore = void 0;
+                    // If there is some data missing and the user has told us that they
+                    // do not tolerate partial data then we want to return the previous
+                    // result and mark it as stale.
                     if (isMissing && fetchPolicy !== 'cache-only') {
                         resultFromStore = {
                             data: lastResult && lastResult.data,
@@ -2751,6 +3724,7 @@ var QueryManager = (function () {
                             stale: false,
                         };
                     }
+                    // if the query wants updates on errors we need to add it to the result
                     if (errorPolicy === 'all' &&
                         queryStoreValue.graphQLErrors &&
                         queryStoreValue.graphQLErrors.length > 0) {
@@ -2761,12 +3735,16 @@ var QueryManager = (function () {
                             resultFromStore &&
                             lastResult.networkStatus === resultFromStore.networkStatus &&
                             lastResult.stale === resultFromStore.stale &&
+                            // We can do a strict equality check here because we include a `previousResult`
+                            // with `readQueryFromStore`. So if the results are the same they will be
+                            // referentially equal.
                             lastResult.data === resultFromStore.data);
                         if (isDifferentResult || previouslyHadError) {
                             try {
                                 observer.next(maybeDeepFreeze(resultFromStore));
                             }
                             catch (e) {
+                                // Throw error outside this control flow to avoid breaking Apollo's state
                                 setTimeout(function () {
                                     throw e;
                                 }, 0);
@@ -2784,12 +3762,20 @@ var QueryManager = (function () {
             }
         };
     };
+    // The shouldSubscribe option is a temporary fix that tells us whether watchQuery was called
+    // directly (i.e. through ApolloClient) or through the query method within QueryManager.
+    // Currently, the query method uses watchQuery in order to handle non-network errors correctly
+    // but we don't want to keep track observables issued for the query method since those aren't
+    // supposed to be refetched in the event of a store reset. Once we unify error handling for
+    // network errors and non-network errors, the shouldSubscribe option will go away.
     QueryManager.prototype.watchQuery = function (options, shouldSubscribe) {
         if (shouldSubscribe === void 0) { shouldSubscribe = true; }
         if (options.fetchPolicy === 'standby') {
             throw new Error('client.watchQuery cannot be called with fetchPolicy set to "standby"');
         }
+        // get errors synchronously
         var queryDefinition = getQueryDefinition(options.query);
+        // assign variable default values if supplied
         if (queryDefinition.variableDefinitions &&
             queryDefinition.variableDefinitions.length) {
             var defaultValues = getDefaultValues(queryDefinition);
@@ -2798,7 +3784,7 @@ var QueryManager = (function () {
         if (typeof options.notifyOnNetworkStatusChange === 'undefined') {
             options.notifyOnNetworkStatusChange = false;
         }
-        var transformedOptions = __assign$5({}, options);
+        var transformedOptions = __assign$6({}, options);
         return new ObservableQuery({
             scheduler: this.scheduler,
             options: transformedOptions,
@@ -2824,8 +3810,8 @@ var QueryManager = (function () {
         }
         options.notifyOnNetworkStatusChange = false;
         var requestId = this.idCounter;
-        var resPromise = new Promise(function (resolve, reject) {
-            _this.addFetchQueryPromise(requestId, resPromise, resolve, reject);
+        return new Promise(function (resolve, reject) {
+            _this.addFetchQueryPromise(requestId, resolve, reject);
             return _this.watchQuery(options, false)
                 .result()
                 .then(function (result) {
@@ -2837,7 +3823,6 @@ var QueryManager = (function () {
                 reject(error);
             });
         });
-        return resPromise;
     };
     QueryManager.prototype.generateQueryId = function () {
         var queryId = this.idCounter.toString();
@@ -2884,21 +3869,25 @@ var QueryManager = (function () {
             },
         });
     };
-    QueryManager.prototype.addFetchQueryPromise = function (requestId, promise, resolve, reject) {
+    // Adds a promise to this.fetchQueryPromises for a given request ID.
+    QueryManager.prototype.addFetchQueryPromise = function (requestId, resolve, reject) {
         this.fetchQueryPromises.set(requestId.toString(), {
-            promise: promise,
             resolve: resolve,
             reject: reject,
         });
     };
+    // Removes the promise in this.fetchQueryPromises for a particular request ID.
     QueryManager.prototype.removeFetchQueryPromise = function (requestId) {
         this.fetchQueryPromises.delete(requestId.toString());
     };
+    // Adds an ObservableQuery to this.observableQueries and to this.observableQueriesByName.
     QueryManager.prototype.addObservableQuery = function (queryId, observableQuery) {
         this.setQuery(queryId, function () { return ({ observableQuery: observableQuery }); });
+        // Insert the ObservableQuery into this.observableQueriesByName if the query has a name
         var queryDef = getQueryDefinition(observableQuery.options.query);
         if (queryDef.name && queryDef.name.value) {
             var queryName = queryDef.name.value;
+            // XXX we may we want to warn the user about query name conflicts in the future
             this.queryIdsByName[queryName] = this.queryIdsByName[queryName] || [];
             this.queryIdsByName[queryName].push(observableQuery.queryId);
         }
@@ -2919,6 +3908,12 @@ var QueryManager = (function () {
         }
     };
     QueryManager.prototype.clearStore = function () {
+        // Before we have sent the reset action to the store,
+        // we can no longer rely on the results returned by in-flight
+        // requests since these may depend on values that previously existed
+        // in the data portion of the store. So, we cancel the promises and observers
+        // that we have issued so far and not yet resolved (in the case of
+        // queries).
         this.fetchQueryPromises.forEach(function (_a) {
             var reject = _a.reject;
             reject(new Error('Store reset while query was in flight(not completed in link chain)'));
@@ -2931,11 +3926,18 @@ var QueryManager = (function () {
         });
         this.queryStore.reset(resetIds);
         this.mutationStore.reset();
+        // begin removing data from the store
         var reset = this.dataStore.reset();
         return reset;
     };
     QueryManager.prototype.resetStore = function () {
         var _this = this;
+        // Similarly, we have to have to refetch each of the queries currently being
+        // observed. We refetch instead of error'ing on these since the assumption is that
+        // resetting the store doesn't eliminate the need for the queries currently being
+        // watched. If there is an existing query in flight when the store is reset,
+        // the promise for it will be rejected and its results will not be written to the
+        // store.
         return this.clearStore().then(function () {
             return _this.reFetchObservableQueries();
         });
@@ -2977,14 +3979,17 @@ var QueryManager = (function () {
         var variables = assign({}, getDefaultValues(getOperationDefinition(query)), options.variables);
         var sub;
         var observers = [];
-        return new Observable$2(function (observer) {
+        return new Observable$3(function (observer) {
             observers.push(observer);
+            // If this is the first observer, actually initiate the network subscription
             if (observers.length === 1) {
                 var handler = {
                     next: function (result) {
                         _this.dataStore.markSubscriptionResult(result, transformedDoc, variables);
                         _this.broadcastQueries();
+                        // It's slightly awkward that the data for subscriptions doesn't come from the store.
                         observers.forEach(function (obs) {
+                            // XXX I'd prefer a different way to handle errors for subscriptions
                             if (obs.next)
                                 obs.next(result);
                         });
@@ -2996,11 +4001,14 @@ var QueryManager = (function () {
                         });
                     },
                 };
+                // TODO: Should subscriptions also accept a `context` option to pass
+                // through to links?
                 var operation = _this.buildOperationForLink(transformedDoc, variables);
                 sub = execute(_this.link, operation).subscribe(handler);
             }
             return function () {
                 observers = observers.filter(function (obs) { return obs !== observer; });
+                // If we removed the last observer, tear down the network subscription
                 if (observers.length === 0 && sub) {
                     sub.unsubscribe();
                 }
@@ -3013,6 +4021,7 @@ var QueryManager = (function () {
     };
     QueryManager.prototype.removeQuery = function (queryId) {
         var subscriptions = this.getQuery(queryId).subscriptions;
+        // teardown all links
         subscriptions.forEach(function (x) { return x.unsubscribe(); });
         this.queries.delete(queryId);
     };
@@ -3021,11 +4030,13 @@ var QueryManager = (function () {
         var _a = observableQuery.options, variables = _a.variables, query = _a.query;
         var lastResult = observableQuery.getLastResult();
         var newData = this.getQuery(observableQuery.queryId).newData;
+        // XXX test this
         if (newData) {
             return maybeDeepFreeze({ data: newData.result, partial: false });
         }
         else {
             try {
+                // the query is brand new, so we read from the store to see if anything is there
                 var data = this.dataStore.getCache().read({
                     query: query,
                     variables: variables,
@@ -3072,17 +4083,24 @@ var QueryManager = (function () {
             });
         });
     };
+    // Takes a request id, query id, a query document and information associated with the query
+    // and send it to the network interface. Returns
+    // a promise for the result associated with that request.
     QueryManager.prototype.fetchRequest = function (_a) {
         var _this = this;
         var requestId = _a.requestId, queryId = _a.queryId, document = _a.document, options = _a.options, fetchMoreForQueryId = _a.fetchMoreForQueryId;
         var variables = options.variables, context = options.context, _b = options.errorPolicy, errorPolicy = _b === void 0 ? 'none' : _b, fetchPolicy = options.fetchPolicy;
-        var operation = this.buildOperationForLink(document, variables, __assign$5({}, context, { forceFetch: !this.queryDeduplication }));
+        var operation = this.buildOperationForLink(document, variables, __assign$6({}, context, { 
+            // TODO: Should this be included for all entry points via
+            // buildOperationForLink?
+            forceFetch: !this.queryDeduplication }));
         var resultFromStore;
         var errorsFromStore;
-        var retPromise = new Promise(function (resolve, reject) {
-            _this.addFetchQueryPromise(requestId, retPromise, resolve, reject);
+        return new Promise(function (resolve, reject) {
+            _this.addFetchQueryPromise(requestId, resolve, reject);
             var subscription = execute(_this.deduplicator, operation).subscribe({
                 next: function (result) {
+                    // default the lastRequestId to 1
                     var lastRequestId = _this.getQuery(queryId).lastRequestId;
                     if (requestId >= (lastRequestId || 1)) {
                         if (fetchPolicy !== 'no-cache') {
@@ -3093,6 +4111,11 @@ var QueryManager = (function () {
                                 reject(e);
                                 return;
                             }
+                        }
+                        else {
+                            _this.setQuery(queryId, function () { return ({
+                                newData: { result: result.data, complete: true },
+                            }); });
                         }
                         _this.queryStore.markQueryResult(queryId, result, fetchMoreForQueryId);
                         _this.invalidate(true, queryId, fetchMoreForQueryId);
@@ -3107,16 +4130,22 @@ var QueryManager = (function () {
                     else if (errorPolicy === 'all') {
                         errorsFromStore = result.errors;
                     }
-                    if (fetchMoreForQueryId) {
+                    if (fetchMoreForQueryId || fetchPolicy === 'no-cache') {
+                        // We don't write fetchMore results to the store because this would overwrite
+                        // the original result in case an @connection directive is used.
                         resultFromStore = result.data;
                     }
                     else {
                         try {
+                            // ensure result is combined with data already in store
                             resultFromStore = _this.dataStore.getCache().read({
                                 variables: variables,
                                 query: document,
                                 optimistic: false,
                             });
+                            // this will throw an error if there are missing fields in
+                            // the results which can happen with errors from the server.
+                            // tslint:disable-next-line
                         }
                         catch (e) { }
                     }
@@ -3155,11 +4184,15 @@ var QueryManager = (function () {
                 });
             });
         });
-        return retPromise;
     };
+    // Refetches a query given that query's name. Refetches
+    // all ObservableQuery instances associated with the query name.
     QueryManager.prototype.refetchQueryByName = function (queryName) {
         var _this = this;
         var refetchedQueries = this.queryIdsByName[queryName];
+        // early return if the query named does not exist (not yet fetched)
+        // this used to warn but it may be inteneded behavoir to try and refetch
+        // un called queries because they could be on different routes
         if (refetchedQueries === undefined)
             return;
         return Promise.all(refetchedQueries
@@ -3173,11 +4206,11 @@ var QueryManager = (function () {
         return requestId;
     };
     QueryManager.prototype.getQuery = function (queryId) {
-        return this.queries.get(queryId) || __assign$5({}, defaultQueryInfo);
+        return this.queries.get(queryId) || __assign$6({}, defaultQueryInfo);
     };
     QueryManager.prototype.setQuery = function (queryId, updater) {
         var prev = this.getQuery(queryId);
-        var newInfo = __assign$5({}, prev, updater(prev));
+        var newInfo = __assign$6({}, prev, updater(prev));
         this.queries.set(queryId, newInfo);
     };
     QueryManager.prototype.invalidate = function (invalidated, queryId, fetchMoreForQueryId) {
@@ -3195,8 +4228,11 @@ var QueryManager = (function () {
                 : document,
             variables: variables,
             operationName: getOperationName(document) || undefined,
-            context: __assign$5({}, extraContext, { cache: cache, getCacheKey: function (obj) {
+            context: __assign$6({}, extraContext, { cache: cache, 
+                // getting an entry's cache key is useful for cacheResolvers & state-link
+                getCacheKey: function (obj) {
                     if (cache.config) {
+                        // on the link, we just want the id string, not the full id value from toIdValue
                         return cache.config.dataIdFromObject(obj);
                     }
                     else {
@@ -3231,6 +4267,8 @@ var DataStore = (function () {
         }
     };
     DataStore.prototype.markSubscriptionResult = function (result, document, variables) {
+        // the subscription interface should handle not sending us results we no longer subscribe to.
+        // XXX I don't think we ever send in an object with errors, but we might in the future...
         if (!graphQLResultHasError(result)) {
             this.cache.write({
                 result: result.data,
@@ -3274,6 +4312,7 @@ var DataStore = (function () {
     };
     DataStore.prototype.markMutationResult = function (mutation) {
         var _this = this;
+        // Incorporate the result from this mutation into the store
         if (!graphQLResultHasError(mutation.result)) {
             var cacheWrites_1 = [];
             cacheWrites_1.push({
@@ -3287,6 +4326,7 @@ var DataStore = (function () {
                     .filter(function (id) { return mutation.updateQueries[id]; })
                     .forEach(function (queryId) {
                     var _a = mutation.updateQueries[queryId], query = _a.query, updater = _a.updater;
+                    // Read the current query result from the store.
                     var _b = _this.cache.diff({
                         query: query.document,
                         variables: query.variables,
@@ -3296,6 +4336,7 @@ var DataStore = (function () {
                     if (!complete) {
                         return;
                     }
+                    // Run our reducer using the current query result and the mutation result.
                     var nextQueryResult = tryFunctionOrLogError(function () {
                         return updater(currentQueryResult, {
                             mutationResult: mutation.result,
@@ -3303,6 +4344,7 @@ var DataStore = (function () {
                             queryVariables: query.variables,
                         });
                     });
+                    // Write the modified result back into the store if we got a new result.
                     if (nextQueryResult) {
                         cacheWrites_1.push({
                             result: nextQueryResult,
@@ -3316,6 +4358,9 @@ var DataStore = (function () {
             this.cache.performTransaction(function (c) {
                 cacheWrites_1.forEach(function (write) { return c.write(write); });
             });
+            // If the mutation has some writes associated with it then we need to
+            // apply those writes to the store by running this reducer again with a
+            // write action.
             var update_1 = mutation.update;
             if (update_1) {
                 this.cache.performTransaction(function (c) {
@@ -3344,9 +4389,9 @@ var DataStore = (function () {
     return DataStore;
 }());
 
-var version_1 = "2.2.7";
+var version_1 = "2.3.1";
 
-var __assign$6 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$7 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -3359,7 +4404,29 @@ var supportedDirectives = new ApolloLink(function (operation, forward) {
     operation.query = removeConnectionDirectiveFromDocument(operation.query);
     return forward(operation);
 });
+/**
+ * This is the primary Apollo Client class. It is used to send GraphQL documents (i.e. queries
+ * and mutations) to a GraphQL spec-compliant server over a {@link NetworkInterface} instance,
+ * receive results from the server and cache the results in a store. It also delivers updates
+ * to GraphQL queries through {@link Observable} instances.
+ */
 var ApolloClient = (function () {
+    /**
+     * Constructs an instance of {@link ApolloClient}.
+     *
+     * @param link The {@link ApolloLink} over which GraphQL documents will be resolved into a response.
+     *
+     * @param cache The initial cache to use in the data store.
+     *
+     * @param ssrMode Determines whether this is being run in Server Side Rendering (SSR) mode.
+     *
+     * @param ssrForceFetchDelay Determines the time interval before we force fetch queries for a
+     * server side render.
+     *
+     * @param queryDeduplication If set to false, a query will still be sent to the server even if a query
+     * with identical parameters (query, variables, operationName) is already in flight.
+     *
+     */
     function ApolloClient(options) {
         var _this = this;
         this.defaultOptions = {};
@@ -3368,6 +4435,7 @@ var ApolloClient = (function () {
         if (!link || !cache) {
             throw new Error("\n        In order to initialize Apollo Client, you must specify link & cache properties on the config object.\n        This is part of the required upgrade when migrating from Apollo Client 1.0 to Apollo Client 2.0.\n        For more information, please visit:\n          https://www.apollographql.com/docs/react/basics/setup.html\n        to help you get started.\n      ");
         }
+        // remove apollo-client supported directives
         this.link = supportedDirectives.concat(link);
         this.cache = cache;
         this.store = new DataStore(cache);
@@ -3383,6 +4451,8 @@ var ApolloClient = (function () {
         this.mutate = this.mutate.bind(this);
         this.resetStore = this.resetStore.bind(this);
         this.reFetchObservableQueries = this.reFetchObservableQueries.bind(this);
+        // Attach the client instance to window to let us be found by chrome devtools, but only in
+        // development mode
         var defaultConnectToDevTools = !isProduction() &&
             typeof window !== 'undefined' &&
             !window.__APOLLO_CLIENT__;
@@ -3391,13 +4461,19 @@ var ApolloClient = (function () {
             : connectToDevTools && typeof window !== 'undefined') {
             window.__APOLLO_CLIENT__ = this;
         }
+        /**
+         * Suggest installing the devtools for developers who don't have them
+         */
         if (!hasSuggestedDevtools && !isProduction()) {
             hasSuggestedDevtools = true;
             if (typeof window !== 'undefined' &&
                 window.document &&
                 window.top === window.self) {
+                // First check if devtools is not installed
                 if (typeof window.__APOLLO_DEVTOOLS_GLOBAL_HOOK__ === 'undefined') {
-                    if (navigator.userAgent.indexOf('Chrome') > -1) {
+                    // Only for Chrome
+                    if (window.navigator && window.navigator.userAgent.indexOf('Chrome') > -1) {
+                        // tslint:disable-next-line
                         console.debug('Download the Apollo DevTools ' +
                             'for a better development experience: ' +
                             'https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm');
@@ -3407,56 +4483,139 @@ var ApolloClient = (function () {
         }
         this.version = version_1;
     }
+    /**
+     * This watches the results of the query according to the options specified and
+     * returns an {@link ObservableQuery}. We can subscribe to this {@link ObservableQuery} and
+     * receive updated results through a GraphQL observer.
+     * <p /><p />
+     * Note that this method is not an implementation of GraphQL subscriptions. Rather,
+     * it uses Apollo's store in order to reactively deliver updates to your query results.
+     * <p /><p />
+     * For example, suppose you call watchQuery on a GraphQL query that fetches an person's
+     * first name and last name and this person has a particular object identifer, provided by
+     * dataIdFromObject. Later, a different query fetches that same person's
+     * first and last name and his/her first name has now changed. Then, any observers associated
+     * with the results of the first query will be updated with a new result object.
+     * <p /><p />
+     * See [here](https://medium.com/apollo-stack/the-concepts-of-graphql-bc68bd819be3#.3mb0cbcmc) for
+     * a description of store reactivity.
+     *
+     */
     ApolloClient.prototype.watchQuery = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.watchQuery) {
-            options = __assign$6({}, this.defaultOptions.watchQuery, options);
+            options = __assign$7({}, this.defaultOptions.watchQuery, options);
         }
+        // XXX Overwriting options is probably not the best way to do this long term...
         if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
-            options = __assign$6({}, options, { fetchPolicy: 'cache-first' });
+            options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
         return this.queryManager.watchQuery(options);
     };
+    /**
+     * This resolves a single query according to the options specified and returns a
+     * {@link Promise} which is either resolved with the resulting data or rejected
+     * with an error.
+     *
+     * @param options An object of type {@link WatchQueryOptions} that allows us to describe
+     * how this query should be treated e.g. whether it is a polling query, whether it should hit the
+     * server at all or just resolve from the cache, etc.
+     */
     ApolloClient.prototype.query = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.query) {
-            options = __assign$6({}, this.defaultOptions.query, options);
+            options = __assign$7({}, this.defaultOptions.query, options);
         }
         if (options.fetchPolicy === 'cache-and-network') {
             throw new Error('cache-and-network fetchPolicy can only be used with watchQuery');
         }
+        // XXX Overwriting options is probably not the best way to do this long term...
         if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
-            options = __assign$6({}, options, { fetchPolicy: 'cache-first' });
+            options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
         return this.queryManager.query(options);
     };
+    /**
+     * This resolves a single mutation according to the options specified and returns a
+     * {@link Promise} which is either resolved with the resulting data or rejected with an
+     * error.
+     *
+     * It takes options as an object with the following keys and values:
+     */
     ApolloClient.prototype.mutate = function (options) {
         this.initQueryManager();
         if (this.defaultOptions.mutate) {
-            options = __assign$6({}, this.defaultOptions.mutate, options);
+            options = __assign$7({}, this.defaultOptions.mutate, options);
         }
         return this.queryManager.mutate(options);
     };
+    /**
+     * This subscribes to a graphql subscription according to the options specified and returns an
+     * {@link Observable} which either emits received data or an error.
+     */
     ApolloClient.prototype.subscribe = function (options) {
         this.initQueryManager();
         return this.queryManager.startGraphQLSubscription(options);
     };
+    /**
+     * Tries to read some data from the store in the shape of the provided
+     * GraphQL query without making a network request. This method will start at
+     * the root query. To start at a specific id returned by `dataIdFromObject`
+     * use `readFragment`.
+     */
     ApolloClient.prototype.readQuery = function (options) {
         return this.initProxy().readQuery(options);
     };
+    /**
+     * Tries to read some data from the store in the shape of the provided
+     * GraphQL fragment without making a network request. This method will read a
+     * GraphQL fragment from any arbitrary id that is currently cached, unlike
+     * `readQuery` which will only read from the root query.
+     *
+     * You must pass in a GraphQL document with a single fragment or a document
+     * with multiple fragments that represent what you are reading. If you pass
+     * in a document with multiple fragments then you must also specify a
+     * `fragmentName`.
+     */
     ApolloClient.prototype.readFragment = function (options) {
         return this.initProxy().readFragment(options);
     };
+    /**
+     * Writes some data in the shape of the provided GraphQL query directly to
+     * the store. This method will start at the root query. To start at a a
+     * specific id returned by `dataIdFromObject` then use `writeFragment`.
+     */
     ApolloClient.prototype.writeQuery = function (options) {
         var result = this.initProxy().writeQuery(options);
         this.queryManager.broadcastQueries();
         return result;
     };
+    /**
+     * Writes some data in the shape of the provided GraphQL fragment directly to
+     * the store. This method will write to a GraphQL fragment from any arbitrary
+     * id that is currently cached, unlike `writeQuery` which will only write
+     * from the root query.
+     *
+     * You must pass in a GraphQL document with a single fragment or a document
+     * with multiple fragments that represent what you are writing. If you pass
+     * in a document with multiple fragments then you must also specify a
+     * `fragmentName`.
+     */
     ApolloClient.prototype.writeFragment = function (options) {
         var result = this.initProxy().writeFragment(options);
         this.queryManager.broadcastQueries();
         return result;
     };
+    /**
+     * Sugar for writeQuery & writeFragment
+     * This method will construct a query from the data object passed in.
+     * If no id is supplied, writeData will write the data to the root.
+     * If an id is supplied, writeData will write a fragment to the object
+     * specified by the id in the store.
+     *
+     * Since you aren't passing in a query to check the shape of the data,
+     * you must pass in an object that conforms to the shape of valid GraphQL data.
+     */
     ApolloClient.prototype.writeData = function (options) {
         var result = this.initProxy().writeData(options);
         this.queryManager.broadcastQueries();
@@ -3468,6 +4627,9 @@ var ApolloClient = (function () {
     ApolloClient.prototype.__requestRaw = function (payload) {
         return execute(this.link, payload);
     };
+    /**
+     * This initializes the query manager that tracks queries and the cache
+     */
     ApolloClient.prototype.initQueryManager = function () {
         var _this = this;
         if (this.queryManager)
@@ -3491,6 +4653,22 @@ var ApolloClient = (function () {
             },
         });
     };
+    /**
+     * Resets your entire store by clearing out your cache and then re-executing
+     * all of your active queries. This makes it so that you may guarantee that
+     * there is no data left in your store from a time before you called this
+     * method.
+     *
+     * `resetStore()` is useful when your user just logged out. You’ve removed the
+     * user session, and you now want to make sure that any references to data you
+     * might have fetched while the user session was active is gone.
+     *
+     * It is important to remember that `resetStore()` *will* refetch any active
+     * queries. This means that any components that might be mounted will execute
+     * their queries again using your network interface. If you do not want to
+     * re-execute any queries then you should make sure to stop watching any
+     * active queries.
+     */
     ApolloClient.prototype.resetStore = function () {
         var _this = this;
         return Promise.resolve()
@@ -3506,6 +4684,10 @@ var ApolloClient = (function () {
                 : Promise.resolve(null);
         });
     };
+    /**
+     * Allows callbacks to be registered that are executed with the store is reset.
+     * onResetStore returns an unsubscribe function for removing your registered callbacks.
+     */
     ApolloClient.prototype.onResetStore = function (cb) {
         var _this = this;
         this.resetStoreCallbacks.push(cb);
@@ -3513,17 +4695,44 @@ var ApolloClient = (function () {
             _this.resetStoreCallbacks = _this.resetStoreCallbacks.filter(function (c) { return c !== cb; });
         };
     };
+    /**
+     * Refetches all of your active queries.
+     *
+     * `reFetchObservableQueries()` is useful if you want to bring the client back to proper state in case of a network outage
+     *
+     * It is important to remember that `reFetchObservableQueries()` *will* refetch any active
+     * queries. This means that any components that might be mounted will execute
+     * their queries again using your network interface. If you do not want to
+     * re-execute any queries then you should make sure to stop watching any
+     * active queries.
+     * Takes optional parameter `includeStandby` which will include queries in standby-mode when refetching.
+     */
     ApolloClient.prototype.reFetchObservableQueries = function (includeStandby) {
         return this.queryManager
             ? this.queryManager.reFetchObservableQueries(includeStandby)
             : Promise.resolve(null);
     };
+    /**
+     * Exposes the cache's complete state, in a serializable format for later restoration.
+     */
     ApolloClient.prototype.extract = function (optimistic) {
         return this.initProxy().extract(optimistic);
     };
+    /**
+     * Replaces existing state in the cache (if any) with the values expressed by
+     * `serializedState`.
+     *
+     * Called when hydrating a cache (server side rendering, or offline storage),
+     * and also (potentially) during hot reloads.
+     */
     ApolloClient.prototype.restore = function (serializedState) {
         return this.initProxy().restore(serializedState);
     };
+    /**
+     * Initializes a data proxy for this client instance if one does not already
+     * exist and returns either a previously initialized proxy instance or the
+     * newly initialized instance.
+     */
     ApolloClient.prototype.initProxy = function () {
         if (!this.proxy) {
             this.initQueryManager();
@@ -3534,7 +4743,7 @@ var ApolloClient = (function () {
     return ApolloClient;
 }());
 
-var __assign$7 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -3547,6 +4756,7 @@ var defaultHttpOptions = {
     includeExtensions: false,
 };
 var defaultHeaders = {
+    // headers are case insensitive (https://stackoverflow.com/a/5259004)
     accept: '*/*',
     'content-type': 'application/json',
 };
@@ -3565,6 +4775,7 @@ var throwServerError = function (response, result, message) {
     error.result = result;
     throw error;
 };
+//TODO: when conditional types come in ts 2.8, operations should be a generic type that extends Operation | Array<Operation>
 var parseAndCheckHttpResponse = function (operations) { return function (response) {
     return (response
         .text()
@@ -3582,11 +4793,15 @@ var parseAndCheckHttpResponse = function (operations) { return function (respons
     })
         .then(function (result) {
         if (response.status >= 300) {
+            //Network error
             throwServerError(response, result, "Response not successful: Received status code " + response.status);
         }
+        //TODO should really error per response in a Batch based on properties
+        //    - could be done in a validation link
         if (!Array.isArray(result) &&
             !result.hasOwnProperty('data') &&
             !result.hasOwnProperty('errors')) {
+            //Data error
             throwServerError(response, result, "Server response was missing for query '" + (Array.isArray(operations)
                 ? operations.map(function (op) { return op.operationName; })
                 : operations.operationName) + "'.");
@@ -3614,18 +4829,24 @@ var selectHttpOptionsAndBody = function (operation, fallbackConfig) {
     for (var _i = 2; _i < arguments.length; _i++) {
         configs[_i - 2] = arguments[_i];
     }
-    var options = __assign$7({}, fallbackConfig.options, { headers: fallbackConfig.headers, credentials: fallbackConfig.credentials });
+    var options = __assign$8({}, fallbackConfig.options, { headers: fallbackConfig.headers, credentials: fallbackConfig.credentials });
     var http = fallbackConfig.http;
+    /*
+     * use the rest of the configs to populate the options
+     * configs later in the list will overwrite earlier fields
+     */
     configs.forEach(function (config) {
-        options = __assign$7({}, options, config.options, { headers: __assign$7({}, options.headers, config.headers) });
+        options = __assign$8({}, options, config.options, { headers: __assign$8({}, options.headers, config.headers) });
         if (config.credentials)
             options.credentials = config.credentials;
-        http = __assign$7({}, http, config.http);
+        http = __assign$8({}, http, config.http);
     });
+    //The body depends on the http options
     var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
     var body = { operationName: operationName, variables: variables };
     if (http.includeExtensions)
         body.extensions = extensions;
+    // not sending the query (i.e persisted queries)
     if (http.includeQuery)
         body.query = printer_1(query);
     return {
@@ -3645,6 +4866,7 @@ var serializeFetchParameter = function (p, label) {
     }
     return serialized;
 };
+//selects "/graphql" by default
 var selectURI = function (operation, fallbackURI) {
     var context = operation.getContext();
     var contextURI = context.uri;
@@ -3680,8 +4902,14 @@ var __rest = (undefined && undefined.__rest) || function (s, e) {
 };
 var createHttpLink = function (linkOptions) {
     if (linkOptions === void 0) { linkOptions = {}; }
-    var _a = linkOptions.uri, uri = _a === void 0 ? '/graphql' : _a, fetcher = linkOptions.fetch, includeExtensions = linkOptions.includeExtensions, useGETForQueries = linkOptions.useGETForQueries, requestOptions = __rest(linkOptions, ["uri", "fetch", "includeExtensions", "useGETForQueries"]);
+    var _a = linkOptions.uri, uri = _a === void 0 ? '/graphql' : _a, 
+    // use default global fetch is nothing passed in
+    fetcher = linkOptions.fetch, includeExtensions = linkOptions.includeExtensions, useGETForQueries = linkOptions.useGETForQueries, requestOptions = __rest(linkOptions, ["uri", "fetch", "includeExtensions", "useGETForQueries"]);
+    // dev warnings to ensure fetch is present
     checkFetcher(fetcher);
+    //fetcher is set here rather than the destructuring to ensure fetch is
+    //declared before referencing it. Reference in the destructuring would cause
+    //a ReferenceError
     if (!fetcher) {
         fetcher = fetch;
     }
@@ -3700,10 +4928,16 @@ var createHttpLink = function (linkOptions) {
             credentials: context.credentials,
             headers: context.headers,
         };
+        //uses fallback, link, and then context to build options
         var _a = selectHttpOptionsAndBody(operation, fallbackHttpConfig, linkConfig, contextConfig), options = _a.options, body = _a.body;
-        var _b = createSignalIfSupported(), controller = _b.controller, signal = _b.signal;
-        if (controller)
-            options.signal = signal;
+        var controller;
+        if (!options.signal) {
+            var _b = createSignalIfSupported(), _controller = _b.controller, signal = _b.signal;
+            controller = _controller;
+            if (controller)
+                options.signal = signal;
+        }
+        // If requested, set method to GET if there are no mutations.
         var definitionIsMutation = function (d) {
             return d.kind === 'OperationDefinition' && d.operation === 'mutation';
         };
@@ -3726,7 +4960,7 @@ var createHttpLink = function (linkOptions) {
                 return fromError(parseError);
             }
         }
-        return new Observable(function (observer) {
+        return new Observable$1(function (observer) {
             fetcher(chosenURI, options)
                 .then(function (response) {
                 operation.setContext({ response: response });
@@ -3734,26 +4968,66 @@ var createHttpLink = function (linkOptions) {
             })
                 .then(parseAndCheckHttpResponse(operation))
                 .then(function (result) {
+                // we have data and can send it to back up the link chain
                 observer.next(result);
                 observer.complete();
                 return result;
             })
                 .catch(function (err) {
+                // fetch was cancelled so its already been cleaned up in the unsubscribe
                 if (err.name === 'AbortError')
                     return;
+                // if it is a network error, BUT there is graphql result info
+                // fire the next observer before calling error
+                // this gives apollo-client (and react-apollo) the `graphqlErrors` and `networErrors`
+                // to pass to UI
+                // this should only happen if we *also* have data as part of the response key per
+                // the spec
                 if (err.result && err.result.errors && err.result.data) {
+                    // if we dont' call next, the UI can only show networkError because AC didn't
+                    // get andy graphqlErrors
+                    // this is graphql execution result info (i.e errors and possibly data)
+                    // this is because there is no formal spec how errors should translate to
+                    // http status codes. So an auth error (401) could have both data
+                    // from a public field, errors from a private field, and a status of 401
+                    // {
+                    //  user { // this will have errors
+                    //    firstName
+                    //  }
+                    //  products { // this is public so will have data
+                    //    cost
+                    //  }
+                    // }
+                    //
+                    // the result of above *could* look like this:
+                    // {
+                    //   data: { products: [{ cost: "$10" }] },
+                    //   errors: [{
+                    //      message: 'your session has timed out',
+                    //      path: []
+                    //   }]
+                    // }
+                    // status code of above would be a 401
+                    // in the UI you want to show data where you can, errors as data where you can
+                    // and use correct http status codes
                     observer.next(err.result);
                 }
                 observer.error(err);
             });
             return function () {
+                // XXX support canceling this request
+                // https://developers.google.com/web/updates/2017/09/abortable-fetch
                 if (controller)
                     controller.abort();
             };
         });
     });
 };
+// For GET operations, returns the given URI rewritten with parameters, or a
+// parse error.
 function rewriteURIForGET(chosenURI, body) {
+    // Implement the standard HTTP GET serialization, plus 'extensions'. Note
+    // the extra level of JSON serialization!
     var queryParams = [];
     var addQueryParam = function (key, value) {
         queryParams.push(key + "=" + encodeURIComponent(value));
@@ -3784,6 +5058,12 @@ function rewriteURIForGET(chosenURI, body) {
         }
         addQueryParam('extensions', serializedExtensions);
     }
+    // Reconstruct the URI with added query params.
+    // XXX This assumes that the URI is well-formed and that it doesn't
+    //     already contain any of these query params. We could instead use the
+    //     URL API and take a polyfill (whatwg-url@6) for older browsers that
+    //     don't support URLSearchParams. Note that some browsers (and
+    //     versions of whatwg-url) support URL but not URLSearchParams!
     var fragment = '', preFragment = chosenURI;
     var fragmentStart = chosenURI.indexOf('#');
     if (fragmentStart !== -1) {
@@ -3794,7 +5074,7 @@ function rewriteURIForGET(chosenURI, body) {
     var newURI = preFragment + queryParamsPrefix + queryParams.join('&') + fragment;
     return { newURI: newURI };
 }
-var HttpLink = (function (_super) {
+var HttpLink = /** @class */ (function (_super) {
     __extends$5(HttpLink, _super);
     function HttpLink(opts) {
         return _super.call(this, createHttpLink(opts).request) || this;
@@ -3846,11 +5126,14 @@ function selectionSetFromObj(obj) {
         typeof obj === 'string' ||
         typeof obj === 'undefined' ||
         obj === null) {
+        // No selection set here
         return null;
     }
     if (Array.isArray(obj)) {
+        // GraphQL queries don't include arrays
         return selectionSetFromObj(obj[0]);
     }
+    // Now we know it's an object
     var selections = [];
     Object.keys(obj).forEach(function (key) {
         var field = {
@@ -3860,6 +5143,7 @@ function selectionSetFromObj(obj) {
                 value: key,
             },
         };
+        // Recurse
         var nestedSelSet = selectionSetFromObj(obj[key]);
         if (nestedSelSet) {
             field.selectionSet = nestedSelSet;
@@ -3901,7 +5185,7 @@ var justTypenameQuery = {
     ],
 };
 
-var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -3909,15 +5193,23 @@ var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(
     }
     return t;
 };
-var ApolloCache = (function () {
+var ApolloCache = /** @class */ (function () {
     function ApolloCache() {
     }
+    // optional API
     ApolloCache.prototype.transformDocument = function (document) {
         return document;
     };
+    // experimental
     ApolloCache.prototype.transformForLink = function (document) {
         return document;
     };
+    // DataProxy API
+    /**
+     *
+     * @param options
+     * @param optimistic
+     */
     ApolloCache.prototype.readQuery = function (options, optimistic) {
         if (optimistic === void 0) { optimistic = false; }
         return this.read({
@@ -3955,6 +5247,10 @@ var ApolloCache = (function () {
         var id = _a.id, data = _a.data;
         if (typeof id !== 'undefined') {
             var typenameResult = null;
+            // Since we can't use fragments without having a typename in the store,
+            // we need to make sure we have one.
+            // To avoid overwriting an existing typename, we need to read it out first
+            // and generate a fake one if none exists.
             try {
                 typenameResult = this.read({
                     rootId: id,
@@ -3963,9 +5259,12 @@ var ApolloCache = (function () {
                 });
             }
             catch (e) {
+                // Do nothing, since an error just means no typename exists
             }
+            // tslint:disable-next-line
             var __typename = (typenameResult && typenameResult.__typename) || '__ClientData';
-            var dataToWrite = __assign$8({ __typename: __typename }, data);
+            // Add a type here to satisfy the inmemory cache
+            var dataToWrite = __assign$9({ __typename: __typename }, data);
             this.writeFragment({
                 id: id,
                 fragment: fragmentFromPojo(dataToWrite, __typename),
@@ -3980,14 +5279,18 @@ var ApolloCache = (function () {
 }());
 
 var haveWarned$1 = false;
-var HeuristicFragmentMatcher = (function () {
+/**
+ * This fragment matcher is very basic and unable to match union or interface type conditions
+ */
+var HeuristicFragmentMatcher = /** @class */ (function () {
     function HeuristicFragmentMatcher() {
+        // do nothing
     }
     HeuristicFragmentMatcher.prototype.ensureReady = function () {
         return Promise.resolve();
     };
     HeuristicFragmentMatcher.prototype.canBypassInit = function () {
-        return true;
+        return true; // we don't need to initialize this fragment matcher.
     };
     HeuristicFragmentMatcher.prototype.match = function (idValue, typeCondition, context) {
         var obj = context.store.get(idValue.id);
@@ -4000,7 +5303,9 @@ var HeuristicFragmentMatcher = (function () {
                 console.warn('Could not find __typename on Fragment ', typeCondition, obj);
                 console.warn("DEPRECATION WARNING: using fragments without __typename is unsupported behavior " +
                     "and will be removed in future versions of Apollo client. You should fix this and set addTypename to true now.");
+                /* istanbul ignore if */
                 if (!isTest()) {
+                    // When running tests, we want to print the warning every time
                     haveWarned$1 = true;
                 }
             }
@@ -4010,6 +5315,11 @@ var HeuristicFragmentMatcher = (function () {
         if (obj.__typename === typeCondition) {
             return true;
         }
+        // XXX here we reach an issue - we don't know if this fragment should match or not. It's either:
+        // 1. A fragment on a non-matching concrete type or interface or union
+        // 2. A fragment on a matching interface or union
+        // If it's 1, we don't want to return anything, if it's 2 we want to match. We can't tell the
+        // difference, so we warn the user, but still try to match it (backcompat).
         warnOnceInDevelopment("You are using the simple (heuristic) fragment matcher, but your queries contain union or interface types.\n     Apollo Client will not be able to able to accurately map fragments." +
             "To make this error go away, use the IntrospectionFragmentMatcher as described in the docs: " +
             "https://www.apollographql.com/docs/react/recipes/fragment-matching.html", 'error');
@@ -4019,9 +5329,9 @@ var HeuristicFragmentMatcher = (function () {
     return HeuristicFragmentMatcher;
 }());
 
-var ObjectCache = (function () {
+var ObjectCache = /** @class */ (function () {
     function ObjectCache(data) {
-        if (data === void 0) { data = {}; }
+        if (data === void 0) { data = Object.create(null); }
         this.data = data;
     }
     ObjectCache.prototype.toObject = function () {
@@ -4037,10 +5347,10 @@ var ObjectCache = (function () {
         this.data[dataId] = undefined;
     };
     ObjectCache.prototype.clear = function () {
-        this.data = {};
+        this.data = Object.create(null);
     };
     ObjectCache.prototype.replace = function (newData) {
-        this.data = newData || {};
+        this.data = newData || Object.create(null);
     };
     return ObjectCache;
 }());
@@ -4058,7 +5368,7 @@ var __extends$6 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4066,7 +5376,7 @@ var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(
     }
     return t;
 };
-var WriteError = (function (_super) {
+var WriteError = /** @class */ (function (_super) {
     __extends$6(WriteError, _super);
     function WriteError() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -4076,14 +5386,36 @@ var WriteError = (function (_super) {
     return WriteError;
 }(Error));
 function enhanceErrorWithDocument(error, document) {
+    // XXX A bit hacky maybe ...
     var enhancedError = new WriteError("Error writing result to store for query:\n " + printer_1(document));
     enhancedError.message += '\n' + error.message;
     enhancedError.stack = error.stack;
     return enhancedError;
 }
+/**
+ * Writes the result of a query to the store.
+ *
+ * @param result The result object returned for the query document.
+ *
+ * @param query The query document whose result we are writing to the store.
+ *
+ * @param store The {@link NormalizedCache} used by Apollo for the `data` portion of the store.
+ *
+ * @param variables A map from the name of a variable to its value. These variables can be
+ * referenced by the query document.
+ *
+ * @param dataIdFromObject A function that returns an object identifier given a particular result
+ * object. See the store documentation for details and an example of this function.
+ *
+ * @param fragmentMap A map from the name of a fragment to its fragment definition. These fragments
+ * can be referenced within the query document.
+ *
+ * @param fragmentMatcherFunction A function to use for matching fragment conditions in GraphQL documents
+ */
 
 function writeResultToStore(_a) {
     var dataId = _a.dataId, result = _a.result, document = _a.document, _b = _a.storeFactory, storeFactory = _b === void 0 ? defaultNormalizedCacheFactory : _b, _c = _a.store, store = _c === void 0 ? storeFactory() : _c, variables = _a.variables, dataIdFromObject = _a.dataIdFromObject, fragmentMatcherFunction = _a.fragmentMatcherFunction;
+    // XXX TODO REFACTOR: this is a temporary workaround until query normalization is made to work with documents.
     var operationDefinition = getOperationDefinition(document);
     var selectionSet = operationDefinition.selectionSet;
     var fragmentMap = createFragmentMap(getFragmentDefinitions(document));
@@ -4126,10 +5458,14 @@ function writeSelectionSetToStore(_a) {
                     });
                 }
                 else {
+                    // if this is a defered field we don't need to throw / warn
                     var isDefered = selection.directives &&
                         selection.directives.length &&
                         selection.directives.some(function (directive) { return directive.name && directive.name.value === 'defer'; });
                     if (!isDefered && context.fragmentMatcherFunction) {
+                        // XXX We'd like to throw an error, but for backwards compatibility's sake
+                        // we just print a warning for the time being.
+                        //throw new WriteError(`Missing field ${resultFieldKey} in ${JSON.stringify(result, null, 2).substring(0, 100)}`);
                         if (!isProduction()) {
                             console.warn("Missing field " + resultFieldKey + " in " + JSON.stringify(result, null, 2).substring(0, 100));
                         }
@@ -4138,11 +5474,13 @@ function writeSelectionSetToStore(_a) {
             }
         }
         else {
+            // This is not a field, so it must be a fragment, either inline or named
             var fragment = void 0;
             if (isInlineFragment(selection)) {
                 fragment = selection;
             }
             else {
+                // Named fragment
                 fragment = (fragmentMap || {})[selection.name.value];
                 if (!fragment) {
                     throw new Error("No fragment named " + selection.name.value + ".");
@@ -4150,8 +5488,13 @@ function writeSelectionSetToStore(_a) {
             }
             var matches = true;
             if (context.fragmentMatcherFunction && fragment.typeCondition) {
-                var idValue = { type: 'id', id: 'self', generated: false };
+                // TODO we need to rewrite the fragment matchers for this to work properly and efficiently
+                // Right now we have to pretend that we're passing in an idValue and that there's a store
+                // on the context.
+                var idValue = toIdValue({ id: 'self', typename: undefined });
                 var fakeContext = {
+                    // NOTE: fakeContext always uses ObjectCache
+                    // since this is only to ensure the return value of 'matches'
                     store: new ObjectCache({ self: result }),
                     returnPartialData: false,
                     hasMissingField: false,
@@ -4174,6 +5517,8 @@ function writeSelectionSetToStore(_a) {
     });
     return store;
 }
+// Checks if the id given is an id that was generated by Apollo
+// rather than by dataIdFromObject.
 function isGeneratedId(id) {
     return id[0] === '$';
 }
@@ -4187,7 +5532,7 @@ function mergeWithGenerated(generatedKey, realKey, cache) {
             mergeWithGenerated(value.id, realValue.id, cache);
         }
         cache.delete(generatedKey);
-        cache.set(realKey, __assign$9({}, generated, real));
+        cache.set(realKey, __assign$10({}, generated, real));
     });
 }
 function isDataProcessed(dataId, field, processedData) {
@@ -4213,12 +5558,16 @@ function writeFieldToStore(_a) {
     var storeValue;
     var storeObject;
     var storeFieldName = storeKeyNameFromField(field, variables);
+    // specifies if we need to merge existing keys in the store
     var shouldMerge = false;
+    // If we merge, this will be the generatedKey
     var generatedKey = '';
+    // If this is a scalar value...
     if (!field.selectionSet || value === null) {
         storeValue =
             value != null && typeof value === 'object'
                 ?
+                    // an id.
                     { type: 'json', json: value }
                 :
                     value;
@@ -4228,13 +5577,20 @@ function writeFieldToStore(_a) {
         storeValue = processArrayValue(value, generatedId, field.selectionSet, context);
     }
     else {
+        // It's an object
         var valueDataId = dataId + "." + storeFieldName;
         var generated = true;
+        // We only prepend the '$' if the valueDataId isn't already a generated
+        // id.
         if (!isGeneratedId(valueDataId)) {
             valueDataId = '$' + valueDataId;
         }
         if (dataIdFromObject) {
             var semanticId = dataIdFromObject(value);
+            // We throw an error if the first character of the id is '$. This is
+            // because we use that character to designate an Apollo-generated id
+            // and we use the distinction between user-desiginated and application-provided
+            // ids when managing overwrites.
             if (semanticId && isGeneratedId(semanticId)) {
                 throw new Error('IDs returned by dataIdFromObject cannot begin with the "$" character.');
             }
@@ -4251,30 +5607,51 @@ function writeFieldToStore(_a) {
                 context: context,
             });
         }
-        storeValue = {
-            type: 'id',
-            id: valueDataId,
-            generated: generated,
-        };
+        // We take the id and escape it (i.e. wrap it with an enclosing object).
+        // This allows us to distinguish IDs from normal scalars.
+        var typename = value.__typename;
+        storeValue = toIdValue({ id: valueDataId, typename: typename }, generated);
+        // check if there was a generated id at the location where we're
+        // about to place this new id. If there was, we have to merge the
+        // data from that id with the data we're about to write in the store.
         storeObject = store.get(dataId);
-        if (storeObject && storeObject[storeFieldName] !== storeValue) {
-            var escapedId = storeObject[storeFieldName];
-            if (isIdValue(storeValue) &&
-                storeValue.generated &&
-                isIdValue(escapedId) &&
-                !escapedId.generated) {
+        var escapedId = storeObject && storeObject[storeFieldName];
+        if (escapedId !== storeValue && isIdValue(escapedId)) {
+            var hadTypename = escapedId.typename !== undefined;
+            var hasTypename = typename !== undefined;
+            var typenameChanged = hadTypename && hasTypename && escapedId.typename !== typename;
+            // If there is already a real id in the store and the current id we
+            // are dealing with is generated, we throw an error.
+            // One exception we allow is when the typename has changed, which occurs
+            // when schema defines a union, both with and without an ID in the same place.
+            // checks if we "lost" the read id
+            if (generated && !escapedId.generated && !typenameChanged) {
                 throw new Error("Store error: the application attempted to write an object with no provided id" +
                     (" but the store already contains an id of " + escapedId.id + " for this object. The selectionSet") +
                     " that was trying to be written is:\n" +
                     printer_1(field));
             }
-            if (isIdValue(escapedId) && escapedId.generated) {
+            // checks if we "lost" the typename
+            if (hadTypename && !hasTypename) {
+                throw new Error("Store error: the application attempted to write an object with no provided typename" +
+                    (" but the store already contains an object with typename of " + escapedId.typename + " for the object of id " + escapedId.id + ". The selectionSet") +
+                    " that was trying to be written is:\n" +
+                    printer_1(field));
+            }
+            if (escapedId.generated) {
                 generatedKey = escapedId.id;
-                shouldMerge = true;
+                // we should only merge if it's an object of the same type
+                // otherwise, we should delete the generated object
+                if (typenameChanged) {
+                    store.delete(generatedKey);
+                }
+                else {
+                    shouldMerge = true;
+                }
             }
         }
     }
-    var newStoreObj = __assign$9({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
+    var newStoreObj = __assign$10({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
     if (shouldMerge) {
         mergeWithGenerated(generatedKey, storeValue.id, store);
     }
@@ -4309,21 +5686,34 @@ function processArrayValue(value, generatedId, selectionSet, context) {
                 context: context,
             });
         }
-        var idStoreValue = {
-            type: 'id',
-            id: itemDataId,
-            generated: generated,
-        };
-        return idStoreValue;
+        return toIdValue({ id: itemDataId, typename: item.__typename }, generated);
     });
 }
 
+/* Based on graphql function from graphql-js:
+ *
+ * graphql(
+ *   schema: GraphQLSchema,
+ *   requestString: string,
+ *   rootValue?: ?any,
+ *   contextValue?: ?any,
+ *   variableValues?: ?{[key: string]: any},
+ *   operationName?: ?string
+ * ): Promise<GraphQLResult>
+ *
+ * The default export as of graphql-anywhere is sync as of 4.0,
+ * but below is an exported alternative that is async.
+ * In the 5.0 version, this will be the only export again
+ * and it will be async
+ *
+ */
 function graphql(resolver, document, rootValue, contextValue, variableValues, execOptions) {
     if (execOptions === void 0) { execOptions = {}; }
     var mainDefinition = getMainDefinition(document);
     var fragments = getFragmentDefinitions(document);
     var fragmentMap = createFragmentMap(fragments);
     var resultMapper = execOptions.resultMapper;
+    // Default matcher always matches all fragments
     var fragmentMatcher = execOptions.fragmentMatcher || (function () { return true; });
     var execContext = {
         fragmentMap: fragmentMap,
@@ -4340,6 +5730,7 @@ function executeSelectionSet(selectionSet, rootValue, execContext) {
     var result = {};
     selectionSet.selections.forEach(function (selection) {
         if (!shouldInclude(selection, variables)) {
+            // Skip this entirely
             return;
         }
         if (isField(selection)) {
@@ -4360,6 +5751,7 @@ function executeSelectionSet(selectionSet, rootValue, execContext) {
                 fragment = selection;
             }
             else {
+                // This is a named fragment
                 fragment = fragmentMap[selection.name.value];
                 if (!fragment) {
                     throw new Error("No fragment named " + selection.name.value);
@@ -4387,45 +5779,57 @@ function executeField(field, rootValue, execContext) {
         directives: getDirectiveInfoFromField(field, variables),
     };
     var result = resolver(fieldName, rootValue, args, contextValue, info);
+    // Handle all scalar types here
     if (!field.selectionSet) {
         return result;
     }
+    // From here down, the field has a selection set, which means it's trying to
+    // query a GraphQLObjectType
     if (result == null) {
+        // Basically any field in a GraphQL response can be null, or missing
         return result;
     }
     if (Array.isArray(result)) {
         return executeSubSelectedArray(field, result, execContext);
     }
+    // Returned value is an object, and the query has a sub-selection. Recurse.
     return executeSelectionSet(field.selectionSet, result, execContext);
 }
 function executeSubSelectedArray(field, result, execContext) {
     return result.map(function (item) {
+        // null value in array
         if (item === null) {
             return null;
         }
+        // This is a nested array, recurse
         if (Array.isArray(item)) {
             return executeSubSelectedArray(field, item, execContext);
         }
+        // This is an object, run the selection set on it
         return executeSelectionSet(field.selectionSet, item, execContext);
     });
 }
+var hasOwn = Object.prototype.hasOwnProperty;
 function merge(dest, src) {
-    if (src === null || typeof src !== 'object') {
-        return src;
+    if (src !== null && typeof src === 'object') {
+        Object.keys(src).forEach(function (key) {
+            var srcVal = src[key];
+            if (!hasOwn.call(dest, key)) {
+                dest[key] = srcVal;
+            }
+            else {
+                merge(dest[key], srcVal);
+            }
+        });
     }
-    Object.keys(dest).forEach(function (destKey) {
-        if (src.hasOwnProperty(destKey)) {
-            merge(dest[destKey], src[destKey]);
-        }
-    });
-    Object.keys(src).forEach(function (srcKey) {
-        if (!dest.hasOwnProperty(srcKey)) {
-            dest[srcKey] = src[srcKey];
-        }
-    });
 }
 
-var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
+// TODO: we should probably make check call propType and then throw,
+// rather than the other way round, to avoid constructing stack traces
+// for things like oneOf uses in React. At this stage I doubt many people
+// are using this like that, but in the future, who knows?
+
+var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4433,30 +5837,66 @@ var __assign$10 = (undefined && undefined.__assign) || Object.assign || function
     }
     return t;
 };
+/**
+ * The key which the cache id for a given value is stored in the result object. This key is private
+ * and should not be used by Apollo client users.
+ *
+ * Uses a symbol if available in the environment.
+ *
+ * @private
+ */
 var ID_KEY = typeof Symbol !== 'undefined' ? Symbol('id') : '@@id';
+/**
+ * Resolves the result of a query solely from the store (i.e. never hits the server).
+ *
+ * @param {Store} store The {@link NormalizedCache} used by Apollo for the `data` portion of the
+ * store.
+ *
+ * @param {DocumentNode} query The query document to resolve from the data available in the store.
+ *
+ * @param {Object} [variables] A map from the name of a variable to its value. These variables can
+ * be referenced by the query document.
+ *
+ * @param {any} previousResult The previous result returned by this function for the same query.
+ * If nothing in the store changed since that previous result then values from the previous result
+ * will be returned to preserve referential equality.
+ */
 function readQueryFromStore(options) {
     var optsPatch = { returnPartialData: false };
-    return diffQueryAgainstStore(__assign$10({}, options, optsPatch)).result;
+    return diffQueryAgainstStore(__assign$11({}, options, optsPatch)).result;
 }
 var readStoreResolver = function (fieldName, idValue, args, context, _a) {
     var resultKey = _a.resultKey, directives = _a.directives;
     assertIdValue(idValue);
     var objId = idValue.id;
     var obj = context.store.get(objId);
-    var storeKeyName = getStoreKeyName(fieldName, args, directives);
-    var fieldValue = (obj || {})[storeKeyName];
-    if (typeof fieldValue === 'undefined') {
-        if (context.cacheRedirects &&
-            obj &&
+    var storeKeyName = fieldName;
+    if (args || directives) {
+        // We happen to know here that getStoreKeyName returns its first
+        // argument unmodified if there are no args or directives, so we can
+        // avoid calling the function at all in that case, as a small but
+        // important optimization to this frequently executed code.
+        storeKeyName = getStoreKeyName(storeKeyName, args, directives);
+    }
+    var fieldValue = void 0;
+    if (obj) {
+        fieldValue = obj[storeKeyName];
+        if (typeof fieldValue === 'undefined' &&
+            context.cacheRedirects &&
             (obj.__typename || objId === 'ROOT_QUERY')) {
             var typename = obj.__typename || 'Query';
+            // Look for the type in the custom resolver map
             var type = context.cacheRedirects[typename];
             if (type) {
+                // Look for the field in the custom resolver map
                 var resolver = type[fieldName];
                 if (resolver) {
                     fieldValue = resolver(obj, args, {
-                        getCacheKey: function (obj) {
-                            return toIdValue(context.dataIdFromObject(obj));
+                        getCacheKey: function (storeObj) {
+                            return toIdValue({
+                                id: context.dataIdFromObject(storeObj),
+                                typename: storeObj.__typename,
+                            });
                         },
                     });
                 }
@@ -4470,27 +5910,47 @@ var readStoreResolver = function (fieldName, idValue, args, context, _a) {
         context.hasMissingField = true;
         return fieldValue;
     }
+    // if this is an object scalar, it must be a json blob and we have to unescape it
     if (isJsonValue(fieldValue)) {
+        // If the JSON blob is the same now as in the previous result, return the previous result to
+        // maintain referential equality.
+        //
+        // `isEqual` will first perform a referential equality check (with `===`) in case the JSON
+        // value has not changed in the store, and then a deep equality check if that fails in case a
+        // new JSON object was returned by the API but that object may still be the same.
         if (idValue.previousResult &&
             isEqual(idValue.previousResult[resultKey], fieldValue.json)) {
             return idValue.previousResult[resultKey];
         }
         return fieldValue.json;
     }
+    // If we had a previous result, try adding that previous result value for this field to our field
+    // value. This will create a new value without mutating the old one.
     if (idValue.previousResult) {
         fieldValue = addPreviousResultToIdValues(fieldValue, idValue.previousResult[resultKey]);
     }
     return fieldValue;
 };
+/**
+ * Given a store and a query, return as much of the result as possible and
+ * identify if any data was missing from the store.
+ * @param  {DocumentNode} query A parsed GraphQL query document
+ * @param  {Store} store The Apollo Client store object
+ * @param  {any} previousResult The previous result returned by this function for the same query
+ * @return {result: Object, complete: [boolean]}
+ */
 function diffQueryAgainstStore(_a) {
     var store = _a.store, query = _a.query, variables = _a.variables, previousResult = _a.previousResult, _b = _a.returnPartialData, returnPartialData = _b === void 0 ? true : _b, _c = _a.rootId, rootId = _c === void 0 ? 'ROOT_QUERY' : _c, fragmentMatcherFunction = _a.fragmentMatcherFunction, config = _a.config;
+    // Throw the right validation error by trying to find a query in the document
     var queryDefinition = getQueryDefinition(query);
     variables = assign({}, getDefaultValues(queryDefinition), variables);
     var context = {
+        // Global settings
         store: store,
         returnPartialData: returnPartialData,
         dataIdFromObject: (config && config.dataIdFromObject) || null,
         cacheRedirects: (config && config.cacheRedirects) || {},
+        // Flag set during execution
         hasMissingField: false,
     };
     var rootIdValue = {
@@ -4512,21 +5972,46 @@ function assertIdValue(idValue) {
         throw new Error("Encountered a sub-selection on the query, but the store doesn't have an object reference. This should never happen during normal use unless you have custom code that is directly manipulating the store; please file an issue.");
     }
 }
+/**
+ * Adds a previous result value to id values in a nested array. For a single id value and a single
+ * previous result then the previous value is added directly.
+ *
+ * For arrays we put all of the ids from the previous result array in a map and add them to id
+ * values with the same id.
+ *
+ * This function does not mutate. Instead it returns new instances of modified values.
+ *
+ * @private
+ */
 function addPreviousResultToIdValues(value, previousResult) {
+    // If the value is an `IdValue`, add the previous result to it whether or not that
+    // `previousResult` is undefined.
+    //
+    // If the value is an array, recurse over each item trying to add the `previousResult` for that
+    // item.
     if (isIdValue(value)) {
-        return __assign$10({}, value, { previousResult: previousResult });
+        return __assign$11({}, value, { previousResult: previousResult });
     }
     else if (Array.isArray(value)) {
         var idToPreviousResult_1 = new Map();
+        // If the previous result was an array, we want to build up our map of ids to previous results
+        // using the private `ID_KEY` property that is added in `resultMapper`.
         if (Array.isArray(previousResult)) {
             previousResult.forEach(function (item) {
+                // item can be null
                 if (item && item[ID_KEY]) {
                     idToPreviousResult_1.set(item[ID_KEY], item);
+                    // idToPreviousResult[item[ID_KEY]] = item;
                 }
             });
         }
+        // For every value we want to add the previous result.
         return value.map(function (item, i) {
+            // By default the previous result for this item will be in the same array position as this
+            // item.
             var itemPreviousResult = previousResult && previousResult[i];
+            // If the item is an id value, we should check to see if there is a previous result for this
+            // specific id. If there is, that will be the value for `itemPreviousResult`.
             if (isIdValue(item)) {
                 itemPreviousResult =
                     idToPreviousResult_1.get(item.id) || itemPreviousResult;
@@ -4534,12 +6019,31 @@ function addPreviousResultToIdValues(value, previousResult) {
             return addPreviousResultToIdValues(item, itemPreviousResult);
         });
     }
+    // Return the value, nothing changed.
     return value;
 }
+/**
+ * Maps a result from `graphql-anywhere` to a final result value.
+ *
+ * If the result and the previous result from the `idValue` pass a shallow equality test, we just
+ * return the `previousResult` to maintain referential equality.
+ *
+ * We also add a private id property to the result that we can use later on.
+ *
+ * @private
+ */
 function resultMapper(resultFields, idValue) {
+    // If we had a previous result, we may be able to return that and preserve referential equality
     if (idValue.previousResult) {
         var currentResultKeys_1 = Object.keys(resultFields);
-        var sameAsPreviousResult = Object.keys(idValue.previousResult).reduce(function (sameKeys, key) { return sameKeys && currentResultKeys_1.indexOf(key) > -1; }, true) &&
+        var sameAsPreviousResult = 
+        // Confirm that we have the same keys in both the current result and the previous result.
+        Object.keys(idValue.previousResult).every(function (key) { return currentResultKeys_1.indexOf(key) > -1; }) &&
+            // Perform a shallow comparison of the result fields with the previous result. If all of
+            // the shallow fields are referentially equal to the fields of the previous result we can
+            // just return the previous result.
+            //
+            // While we do a shallow comparison of objects, but we do a deep comparison of arrays.
             currentResultKeys_1.every(function (key) {
                 return areNestedArrayItemsStrictlyEqual(resultFields[key], idValue.previousResult[key]);
             });
@@ -4547,25 +6051,31 @@ function resultMapper(resultFields, idValue) {
             return idValue.previousResult;
         }
     }
-    Object.defineProperty(resultFields, ID_KEY, {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: idValue.id,
-    });
+    resultFields[ID_KEY] = idValue.id;
     return resultFields;
 }
+/**
+ * Compare all the items to see if they are all referentially equal in two arrays no matter how
+ * deeply nested the arrays are.
+ *
+ * @private
+ */
 function areNestedArrayItemsStrictlyEqual(a, b) {
+    // If `a` and `b` are referentially equal, return true.
     if (a === b) {
         return true;
     }
+    // If either `a` or `b` are not an array or not of the same length return false. `a` and `b` are
+    // known to not be equal here, we checked above.
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
         return false;
     }
+    // Otherwise let us compare all of the array items (which are potentially nested arrays!) to see
+    // if they are equal.
     return a.every(function (item, i) { return areNestedArrayItemsStrictlyEqual(item, b[i]); });
 }
 
-var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4573,7 +6083,7 @@ var __assign$11 = (undefined && undefined.__assign) || Object.assign || function
     }
     return t;
 };
-var RecordingCache = (function () {
+var RecordingCache = /** @class */ (function () {
     function RecordingCache(data) {
         if (data === void 0) { data = {}; }
         this.data = data;
@@ -4586,10 +6096,11 @@ var RecordingCache = (function () {
         return recordedData;
     };
     RecordingCache.prototype.toObject = function () {
-        return __assign$11({}, this.data, this.recordedData);
+        return __assign$12({}, this.data, this.recordedData);
     };
     RecordingCache.prototype.get = function (dataId) {
         if (this.recordedData.hasOwnProperty(dataId)) {
+            // recording always takes precedence:
             return this.recordedData[dataId];
         }
         return this.data[dataId];
@@ -4609,7 +6120,7 @@ var RecordingCache = (function () {
     };
     RecordingCache.prototype.replace = function (newData) {
         this.clear();
-        this.recordedData = __assign$11({}, newData);
+        this.recordedData = __assign$12({}, newData);
     };
     return RecordingCache;
 }());
@@ -4628,7 +6139,7 @@ var __extends$7 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$13 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -4653,15 +6164,18 @@ function defaultDataIdFromObject(result) {
     }
     return null;
 }
-var InMemoryCache = (function (_super) {
+var InMemoryCache = /** @class */ (function (_super) {
     __extends$7(InMemoryCache, _super);
     function InMemoryCache(config) {
         if (config === void 0) { config = {}; }
         var _this = _super.call(this) || this;
         _this.optimistic = [];
         _this.watches = [];
+        // Set this while in a transaction to prevent broadcasts...
+        // don't forget to turn it back on!
         _this.silenceBroadcast = false;
-        _this.config = __assign$12({}, defaultConfig, config);
+        _this.config = __assign$13({}, defaultConfig, config);
+        // backwards compat
         if (_this.config.customResolvers) {
             console.warn('customResolvers have been renamed to cacheRedirects. Please update your config as we will be deprecating customResolvers in the next major version.');
             _this.config.cacheRedirects = _this.config.customResolvers;
@@ -4741,18 +6255,23 @@ var InMemoryCache = (function (_super) {
     };
     InMemoryCache.prototype.removeOptimistic = function (id) {
         var _this = this;
+        // Throw away optimistic changes of that particular mutation
         var toPerform = this.optimistic.filter(function (item) { return item.id !== id; });
         this.optimistic = [];
+        // Re-run all of our optimistic data actions on top of one another.
         toPerform.forEach(function (change) {
             _this.recordOptimisticTransaction(change.transaction, change.id);
         });
         this.broadcastWatches();
     };
     InMemoryCache.prototype.performTransaction = function (transaction) {
+        // TODO: does this need to be different, or is this okay for an in-memory cache?
         var alreadySilenced = this.silenceBroadcast;
         this.silenceBroadcast = true;
         transaction(this);
         if (!alreadySilenced) {
+            // Don't un-silence since this is a nested transaction
+            // (for example, a transaction inside an optimistic record)
             this.silenceBroadcast = false;
         }
         this.broadcastWatches();
@@ -4761,6 +6280,8 @@ var InMemoryCache = (function (_super) {
         var _this = this;
         this.silenceBroadcast = true;
         var patch = record(this.extract(true), function (recordingCache) {
+            // swapping data instance on 'this' is currently necessary
+            // because of the current architecture
             var dataCache = _this.data;
             _this.data = recordingCache;
             _this.performTransaction(transaction);
@@ -4814,12 +6335,16 @@ var InMemoryCache = (function (_super) {
     };
     InMemoryCache.prototype.broadcastWatches = function () {
         var _this = this;
+        // Skip this when silenced (like inside a transaction)
         if (this.silenceBroadcast)
             return;
+        // right now, we invalidate all queries whenever anything changes
         this.watches.forEach(function (c) {
             var newData = _this.diff({
                 query: c.query,
                 variables: c.variables,
+                // TODO: previousResult isn't in the types - this will only work
+                // with ObservableQuery which is in a different package
                 previousResult: c.previousResult && c.previousResult(),
                 optimistic: c.optimistic,
             });
@@ -7662,6 +9187,7 @@ function stripLoc(doc, removeLocAtThisLevel) {
   return doc;
 }
 
+var experimentalFragmentVariables = false;
 function parseDocument(doc) {
   var cacheKey = normalize(doc);
 
@@ -7669,7 +9195,7 @@ function parseDocument(doc) {
     return docCache[cacheKey];
   }
 
-  var parsed = parse(doc);
+  var parsed = parse(doc, { experimentalFragmentVariables: experimentalFragmentVariables });
   if (!parsed || parsed.kind !== 'Document') {
     throw new Error('Not a valid GraphQL document.');
   }
@@ -7681,6 +9207,14 @@ function parseDocument(doc) {
   docCache[cacheKey] = parsed;
 
   return parsed;
+}
+
+function enableExperimentalFragmentVariables() {
+  experimentalFragmentVariables = true;
+}
+
+function disableExperimentalFragmentVariables() {
+  experimentalFragmentVariables = false;
 }
 
 // XXX This should eventually disallow arbitrary string interpolation, like Relay does
@@ -7709,6 +9243,8 @@ function gql(/* arguments */) {
 gql.default = gql;
 gql.resetCaches = resetCaches;
 gql.disableFragmentWarnings = disableFragmentWarnings;
+gql.enableExperimentalFragmentVariables = enableExperimentalFragmentVariables;
+gql.disableExperimentalFragmentVariables = disableExperimentalFragmentVariables;
 
 var src = gql;
 
