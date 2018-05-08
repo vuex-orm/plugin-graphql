@@ -133,12 +133,6 @@ the server. It's true for all records except newly created ones.
 
 
 
-## Known issues
-
-- Each model is only loaded once in the graph
-- Code documentation is deprecated and crappy
-
-
 ## Contribution
 
 To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link` in your local
