@@ -9392,7 +9392,7 @@ var QueryBuilder = /** @class */ (function () {
                         }
                     }
                     else if (model.fieldIsNumber(model.fields.get(key))) {
-                        result[key] = parseInt(data[key], 0);
+                        result[key] = parseFloat(data[key]);
                     }
                     else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
                         result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));

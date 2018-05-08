@@ -186,7 +186,7 @@ export default class QueryBuilder {
               result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
             }
           } else if (model.fieldIsNumber(model.fields.get(key))) {
-            result[key] = parseInt(data[key], 0);
+            result[key] = parseFloat(data[key]);
           } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
             result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
           } else {

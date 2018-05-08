@@ -312,7 +312,7 @@ describe('QueryBuilder', () => {
                 "id": "15",
                 "name": "Charly Brown"
               },
-              "otherId": "4894",
+              "otherId": "4894.35",
               "comments": {
                 "nodes": [
                   {
@@ -343,7 +343,7 @@ describe('QueryBuilder', () => {
               "id": 15,
               "name": "Charly Brown"
             },
-            "otherId": 4894,
+            "otherId": 4894.35,
             "comments": [
               {
                 "$isPersisted": true,
