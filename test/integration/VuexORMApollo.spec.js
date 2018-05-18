@@ -20,6 +20,7 @@ class User extends ORMModel {
 class Video extends ORMModel {
   static entity = 'videos';
   static eagerLoad = ['comments'];
+  static skipFields = ['ignoreMe'];
 
   static fields () {
     return {
@@ -28,6 +29,7 @@ class Video extends ORMModel {
       title: this.string(''),
       userId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
+      ignoreMe: this.string(''),
       user: this.belongsTo(User, 'userId'),
       comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };

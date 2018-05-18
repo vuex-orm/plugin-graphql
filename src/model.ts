@@ -42,12 +42,15 @@ export default class Model {
   }
 
   /**
-   * Tells if a field should be ignored. This is true for fields that start with a `$` and all foreign keys
+   * Tells if a field should be ignored. This is true for fields that start with a `$` or is it is within the skipField
+   * property.
+   *
    * @param {string} field
    * @returns {boolean}
    */
   public skipField (field: string) {
     if (field.startsWith('$')) return true;
+    if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
 
     let shouldSkipField: boolean = false;
 

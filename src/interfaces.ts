@@ -32,6 +32,7 @@ export interface ORMModel {
   name: string;
   entity: string;
   eagerLoad: undefined | Array<string>;
+  skipFields: undefined | Array<string>;
 
   fields (): any;
   dispatch (name: string, ...params: Array<any>): any;
