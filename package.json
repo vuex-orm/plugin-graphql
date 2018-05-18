@@ -1,6 +1,6 @@
 {
   "name": "@vuex-orm/plugin-apollo",
-  "version": "0.0.34",
+  "version": "0.0.35",
   "description": "Vuex-ORM Plugin to sync the data against a GraphQL API via Apollo.",
   "main": "dist/vuex-orm-apollo.common.js",
   "module": "dist/vuex-orm-apollo.esm.js",
