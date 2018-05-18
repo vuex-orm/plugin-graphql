@@ -125,7 +125,7 @@ export default class QueryBuilder {
   /**
    * Transforms outgoing data. Use for variables param.
    *
-   * Omits relations and id fields.
+   * Omits relations and some fields.
    *
    * @param model
    * @param {Data} data
@@ -138,9 +138,14 @@ export default class QueryBuilder {
     Object.keys(data).forEach((key) => {
       const value = data[key];
 
-      // Ignore IDs and connections and empty fields
-      if (!relations.has(key) && !key.startsWith('$') && key !== 'id' && value !== null) {
-        returnValue[key] = value;
+      // Ignore connections and empty fields
+      if (!relations.has(key) && !key.startsWith('$') && value !== null) {
+        if (value instanceof Array) {
+          const arrayModel = this.getModel(inflection.singularize(key));
+          returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
+        } else {
+          returnValue[key] = value;
+        }
       }
     });
 

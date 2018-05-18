@@ -300,7 +300,7 @@ query Users {
         await store.dispatch('entities/users/persist', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ user: { name: 'Charlie Brown' } });
+      expect(request.variables).toEqual({ user: { id: 1, name: 'Charlie Brown' } });
       expect(request.query).toEqual(`
 mutation CreateUser($user: UserInput!) {
   createUser(user: $user) {
@@ -333,7 +333,7 @@ mutation CreateUser($user: UserInput!) {
         await store.dispatch('entities/users/push', { data: user });
       });
 
-      expect(request.variables).toEqual({ id: 1, user: { name: 'Snoopy' } });
+      expect(request.variables).toEqual({ id: 1, user: { id: 1, name: 'Snoopy' } });
       expect(request.query).toEqual(`
 mutation UpdateUser($id: ID!, $user: UserInput!) {
   updateUser(id: $id, user: $user) {

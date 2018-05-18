@@ -9335,20 +9335,27 @@ var QueryBuilder = /** @class */ (function () {
     /**
      * Transforms outgoing data. Use for variables param.
      *
-     * Omits relations and id fields.
+     * Omits relations and some fields.
      *
      * @param model
      * @param {Data} data
      * @returns {Data}
      */
     QueryBuilder.prototype.transformOutgoingData = function (model, data) {
+        var _this = this;
         var relations = model.getRelations();
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
             var value = data[key];
-            // Ignore IDs and connections and empty fields
-            if (!relations.has(key) && !key.startsWith('$') && key !== 'id' && value !== null) {
-                returnValue[key] = value;
+            // Ignore connections and empty fields
+            if (!relations.has(key) && !key.startsWith('$') && value !== null) {
+                if (value instanceof Array) {
+                    var arrayModel_1 = _this.getModel(inflection.singularize(key));
+                    returnValue[key] = value.map(function (v) { return _this.transformOutgoingData(arrayModel_1 || model, v); });
+                }
+                else {
+                    returnValue[key] = value;
+                }
             }
         });
         return returnValue;
