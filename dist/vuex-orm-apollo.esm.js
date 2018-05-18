@@ -9672,13 +9672,17 @@ var Model = /** @class */ (function () {
         return fields;
     };
     /**
-     * Tells if a field should be ignored. This is true for fields that start with a `$` and all foreign keys
+     * Tells if a field should be ignored. This is true for fields that start with a `$` or is it is within the skipField
+     * property.
+     *
      * @param {string} field
      * @returns {boolean}
      */
     Model.prototype.skipField = function (field) {
         var _this = this;
         if (field.startsWith('$'))
+            return true;
+        if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0)
             return true;
         var shouldSkipField = false;
         this.getRelations().forEach(function (relation) {
