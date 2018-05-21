@@ -8,7 +8,12 @@ This [Vuex-ORM](https://github.com/vuex-orm/vuex-orm) plugin uses the
 [apollo-client](https://www.apollographql.com/client/) to let you sync your Vuex state with
 a [GraphQL API](http://graphql.org/)
 
-**Warning:** This is a early version of the plugin, please don't use in production yet.
+**Warning:** This is a early version of the plugin, use with care.
+
+
+## Documentation
+
+https://vuex-orm.github.io/vuex-orm-apollo/
 
 
 ## Usage
