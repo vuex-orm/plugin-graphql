@@ -1,5 +1,7 @@
 # Eager Loading
 
+[[toc]]
+
 All `belongsTo` and `hasOne` related entities are eager loaded when `fetch` is called. All other related entities have to 
 be added to a static field in the model called `eagerLoad` to have them eagerly loaded with fetch.
 

@@ -1,3 +1,7 @@
 # destroy
 
-Hello.
+[[toc]]
+
+::: danger
+TODO
+:::

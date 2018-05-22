@@ -9,6 +9,9 @@ This plugin is in BETA stage, please use with care.
 :::
 
 
+[[toc]]
+
+
 ## Actions
 
 While using Vuex-ORM with the Apollo plugin you have to distinct between two types of Vuex actions:

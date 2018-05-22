@@ -1,5 +1,7 @@
 # Setup
 
+[[toc]]
+
 Installation of the Apollo plugin is easy. First add the package to your dependencies:
 
 ```bash
@@ -20,10 +22,13 @@ import VuexORMApollo from '@vuex-orm/plugin-apollo';
 VuexORM.use(VuexORMApollo, { database: database });
 ```
 
-## Possible options:
+## Possible options
 
 These are the possible options to pass when calling `VuexORM.use()`:
 
 - `database` (required): The Vuex-ORM database.
 - `url` (optional, default: '/graphql'): The URL to the graphql api. Will be passed to apollo-client.
-- `debug` (optional, default: false): Set to true to activate the debug logging.
+- `debug` (optional, default: false): Set to true to activate the debug logging. We recommend to activate this in
+  development env.
+
+More options will come in future releases.
