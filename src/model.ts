@@ -117,6 +117,10 @@ export default class Model {
     return found;
   }
 
+  public getRecordWithId (id: number) {
+    return this.baseModel.getters('query')().withAllRecursive().where('id', id).first();
+  }
+
   public fieldIsNumber (field: Field | undefined): boolean {
     if (!field) return false;
     return field instanceof this.context.components.Number ||

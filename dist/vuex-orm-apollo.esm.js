@@ -9347,11 +9347,16 @@ var QueryBuilder = /** @class */ (function () {
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
             var value = data[key];
-            // Ignore connections and empty fields
-            if (!relations.has(key) && !key.startsWith('$') && value !== null) {
+            // Ignore hasMany/One connections, empty fields and internal fields ($)
+            if ((!relations.has(key) || relations.get(key) instanceof _this.context.components.BelongsTo) &&
+                !key.startsWith('$') && value !== null) {
                 if (value instanceof Array) {
                     var arrayModel_1 = _this.getModel(inflection.singularize(key));
                     returnValue[key] = value.map(function (v) { return _this.transformOutgoingData(arrayModel_1 || model, v); });
+                }
+                else if (relations.get(key) instanceof _this.context.components.BelongsTo) {
+                    var relatedModel = _this.getModel(inflection.singularize(key));
+                    returnValue[key] = _this.transformOutgoingData(relatedModel || model, value);
                 }
                 else {
                     returnValue[key] = value;
@@ -9744,6 +9749,9 @@ var Model = /** @class */ (function () {
         });
         return found;
     };
+    Model.prototype.getRecordWithId = function (id) {
+        return this.baseModel.getters('query')().withAllRecursive().where('id', id).first();
+    };
     Model.prototype.fieldIsNumber = function (field) {
         if (!field)
             return false;
@@ -9962,14 +9970,14 @@ var VuexORMApollo = /** @class */ (function () {
                     case 0:
                         if (!id) return [3 /*break*/, 4];
                         model = this.context.getModel(state.$name);
-                        data = model.baseModel.getters('find')(id);
+                        data = model.getRecordWithId(id);
                         args = args || {};
                         args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
                         mutationName = "create" + upcaseFirstLetter(model.singularName);
                         return [4 /*yield*/, this.mutate(mutationName, args, dispatch, model, false)];
                     case 1:
                         newRecord = _c.sent();
-                        oldRecord = model.baseModel.getters('find')(id);
+                        oldRecord = model.getRecordWithId(id);
                         if (!(oldRecord && !oldRecord.$isPersisted)) return [3 /*break*/, 3];
                         // The server generated another ID, this is very likely to happen.
                         // in this case this.mutate has inserted a new record instead of updating the existing one.

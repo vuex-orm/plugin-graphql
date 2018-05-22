@@ -76,12 +76,12 @@ describe('VuexORMApollo', () => {
 
     store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
     store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
-    store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
-    store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
-    store.dispatch('entities/videos/insert', { data: { id: 1, userId: 1, title: 'Example video', content: 'Video' }});
+    store.dispatch('entities/posts/insert', { data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
+    store.dispatch('entities/posts/insert', { data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
+    store.dispatch('entities/videos/insert', { data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
     store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
-    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
-    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
+    store.dispatch('entities/comments/insert', { data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
+    store.dispatch('entities/comments/insert', { data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
   });
 
   describe('fetch', () => {
@@ -288,24 +288,72 @@ query Users {
     it('sends the correct query to the API', async () => {
       const response = {
         data: {
-          createUser: {
-            __typename: 'user',
-            id: 1,
-            name: 'Charlie Brown'
+          createPost: {
+            __typename: 'post',
+            id: 42,
+            otherId: 13548,
+            title: 'Example post 1',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: [{
+                __typename: 'comment',
+                id: 15,
+                content: 'Works!',
+                subjectId: 42,
+                subjectType: 'Post'
+              }]
+            },
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Charlie Brown',
+            }
           }
         }
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/persist', { id: 1 });
+        await store.dispatch('entities/posts/persist', { id: 1 });
       });
 
-      expect(request.variables).toEqual({ user: { id: 1, name: 'Charlie Brown' } });
+      expect(request.variables).toEqual({
+        post: {
+          content: "Foo",
+          id: 1,
+          otherId: 9,
+          title: "Example post 1",
+          userId: 1,
+          user: {
+            id: 1,
+            name: 'Charlie Brown'
+          }
+        }
+      });
+
+
       expect(request.query).toEqual(`
-mutation CreateUser($user: UserInput!) {
-  createUser(user: $user) {
+mutation CreatePost($post: PostInput!) {
+  createPost(post: $post) {
     id
-    name
+    content
+    title
+    otherId
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        __typename
+      }
+      __typename
+    }
     __typename
   }
 }

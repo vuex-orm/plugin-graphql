@@ -138,11 +138,16 @@ export default class QueryBuilder {
     Object.keys(data).forEach((key) => {
       const value = data[key];
 
-      // Ignore connections and empty fields
-      if (!relations.has(key) && !key.startsWith('$') && value !== null) {
+      // Ignore hasMany/One connections, empty fields and internal fields ($)
+      if ((!relations.has(key) || relations.get(key) instanceof this.context.components.BelongsTo) &&
+        !key.startsWith('$') && value !== null) {
+
         if (value instanceof Array) {
           const arrayModel = this.getModel(inflection.singularize(key));
           returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
+        } else if (relations.get(key) instanceof this.context.components.BelongsTo) {
+          const relatedModel = this.getModel(inflection.singularize(key));
+          returnValue[key] = this.transformOutgoingData(relatedModel || model, value);
         } else {
           returnValue[key] = value;
         }

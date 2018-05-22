@@ -112,7 +112,7 @@ export default class VuexORMApollo {
   private async persist ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<any> {
     if (id) {
       const model = this.context.getModel(state.$name);
-      const data = model.baseModel.getters('find')(id);
+      const data = model.getRecordWithId(id);
 
       args = args || {};
       args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
@@ -120,7 +120,7 @@ export default class VuexORMApollo {
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
       const newRecord = await this.mutate(mutationName, args, dispatch, model, false);
 
-      const oldRecord = model.baseModel.getters('find')(id);
+      const oldRecord = model.getRecordWithId(id);
 
       if (oldRecord && !oldRecord.$isPersisted) {
         // The server generated another ID, this is very likely to happen.
