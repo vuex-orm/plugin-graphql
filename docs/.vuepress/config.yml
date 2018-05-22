@@ -1,4 +1,31 @@
-title: Vuex-ORM Apollo Plugin Documentation
-description: 
+title: 'Vuex-ORM Apollo Plugin'
+description: 'Vue + Vuex-ORM + GraphQL = <3'
 
 base: '/vuex-orm-apollo/'
+
+themeConfig:
+  nav:
+    - text: Home
+      link: /
+
+    - text: Guide
+      link: /guide/
+
+    - text: Vuex-ORM
+      link: https://vuex-orm.github.io/vuex-orm/
+
+    - text: GitHub
+      link: https://github.com/vuex-orm/vuex-orm-apollo
+
+  sidebar:
+    - ['/guide/', 'Introduction']
+    - /guide/setup/
+    - /guide/graphql/
+    - /guide/fetch/
+    - /guide/persist/
+    - /guide/push/
+    - /guide/destroy/
+    - /guide/relationships/
+    - /guide/eager-loading/
+    - /guide/skipping-fields/
+    - /guide/meta-fields/
