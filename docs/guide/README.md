@@ -23,12 +23,14 @@ The following table lists all actions and what they do:
 
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
-**R**EAD | getters['find'] & getters['findAll'] | dispatch('fetch')
-**C**REATE | dispatch('create') | dispatch('persist')
-**U**PDATE | dispatch('save') | dispatch('push')
-**D**ELETE | dispatch('delete') | dispatch('destroy')
+**R**EAD | getters['find'] & getters['findAll'] | [dispatch('fetch')](/guide/fetch)
+**C**REATE | dispatch('create') | [dispatch('persist')](/guide/persist)
+**U**PDATE | dispatch('save') | [dispatch('push')](/guide/push)
+**D**ELETE | dispatch('delete') | [dispatch('destroy')](/guide/destroy)
 
 See the example below to get an idea of how this plugin interacts with Vuex-ORM.
+
+
 
 
 ## Example usage
@@ -37,22 +39,22 @@ After [installing](/guide/setup) this plugin you can load data in your component
 
 ```vue
 <template>
-    <ul>
-        <li v-for="user in users" :key="user.name">{{user.name}}</li>
-    </ul>
+  <ul>
+    <li v-for="user in users" :key="user.name">{{user.name}}</li>
+  </ul>
 </template>
 
 
 <script>
-    export default {
-        computed: {
-            users: () => store.getters['entities/users/all']()
-        },
-        
-        created() {
-            this.$store.dispatch('entities/users/fetch');
-        }
+  export default {
+    computed: {
+      users: () => store.getters['entities/users/all']()
+    },
+
+    created() {
+      this.$store.dispatch('entities/users/fetch');
     }
+  }
 </script>
 ```
 

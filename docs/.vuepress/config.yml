@@ -25,7 +25,8 @@ themeConfig:
     - /guide/persist/
     - /guide/push/
     - /guide/destroy/
+    - /guide/custom-mutations/
     - /guide/relationships/
     - /guide/eager-loading/
-    - /guide/skipping-fields/
+    - /guide/virtual-fields/
     - /guide/meta-fields/

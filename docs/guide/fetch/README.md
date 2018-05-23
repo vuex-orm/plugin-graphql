@@ -13,26 +13,30 @@ This produces the following GraphQL query:
 
 ```graphql
 query Comments {
-    comments {
+  comments {
+    nodes {
+      id
+      content
+      postId
+      userId
+        
+      user {
+        id
+        email
+      }
+        
+      post {
         id
         content
-        
+        title
+      
         user {
-            id
-            email
+          id
+          email
         }
-        
-        post {
-            id
-            content
-            title
-        
-            user {
-                id
-                email
-            }
-        }
+      }
     }
+  }
 }
 ```
 
@@ -44,6 +48,15 @@ So using the regular Vuex-ORM getters should work out of the box now:
 ```javascript
 const comments = Comment.getters('all');
 ```
+
+When fetching all returned records replace the respective existing records in the Vuex-ORM database.
+
+
+## Fetching single record
+
+::: danger
+TODO
+:::
 
 
 
@@ -58,27 +71,31 @@ Comment.dispatch('fetch', { postId: 15, deleted: false });
 This will generate the following GraphQL query:
 
 ```graphql
-query Comments($postId: !ID, $deleted: !Boolean) {
-    comments(filter: { postId: $postId, deleted: $deleted }) {
+query Comments($postId: ID!, $deleted: Boolean!) {
+  comments(filter: { postId: $postId, deleted: $deleted }) {
+    nodes {
+      id
+      content
+      postId
+      userId
+        
+      user {
+        id
+        email
+      }
+      
+      post {
         id
         content
-        
+        title
+      
         user {
-            id
-            email
+          id
+          email
         }
-        
-        post {
-            id
-            content
-            title
-        
-            user {
-                id
-                email
-            }
-        }
+      }
     }
+  }
 }
 ```
 
@@ -91,36 +108,36 @@ recommend the usage of async/await.
 ```vue
 <template>
   <div class="post" v-if="post">
-      <h1>{{ post.title }}</h1>
-      <p>{{ post.body }}</p>
+    <h1>{{ post.title }}</h1>
+    <p>{{ post.body }}</p>
   </div>
 </template>
 
 <script>
-    export default {
-        // Use a computed property for the component state to keep it reactive
-        computed: {
-            post: () => Post.getters('find')(1)
-        },
-      
-        created () {
-            // fetch the data when the view is created and the data is
-            // already being observed
-            this.fetchData();
-        },
-      
-        watch: {
-            // call again the method if the route changes
-            '$route': 'fetchData'
-        },
-      
-        methods: {
-            // Loads the data from the server and stores them in the Vuex Store.
-            async fetchData () {
-                await Post.dispatch('fetch', { id: this.$route.params.id });
-            }
-        }
+  export default {
+    // Use a computed property for the component state to keep it reactive
+    computed: {
+      post: () => Post.getters('find')(1)
+    },
+    
+    created () {
+      // fetch the data when the view is created and the data is
+      // already being observed
+      this.fetchData();
+    },
+    
+    watch: {
+      // call again the method if the route changes
+      '$route': 'fetchData'
+    },
+    
+    methods: {
+      // Loads the data from the server and stores them in the Vuex Store.
+      async fetchData () {
+        await Post.dispatch('fetch', { id: this.$route.params.id });
+      }
     }
+  }
 </script>
 ```
 
