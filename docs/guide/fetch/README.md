@@ -52,12 +52,42 @@ const comments = Comment.getters('all');
 When fetching all returned records replace the respective existing records in the Vuex-ORM database.
 
 
-## Fetching single record
+## Fetching a single record
 
-::: danger
-TODO
-:::
+You can also fetch single records via ID:
 
+```javascript
+Comment.dispatch('fetch', { filter: { id: 42 }});
+```
+
+It automatically recognizes, that you're requesting a single record and sends a GraphQL Query for a single record:
+
+```graphql
+query Comment($id: ID!) {
+  comment(id: $id) {
+    id
+    content
+    postId
+    userId
+    
+    user {
+      id
+      email
+    }
+    
+    post {
+      id
+      content
+      title
+  
+      user {
+        id
+        email
+      }
+    }
+  }
+}
+```
 
 
 ## Filtering
@@ -65,7 +95,7 @@ TODO
 Additionally you can pass a filter object to the fetch action like this:
 
 ```javascript
-Comment.dispatch('fetch', { postId: 15, deleted: false });
+Comment.dispatch('fetch', { filter: { postId: 15, deleted: false }});
 ``` 
 
 This will generate the following GraphQL query:

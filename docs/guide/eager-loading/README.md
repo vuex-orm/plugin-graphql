@@ -7,7 +7,7 @@ be added to a static field in the model called `eagerLoad` to have them eagerly 
 
 Example:
 
-```javascript
+```javascript{3}
 class User extends Model {
   static entity = 'users';
   static eagerLoad = ['posts'];
