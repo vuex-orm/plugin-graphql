@@ -46,13 +46,15 @@ After [installing](/guide/setup) this plugin you can load data in your component
 
 
 <script>
+  import User from 'data/models/user';
+  
   export default {
     computed: {
-      users: () => store.getters['entities/users/all']()
+      users: () => User.getters['all']()
     },
 
     created() {
-      this.$store.dispatch('entities/users/fetch');
+      User.dispatch('fetch');
     }
   }
 </script>
