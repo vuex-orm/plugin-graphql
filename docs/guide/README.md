@@ -1,12 +1,20 @@
 # Introduction
 
 This [Vuex-ORM](https://github.com/vuex-orm/vuex-orm) plugin uses the
-[apollo-client](https://www.apollographql.com/client/) to let you sync your Vuex state with
+[apollo-client](https://www.apollographql.com/client/) to let you sync your Vuex-ORM database with your server via
 a [GraphQL API](http://graphql.org/).
 
 ::: warning
 This plugin is in BETA stage, please use with care.
 :::
+
+::: warning
+You should have basic knowledge of [Vue](https://vuejs.org/), [Vuex](https://vuex.vuejs.org/) and
+[Vuex-ORM](https://vuex-orm.github.io/vuex-orm/) before reading this documentation.
+:::
+
+
+---
 
 
 [[toc]]
@@ -40,7 +48,11 @@ After [installing](/guide/setup) this plugin you can load data in your component
 ```vue
 <template>
   <ul>
-    <li v-for="user in users" :key="user.name">{{user.name}}</li>
+    <li v-for="user in users" :key="user.id">
+      {{user.name}}
+      
+      <a href="#" @click.prevent="destroy(user)">x</a>
+    </li>
   </ul>
 </template>
 
@@ -50,11 +62,27 @@ After [installing](/guide/setup) this plugin you can load data in your component
   
   export default {
     computed: {
+      /**
+       * Returns all users with reactivity.
+       */ 
       users: () => User.getters['all']()
     },
 
-    created() {
-      User.dispatch('fetch');
+
+    async mounted() {
+      // Load all users form the server
+      await User.dispatch('fetch');
+    },
+    
+    
+    methods: {
+      /**
+      * Deletes the user from Vuex Store and from the server. 
+      */
+      async destroy(user) {
+        User.dispatch('delete', user.id);
+        await User.dispatch('destroy', { id: user.id });
+      }
     }
   }
 </script>
