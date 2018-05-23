@@ -19,7 +19,7 @@ While using Vuex-ORM with the Apollo plugin you have to distinct between two typ
 - Vuex-ORM actions: Retrieve data from or save data to Vuex (`Vue Component <--> Vuex Store`)
 - Persistence actions: Load data from or persist data to the GraphQL API (`Vuex Store <--> GraphQL Server`)
 
-The following table lists all actions and what they to:
+The following table lists all actions and what they do:
 
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
