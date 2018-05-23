@@ -61,3 +61,6 @@ typings/
 /lib
 
 /.idea
+
+# docs
+/docs/.vuepress/dist
