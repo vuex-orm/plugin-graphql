@@ -9607,15 +9607,25 @@ var Logger = /** @class */ (function () {
         }
         if (this.enabled) {
             if (process.env.NODE_ENV === 'test') {
-                console.group.apply(console, this.PREFIX.concat(messages));
+                if (console.group) {
+                    console.group.apply(console, this.PREFIX.concat(messages));
+                }
+                else {
+                    console.log.apply(console, this.PREFIX.concat(messages));
+                }
             }
             else {
-                console.groupCollapsed.apply(console, this.PREFIX.concat(messages));
+                if (console.groupCollapsed) {
+                    console.groupCollapsed.apply(console, this.PREFIX.concat(messages));
+                }
+                else {
+                    console.log.apply(console, this.PREFIX.concat(messages));
+                }
             }
         }
     };
     Logger.prototype.groupEnd = function () {
-        if (this.enabled)
+        if (this.enabled && console.groupEnd)
             console.groupEnd();
     };
     Logger.prototype.log = function () {

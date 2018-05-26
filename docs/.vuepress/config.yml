@@ -30,3 +30,4 @@ themeConfig:
     - /guide/eager-loading/
     - /guide/virtual-fields/
     - /guide/meta-fields/
+    - /guide/faq/

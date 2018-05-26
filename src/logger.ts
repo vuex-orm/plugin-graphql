@@ -21,15 +21,23 @@ export default class Logger {
   public group (...messages: Array<any>): void {
     if (this.enabled) {
       if (process.env.NODE_ENV === 'test') {
-        console.group(...this.PREFIX, ...messages);
+        if (console.group) {
+          console.group(...this.PREFIX, ...messages);
+        } else {
+          console.log(...this.PREFIX, ...messages);
+        }
       } else {
-        console.groupCollapsed(...this.PREFIX, ...messages);
+        if (console.groupCollapsed) {
+          console.groupCollapsed(...this.PREFIX, ...messages);
+        } else {
+          console.log(...this.PREFIX, ...messages);
+        }
       }
     }
   }
 
   public groupEnd (): void {
-    if (this.enabled) console.groupEnd();
+    if (this.enabled && console.groupEnd) console.groupEnd();
   }
 
   public log (...messages: Array<any>): void {
