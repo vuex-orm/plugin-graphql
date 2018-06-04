@@ -9318,9 +9318,11 @@ var QueryBuilder = /** @class */ (function () {
         args = args ? JSON.parse(JSON.stringify(args)) : {};
         if (!args)
             throw new Error('args is undefined');
-        if (args[model.singularName] && typeof args[model.singularName] === 'object') {
-            args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
-        }
+        Object.keys(args).forEach(function (key) {
+            if (args && args[key] && typeof args[key] === 'object') {
+                args[key] = { __type: upcaseFirstLetter(key) };
+            }
+        });
         // multiple
         multiple = multiple === undefined ? !args['id'] : multiple;
         // name
@@ -9351,14 +9353,17 @@ var QueryBuilder = /** @class */ (function () {
             if ((!relations.has(key) || relations.get(key) instanceof _this.context.components.BelongsTo) &&
                 !key.startsWith('$') && value !== null) {
                 if (value instanceof Array) {
+                    // Iterate over all fields and transform them if value is an array
                     var arrayModel_1 = _this.getModel(inflection.singularize(key));
                     returnValue[key] = value.map(function (v) { return _this.transformOutgoingData(arrayModel_1 || model, v); });
                 }
-                else if (relations.get(key) instanceof _this.context.components.BelongsTo) {
+                else if (typeof value === 'object' && _this.context.getModel(inflection.singularize(key), true)) {
+                    // Value is a record, transform that too
                     var relatedModel = _this.getModel(inflection.singularize(key));
                     returnValue[key] = _this.transformOutgoingData(relatedModel || model, value);
                 }
                 else {
+                    // In any other case just let the value be what ever it is
                     returnValue[key] = value;
                 }
             }
@@ -9939,16 +9944,16 @@ var VuexORMApollo = /** @class */ (function () {
     VuexORMApollo.prototype.fetch = function (_a, params) {
         var state = _a.state, dispatch = _a.dispatch;
         return __awaiter(this, void 0, void 0, function () {
-            var filter, bypassCache, multiple, model, name, query, data;
+            var model, filter, bypassCache, multiple, name, query, data;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        filter = params ? params.filter || {} : {};
+                        model = this.context.getModel(state.$name);
+                        filter = params && params.filter ? this.queryBuilder.transformOutgoingData(model, params.filter) : {};
                         bypassCache = params && params.bypassCache;
                         multiple = !filter['id'];
-                        model = this.context.getModel(state.$name);
                         name = "" + (multiple ? model.pluralName : model.singularName);
-                        query = this.queryBuilder.buildQuery('query', model, name, filter);
+                        query = this.queryBuilder.buildQuery('query', model, name, filter, multiple);
                         return [4 /*yield*/, this.apolloRequest(model, query, filter, false, bypassCache)];
                     case 1:
                         data = _b.sent();

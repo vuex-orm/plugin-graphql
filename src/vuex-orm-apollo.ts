@@ -85,14 +85,16 @@ export default class VuexORMApollo {
    * @returns {Promise<void>}
    */
   private async fetch ({ state, dispatch }: ActionParams, params?: ActionParams): Promise<void> {
-    const filter = params ? params.filter || {} : {};
+    const model: Model = this.context.getModel(state.$name);
+
+    // Filter
+    const filter = params && params.filter ? this.queryBuilder.transformOutgoingData(model, params.filter) : {};
     const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter['id'];
-    const model: Model = this.context.getModel(state.$name);
     const name: string = `${multiple ? model.pluralName : model.singularName}`;
-    const query = this.queryBuilder.buildQuery('query', model, name, filter);
+    const query = this.queryBuilder.buildQuery('query', model, name, filter, multiple);
 
     // Send the request to the GraphQL API
     const data = await this.apolloRequest(model, query, filter, false, bypassCache as boolean);

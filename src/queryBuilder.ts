@@ -145,12 +145,15 @@ export default class QueryBuilder {
         !key.startsWith('$') && value !== null) {
 
         if (value instanceof Array) {
+          // Iterate over all fields and transform them if value is an array
           const arrayModel = this.getModel(inflection.singularize(key));
           returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
-        } else if (relations.get(key) instanceof this.context.components.BelongsTo) {
+        } else if (typeof value === 'object' && this.context.getModel(inflection.singularize(key), true)) {
+          // Value is a record, transform that too
           const relatedModel = this.getModel(inflection.singularize(key));
           returnValue[key] = this.transformOutgoingData(relatedModel || model, value);
         } else {
+          // In any other case just let the value be what ever it is
           returnValue[key] = value;
         }
       }
