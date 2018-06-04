@@ -463,15 +463,14 @@ query users {
 
   describe('.buildQuery', () => {
     it('generates a complete query for a model', () => {
-      const args = new Map();
-      args.set('title', 'Example Post 1');
+      const args = { title: 'Example Post 1' };
 
       let query = queryBuilder.buildQuery('query', vuexOrmApollo.context.getModel('post'), null, args, true);
       query = QueryBuilder.prettify(query.loc.source.body);
 
       expect(query).toEqual(`
-query Posts {
-  posts {
+query Posts($title: String!) {
+  posts(filter: {title: $title}) {
     nodes {
       id
       content

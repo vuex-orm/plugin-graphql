@@ -103,9 +103,11 @@ export default class QueryBuilder {
     args = args ? JSON.parse(JSON.stringify(args)) : {};
     if (!args) throw new Error('args is undefined');
 
-    if (args[model.singularName] && typeof args[model.singularName] === 'object') {
-      args[model.singularName] = { __type: upcaseFirstLetter(model.singularName) };
-    }
+    Object.keys(args).forEach((key: string) => {
+      if (args && args[key] && typeof args[key] === 'object') {
+        args[key] = { __type: upcaseFirstLetter(key) };
+      }
+    });
 
     // multiple
     multiple = multiple === undefined ? !args['id'] : multiple;
