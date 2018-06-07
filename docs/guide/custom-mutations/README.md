@@ -39,10 +39,3 @@ Variables:
 
 Like for all other operations, all records which are returned replace the respective existing records in the Vuex-ORM
 database.
-
-
-::: danger
-**TODO**
-
-- Example code
-:::

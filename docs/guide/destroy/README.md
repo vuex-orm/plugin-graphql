@@ -30,10 +30,3 @@ Variables:
 }
 ```
 
-
-::: danger
-**TODO**
-
-- Example code
-:::
-
