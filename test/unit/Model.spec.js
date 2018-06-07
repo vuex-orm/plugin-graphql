@@ -1,39 +1,12 @@
 import Model from 'app/model';
-import { createStore } from 'test/support/Helpers';
-import { Model as ORMModel } from '@vuex-orm/core';
+import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
 
 let model;
 let store;
 let vuexOrmApollo;
 
-class User extends ORMModel {
-  static entity = 'users';
-
-  static fields () {
-    return {
-      id: this.increment(null),
-      name: this.string(null),
-      profile: this.hasOne(Profile, 'userId')
-    };
-  }
-}
-
-class Profile extends ORMModel {
-  static entity = 'profiles';
-
-  static fields () {
-    return {
-      id: this.increment(null),
-      userId: this.number(null)
-    };
-  }
-}
-
 beforeEach(async () => {
-  [store, vuexOrmApollo] = createStore([{ model: User }, { model: Profile }]);
-  await Profile.insert({ data: { id: 1, userId: 1 }});
-  await User.insert({ data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
-
+  [store, vuexOrmApollo] = await setupMockData();
   model = vuexOrmApollo.context.getModel('user');
 });
 
@@ -66,9 +39,10 @@ describe('Model', () => {
     it('returns a list of the models relations', () => {
       const relations = model.getRelations();
 
-      expect(relations.has('profile')).toEqual(true);
-      expect(relations.get('profile')).toEqual({
-        foreignKey: "userId", localKey: "id", model: User, "related": Profile
+      expect(relations.has('posts')).toEqual(true);
+      expect(relations.has('comments')).toEqual(true);
+      expect(relations.get('posts')).toEqual({
+        foreignKey: "userId", localKey: "id", model: User, "related": Post
       });
     });
   });

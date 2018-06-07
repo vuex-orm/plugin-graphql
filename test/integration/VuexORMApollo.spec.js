@@ -1,88 +1,12 @@
-import {Model as ORMModel} from "@vuex-orm/core";
-import {createStore, sendWithMockFetch} from "../support/Helpers";
+import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
+import {sendWithMockFetch} from "../support/helpers";
 
 let store;
 let vuexOrmApollo;
 
-class User extends ORMModel {
-  static entity = 'users';
-
-  static fields () {
-    return {
-      id: this.increment(0),
-      name: this.string(''),
-      posts: this.hasMany(Post, 'userId'),
-      comments: this.hasMany(Comment, 'userId')
-    };
-  }
-}
-
-class Video extends ORMModel {
-  static entity = 'videos';
-  static eagerLoad = ['comments'];
-  static skipFields = ['ignoreMe'];
-
-  static fields () {
-    return {
-      id: this.increment(null),
-      content: this.string(''),
-      title: this.string(''),
-      userId: this.number(0),
-      otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
-      ignoreMe: this.string(''),
-      user: this.belongsTo(User, 'userId'),
-      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
-    };
-  }
-}
-
-class Post extends ORMModel {
-  static entity = 'posts';
-  static eagerLoad = ['comments'];
-
-  static fields () {
-    return {
-      id: this.increment(null),
-      content: this.string(''),
-      title: this.string(''),
-      userId: this.number(0),
-      otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
-      user: this.belongsTo(User, 'userId'),
-      comments: this.morphMany(Comment, 'subjectId', 'subjectType')
-    };
-  }
-}
-
-
-class Comment extends ORMModel {
-  static entity = 'comments';
-
-  static fields () {
-    return {
-      id: this.increment(0),
-      content: this.string(''),
-      userId: this.number(0),
-      user: this.belongsTo(User, 'userId'),
-
-      subjectId: this.number(0),
-      subjectType: this.string('')
-    };
-  }
-}
-
 describe('VuexORMApollo', () => {
   beforeEach(async () => {
-    [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Video }, { model: Comment }]);
-
-    await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
-    await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
-    await User.insert({ data: { id: 2, name: 'Peppermint Patty' }});
-    await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
-    await Post.insert({ data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
-    await Video.insert({ data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
-    await Comment.insert({ data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
-    await Comment.insert({ data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
-    await Comment.insert({ data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
+    [store, vuexOrmApollo] = await setupMockData();
   });
 
   describe('fetch', () => {
