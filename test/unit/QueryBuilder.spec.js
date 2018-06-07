@@ -121,20 +121,21 @@ class ContractOption extends ORMModel {
 
 
 
-beforeEach(() => {
+beforeEach(async () => {
   [store, vuexOrmApollo] = createStore([
     { model: User }, { model: Post }, { model: Video }, { model: Comment }, { model: ContractOption }, { model: Contract },
     { model: ContractContractOption }
   ]);
 
-  store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
-  store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
-  store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 1', content: 'Foo' }});
-  store.dispatch('entities/posts/insert', { data: { id: 1, userId: 1, title: 'Example post 2', content: 'Bar' }});
-  store.dispatch('entities/videos/insert', { data: { id: 1, userId: 1, title: 'Example video', content: 'Video' }});
-  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
-  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
-  store.dispatch('entities/comments/insert', { data: { id: 1, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
+  await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
+  await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
+  await User.insert({ data: { id: 2, name: 'Peppermint Patty' }});
+  await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
+  await Post.insert({ data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
+  await Video.insert({ data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
+  await Comment.insert({ data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
+  await Comment.insert({ data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
+  await Comment.insert({ data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
 
   queryBuilder = vuexOrmApollo.queryBuilder;
 });

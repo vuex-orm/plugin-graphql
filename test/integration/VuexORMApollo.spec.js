@@ -71,17 +71,18 @@ class Comment extends ORMModel {
 }
 
 describe('VuexORMApollo', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     [store, vuexOrmApollo] = createStore([{ model: User }, { model: Post }, { model: Video }, { model: Comment }]);
 
-    store.dispatch('entities/users/insert', { data: { id: 1, name: 'Charlie Brown' }});
-    store.dispatch('entities/users/insert', { data: { id: 2, name: 'Peppermint Patty' }});
-    store.dispatch('entities/posts/insert', { data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
-    store.dispatch('entities/posts/insert', { data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
-    store.dispatch('entities/videos/insert', { data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
-    store.dispatch('entities/comments/insert', { data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
-    store.dispatch('entities/comments/insert', { data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
-    store.dispatch('entities/comments/insert', { data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
+    await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
+    await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
+    await User.insert({ data: { id: 2, name: 'Peppermint Patty' }});
+    await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
+    await Post.insert({ data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
+    await Video.insert({ data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
+    await Comment.insert({ data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
+    await Comment.insert({ data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
+    await Comment.insert({ data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
   });
 
   describe('fetch', () => {
@@ -114,7 +115,7 @@ describe('VuexORMApollo', () => {
       };
 
       let request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/posts/fetch', { filter: { id: 42 } });
+        await Post.fetch(42);
       });
       expect(request).not.toEqual(null);
 
@@ -165,17 +166,17 @@ query Post($id: ID!) {
         };
 
         let request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+          await User.fetch(1);
         });
         expect(request).not.toEqual(null);
 
         request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+          await User.fetch(1);
         }, true);
         expect(request).toEqual(null);
 
         request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { filter: { id: 1 }, bypassCache: true });
+          await User.fetch(1, true);
         });
         expect(request).not.toEqual(null);
       });
@@ -192,7 +193,7 @@ query Post($id: ID!) {
         };
 
         const request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+          await User.fetch(1);
         });
 
         expect(request.variables).toEqual({ id: 1 });
@@ -226,7 +227,7 @@ query User($id: ID!) {
         };
 
         const request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch', { filter: { active: true } });
+          await User.fetch({ active: true });
         });
 
         expect(request.variables).toEqual({ active: true });
@@ -263,7 +264,7 @@ query Users($active: Boolean!) {
         };
 
         const request = await sendWithMockFetch(response, async () => {
-          await store.dispatch('entities/users/fetch');
+          await User.fetch();
         });
 
         expect(request.variables).toEqual({});
@@ -314,7 +315,8 @@ query Users {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/posts/persist', { id: 1 });
+        const post = Post.find(1);
+        await post.$persist();
       });
 
       expect(request.variables).toEqual({
@@ -378,7 +380,7 @@ mutation CreatePost($post: PostInput!) {
         const user = User.find(1);
         user.name = 'Snoopy';
 
-        await store.dispatch('entities/users/push', { data: user });
+        await user.$push();
       });
 
       expect(request.variables).toEqual({ id: 1, user: { id: 1, name: 'Snoopy' } });
@@ -408,7 +410,8 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/destroy', { id: 1 });
+        const user = User.find(1);
+        await user.$destroy();
       });
 
       expect(request.variables).toEqual({ id: 1 });
@@ -450,16 +453,14 @@ mutation DeleteUser($id: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/posts/mutate', { mutation: 'upvotePost', post, captchaToken: '15' });
+        await post.$mutate({ mutation: 'upvotePost', captchaToken: '15' });
       });
 
       expect(request.variables.captchaToken).toEqual('15');
-      expect(request.variables.post.title).toEqual(post.title);
-      expect(request.variables.post.otherId).toEqual(post.otherId);
-      expect(request.variables.post.userId).toEqual(1);
+      expect(request.variables.id).toEqual(post.id);
       expect(request.query).toEqual(`
-mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
-  upvotePost(post: $post, captchaToken: $captchaToken) {
+mutation UpvotePost($captchaToken: String!, $id: ID!) {
+  upvotePost(captchaToken: $captchaToken, id: $id) {
     id
     content
     title
@@ -488,7 +489,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
 
   describe('$isPersisted', () => {
     it('is false for newly created records', async () => {
-      const insertedData = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      const insertedData = await User.insert({ data: { name: 'Snoopy' }} );
       let user = insertedData.users[0];
       expect(user.$isPersisted).toBeFalsy();
 
@@ -497,7 +498,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
     });
 
     it('is true for persisted records', async () => {
-      const insertedData = await store.dispatch('entities/users/insert', { data: { name: 'Snoopy' }} );
+      const insertedData = await User.insert({ data: { name: 'Snoopy' }} );
       let user = insertedData.users[0];
       const response = {
         data: {
@@ -516,7 +517,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
       expect(user.$isPersisted).toBeFalsy();
 
       await sendWithMockFetch(response, async () => {
-        user = await store.dispatch('entities/users/persist', { id: 1 });
+        user = await user.$persist();
       });
 
       expect(user.$isPersisted).toBeTruthy();
@@ -553,7 +554,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
       };
 
       await sendWithMockFetch(response, async () => {
-        await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
+        await User.fetch(1);
       });
 
       const user = User.find(1);

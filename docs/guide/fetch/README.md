@@ -64,6 +64,8 @@ When fetching all returned records replace the respective existing records in th
 You can also fetch single records via ID:
 
 ```javascript
+await Comment.fetch(42);
+// or
 await Comment.fetch({ id: 42 });
 // or
 await Comment.dispatch('fetch', { filter: { id: 42 }})

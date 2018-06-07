@@ -29,10 +29,10 @@ class Profile extends ORMModel {
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   [store, vuexOrmApollo] = createStore([{ model: User }, { model: Profile }]);
-  store.dispatch('entities/profiles/insert', { data: { id: 1, userId: 1 }});
-  store.dispatch('entities/users/insert', { data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
+  await Profile.insert({ data: { id: 1, userId: 1 }});
+  await User.insert({ data: { id: 1, name: 'Foo Bar', profile: { id: 1 } }});
 
   model = vuexOrmApollo.context.getModel('user');
 });

@@ -34,3 +34,8 @@ export interface Field {
   localKey?: string;
   foreignKey?: string;
 }
+
+export class PatchedModel extends ORMModel {
+  static async fetch(filter: any, bypassCache = false): Promise<any> { return; };
+  static async mutate(params: any): Promise<any> { return; };
+}

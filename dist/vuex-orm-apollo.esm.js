@@ -9765,7 +9765,7 @@ var Model = /** @class */ (function () {
         return found;
     };
     Model.prototype.getRecordWithId = function (id) {
-        return this.baseModel.getters('query')().withAllRecursive().where('id', id).first();
+        return this.baseModel.query().withAllRecursive().where('id', id).first();
     };
     Model.prototype.fieldIsNumber = function (field) {
         if (!field)
@@ -9926,12 +9926,81 @@ var VuexORMApollo = /** @class */ (function () {
      * This method will setup following Vuex action: fetch, persist, push, destroy, mutate
      */
     VuexORMApollo.prototype.setupMethods = function () {
+        // Register store actions
         this.context.components.subActions.fetch = this.fetch.bind(this);
         this.context.components.subActions.persist = this.persist.bind(this);
         this.context.components.subActions.push = this.push.bind(this);
         this.context.components.subActions.destroy = this.destroy.bind(this);
         this.context.components.subActions.mutate = this.customMutation.bind(this);
+        // Register static model convenience methods
+        this.context.components.Model.fetch = function (filter, bypassCache) {
+            if (bypassCache === void 0) { bypassCache = false; }
+            return __awaiter(this, void 0, void 0, function () {
+                var filterObj;
+                return __generator(this, function (_a) {
+                    filterObj = filter;
+                    if (typeof filterObj !== 'object')
+                        filterObj = { id: filter };
+                    return [2 /*return*/, this.dispatch('fetch', { filter: filterObj, bypassCache: bypassCache })];
+                });
+            });
+        };
+        this.context.components.Model.mutate = function (params) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.dispatch('mutate', params)];
+                });
+            });
+        };
+        // Register model convenience methods
+        this.context.components.Model.prototype.$mutate = function (params) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    if (!params['id'])
+                        params['id'] = this.id;
+                    return [2 /*return*/, this.$dispatch('mutate', params)];
+                });
+            });
+        };
+        this.context.components.Model.prototype.$persist = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch('persist', { id: this.id })];
+                });
+            });
+        };
+        this.context.components.Model.prototype.$push = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch('push', { data: this })];
+                });
+            });
+        };
+        this.context.components.Model.prototype.$destroy = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch('destroy', { id: this.id })];
+                });
+            });
+        };
+        this.context.components.Model.prototype.$deleteAndDestroy = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.$delete()];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/, this.$destroy()];
+                    }
+                });
+            });
+        };
         // this.components.subActions.destroyAll = this.destroyAll.bind(this);
+    };
+    /**
+     * Helper to dispatch actions on the store
+     */
+    VuexORMApollo.prototype.dispatch = function (params) {
     };
     /**
      * Will be called, when dispatch('entities/something/fetch') is called.
@@ -9998,7 +10067,7 @@ var VuexORMApollo = /** @class */ (function () {
                         // in this case this.mutate has inserted a new record instead of updating the existing one.
                         // We can see that because $isPersisted is still false then.
                         this.context.logger.log('Dropping deprecated record with ID', oldRecord.id);
-                        return [4 /*yield*/, model.baseModel.dispatch('delete', { where: oldRecord.id })];
+                        return [4 /*yield*/, model.baseModel.delete({ where: oldRecord.id })];
                     case 2:
                         _c.sent();
                         _c.label = 3;
@@ -10121,7 +10190,7 @@ var VuexORMApollo = /** @class */ (function () {
                         }
                         else {
                             this.context.logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData, '. Fallback to find()');
-                            return [2 /*return*/, model.baseModel.getters('query')().last()];
+                            return [2 /*return*/, model.baseModel.query().last()];
                         }
                         _a.label = 3;
                     case 3: return [2 /*return*/, true];
