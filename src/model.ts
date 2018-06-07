@@ -1,4 +1,5 @@
-import { Field, ORMModel } from './interfaces';
+import ORMModel from "@vuex-orm/core/lib/model/Model";
+import { Field, } from './interfaces';
 import Context from './context';
 const inflection = require('inflection');
 
@@ -118,7 +119,7 @@ export default class Model {
   }
 
   public getRecordWithId (id: number) {
-    return this.baseModel.getters('query')().withAllRecursive().where('id', id).first();
+    return this.baseModel.query().withAllRecursive().where('id', id).first();
   }
 
   public fieldIsNumber (field: Field | undefined): boolean {

@@ -129,7 +129,7 @@ export default class VuexORMApollo {
         // in this case this.mutate has inserted a new record instead of updating the existing one.
         // We can see that because $isPersisted is still false then.
         this.context.logger.log('Dropping deprecated record with ID', oldRecord.id);
-        await model.baseModel.dispatch('delete', { where: oldRecord.id });
+        await model.baseModel.delete({ where: oldRecord.id });
       }
 
       return newRecord;
@@ -232,7 +232,7 @@ export default class VuexORMApollo {
         } else {
           this.context.logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData,
             '. Fallback to find()');
-          return model.baseModel.getters('query')().last();
+          return model.baseModel.query().last();
         }
       }
 

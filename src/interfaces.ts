@@ -1,4 +1,4 @@
-import Model from './model';
+import ORMModel from "@vuex-orm/core/lib/model/Model";
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
 
@@ -26,21 +26,6 @@ export interface Filter extends Object {
 
 export interface Arguments extends Object {
   [index: string]: any;
-}
-
-export interface ORMModel {
-  name: string;
-  entity: string;
-  eagerLoad: undefined | Array<string>;
-  skipFields: undefined | Array<string>;
-
-  fields (): any;
-  dispatch (name: string, ...params: Array<any>): any;
-  getters (name: string, ...params: Array<any>): any;
-  attr (defaultValue: any): Field;
-  boolean (defaultValue: boolean): Field;
-  number (defaultValue: number): Field;
-  string (defaultValue: string): Field;
 }
 
 export interface Field {
