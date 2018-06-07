@@ -9962,17 +9962,17 @@ var VuexORMApollo = /** @class */ (function () {
                 });
             });
         };
-        this.context.components.Model.prototype.$persist = function () {
+        this.context.components.Model.prototype.$persist = function (args) {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch('persist', { id: this.id })];
+                    return [2 /*return*/, this.$dispatch('persist', { id: this.id, args: args })];
                 });
             });
         };
-        this.context.components.Model.prototype.$push = function () {
+        this.context.components.Model.prototype.$push = function (args) {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch('push', { data: this })];
+                    return [2 /*return*/, this.$dispatch('push', { data: this, args: args })];
                 });
             });
         };

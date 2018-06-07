@@ -93,12 +93,12 @@ export default class VuexORMApollo {
       return this.$dispatch('mutate', params);
     };
 
-    this.context.components.Model.prototype.$persist = async function() {
-      return this.$dispatch('persist', { id: this.id });
+    this.context.components.Model.prototype.$persist = async function(args: any) {
+      return this.$dispatch('persist', { id: this.id, args });
     };
 
-    this.context.components.Model.prototype.$push = async function() {
-      return this.$dispatch('push', { data: this });
+    this.context.components.Model.prototype.$push = async function(args: any) {
+      return this.$dispatch('push', { data: this, args });
     };
 
     this.context.components.Model.prototype.$destroy = async function() {

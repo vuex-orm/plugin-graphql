@@ -58,3 +58,8 @@ Variables:
 
 Like when pushing, all records which are returned replace the respective existing records in the Vuex-ORM database.
 
+
+## Additional variables
+
+You can pass a object like this: `$perist({ captchaToken: 'asdfasdf' })`. All fields in the object will be passed as
+variables to the mutation.
