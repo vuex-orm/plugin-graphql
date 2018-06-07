@@ -6,6 +6,8 @@ import { downcaseFirstLetter } from './utils';
 const inflection = require('inflection');
 
 export default class Context {
+  public static instance: Context;
+
   public readonly components: Components;
   public readonly options: any;
   public readonly database: any;
@@ -13,7 +15,12 @@ export default class Context {
   public readonly debugMode: boolean = false;
   public readonly logger: Logger;
 
-  public constructor (components: Components, options: Options) {
+  /**
+   * Private constructor, called by the setup method
+   * @param {Components} components
+   * @param {Options} options
+   */
+  private constructor (components: Components, options: Options) {
     this.components = components;
     this.options = options;
 
@@ -33,6 +40,15 @@ export default class Context {
     this.logger.log('database', this.database);
     this.logger.log('models', this.models);
     this.logger.groupEnd();
+  }
+
+  public static getInstance () {
+    return this.instance;
+  }
+
+  public static setup (components: Components, options: Options) {
+    this.instance = new Context(components, options);
+    return this.instance;
   }
 
   /**

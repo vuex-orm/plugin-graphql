@@ -1,33 +1,16 @@
 import { parse } from 'graphql/language/parser';
-import Logger from './logger';
 import Model from './model';
 import { print } from 'graphql/language/printer';
-import { Arguments, Data, Field } from './interfaces';
-import { downcaseFirstLetter, upcaseFirstLetter } from './utils';
+import { Arguments, Field } from './interfaces';
+import { upcaseFirstLetter } from './utils';
 import gql from 'graphql-tag';
 import Context from './context';
-
-const inflection = require('inflection');
 
 /**
  * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
  * format of the GraphQL API.
  */
 export default class QueryBuilder {
-  /**
-   * Context
-   */
-  private readonly context: Context;
-
-  /**
-   * Constructor.
-   * @param {Logger} logger
-   * @param {(name: (Model | string)) => Model} getModel
-   */
-  public constructor (context: Context) {
-    this.context = context;
-  }
-
   /**
    * Takes a string with a graphql query and formats it. Useful for debug output and the tests.
    * @param {string} query
@@ -57,7 +40,9 @@ export default class QueryBuilder {
                      ignoreModels: Array<Model> = [],
                      name?: string,
                      allowIdFields: boolean = false): string {
-    model = this.getModel(model);
+
+    const context = Context.getInstance();
+    model = context.getModel(model);
     ignoreModels.push(model);
 
     let params: string = this.buildArguments(model, args, false, multiple, allowIdFields);
@@ -95,8 +80,10 @@ export default class QueryBuilder {
    * @returns {any}
    */
   public buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
+    const context = Context.getInstance();
+
     // model
-    model = this.getModel(model);
+    model = context.getModel(model);
     if (!model) throw new Error('No model provided to build the query!');
 
     // args
@@ -122,104 +109,6 @@ export default class QueryBuilder {
       `}`;
 
     return gql(query);
-  }
-
-  /**
-   * Transforms outgoing data. Use for variables param.
-   *
-   * Omits relations and some fields.
-   *
-   * @param model
-   * @param {Data} data
-   * @returns {Data}
-   */
-  public transformOutgoingData (model: Model, data: Data): Data {
-    const relations: Map<string, Field> = model.getRelations();
-    const returnValue: Data = {};
-
-    Object.keys(data).forEach((key) => {
-      const value = data[key];
-
-      // Ignore hasMany/One connections, empty fields and internal fields ($)
-      if ((!relations.has(key) || relations.get(key) instanceof this.context.components.BelongsTo) &&
-        !key.startsWith('$') && value !== null) {
-
-        if (value instanceof Array) {
-          // Iterate over all fields and transform them if value is an array
-          const arrayModel = this.getModel(inflection.singularize(key));
-          returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
-        } else if (typeof value === 'object' && this.context.getModel(inflection.singularize(key), true)) {
-          // Value is a record, transform that too
-          const relatedModel = this.getModel(inflection.singularize(key));
-          returnValue[key] = this.transformOutgoingData(relatedModel || model, value);
-        } else {
-          // In any other case just let the value be what ever it is
-          returnValue[key] = value;
-        }
-      }
-    });
-
-    return returnValue;
-  }
-
-  /**
-   * Transforms a set of incoming data to the format vuex-orm requires.
-   *
-   * @param {Data | Array<Data>} data
-   * @param model
-   * @param mutation required to transform something like `disableUserAddress` to the actual model name.
-   * @param {boolean} recursiveCall
-   * @returns {Data}
-   */
-  public transformIncomingData (data: Data | Array<Data>, model: Model, mutation: boolean = false, recursiveCall: boolean = false): Data {
-    let result: Data = {};
-
-    if (!recursiveCall) {
-      this.context.logger.group('Transforming incoming data');
-      this.context.logger.log('Raw data:', data);
-    }
-
-    if (data instanceof Array) {
-      result = data.map(d => this.transformIncomingData(d, model, mutation, true));
-    } else {
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== undefined && data[key] !== null) {
-          if (data[key] instanceof Object) {
-            const localModel: Model = this.context.getModel(key, true) || model;
-
-            if (data[key].nodes) {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes,
-                localModel, mutation, true);
-            } else {
-              let newKey = key;
-
-              if (mutation && !recursiveCall) {
-                newKey = data[key].nodes ? localModel.pluralName : localModel.singularName;
-                newKey = downcaseFirstLetter(newKey);
-              }
-
-              result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
-            }
-          } else if (model.fieldIsNumber(model.fields.get(key))) {
-            result[key] = parseFloat(data[key]);
-          } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
-            result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
-          } else {
-            result[key] = data[key];
-          }
-        }
-      });
-    }
-
-    if (!recursiveCall) {
-      this.context.logger.log('Transformed data:', result);
-      this.context.logger.groupEnd();
-    } else {
-      result['$isPersisted'] = true;
-    }
-
-    // MAke sure this is really a plain JS object. We had some issues in testing here.
-    return JSON.parse(JSON.stringify(result));
   }
 
   /**
@@ -306,12 +195,13 @@ export default class QueryBuilder {
    */
   private determineAttributeType (model: Model, key: string, value: any): string {
     const field: undefined | Field = model.fields.get(key);
+    const context = Context.getInstance();
 
-    if (field && field instanceof this.context.components.String) {
+    if (field && field instanceof context.components.String) {
       return 'String';
-    } else if (field && field instanceof this.context.components.Number) {
+    } else if (field && field instanceof context.components.Number) {
       return 'Int';
-    } else if (field && field instanceof this.context.components.Boolean) {
+    } else if (field && field instanceof context.components.Boolean) {
       return 'Boolean';
     } else {
       if (typeof value === 'number') return 'Int';
@@ -331,26 +221,26 @@ export default class QueryBuilder {
   private buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []): string {
     if (model === null) return '';
 
+    const context = Context.getInstance();
     const relationQueries: Array<string> = [];
 
     model.getRelations().forEach((field: Field, name: string) => {
       let relatedModel: Model;
 
       if (field.related) {
-        relatedModel = this.getModel(field.related.entity);
+        relatedModel = context.getModel(field.related.entity);
       } else if (field.parent) {
-        relatedModel = this.getModel(field.parent.entity);
+        relatedModel = context.getModel(field.parent.entity);
       } else {
-        relatedModel = this.getModel(name);
-        this.context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name',
-          field);
+        relatedModel = context.getModel(name);
+        context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
       if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
 
-        const multiple: boolean = !(field instanceof this.context.components.BelongsTo ||
-          field instanceof this.context.components.HasOne);
+        const multiple: boolean = !(field instanceof context.components.BelongsTo ||
+          field instanceof context.components.HasOne);
 
         relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels, name));
       }
@@ -369,7 +259,9 @@ export default class QueryBuilder {
    * @returns {boolean}
    */
   private shouldEagerLoadRelation (model: Model, field: Field, relatedModel: Model): boolean {
-    if (field instanceof this.context.components.HasOne || field instanceof this.context.components.BelongsTo) {
+    const context = Context.getInstance();
+
+    if (field instanceof context.components.HasOne || field instanceof context.components.BelongsTo) {
       return true;
     }
 
@@ -379,14 +271,5 @@ export default class QueryBuilder {
 
   private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
     return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
-  }
-
-  /**
-   * Helper method to get the model by name
-   * @param {Model|string} name
-   * @returns {Model}
-   */
-  private getModel (name: Model | string): Model {
-    return this.context.getModel(name);
   }
 }

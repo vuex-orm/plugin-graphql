@@ -7,6 +7,7 @@ import QueryBuilder from './queryBuilder';
 import { upcaseFirstLetter } from './utils';
 import Context from './context';
 import { Components } from '@vuex-orm/core/lib/plugins/use';
+import Transformer from './transformer';
 
 const inflection = require('inflection');
 
@@ -27,7 +28,7 @@ export default class VuexORMApollo {
    * @param options
    */
   public constructor (components: Components, options: Options) {
-    this.context = new Context(components, options);
+    this.context = Context.setup(components, options);
 
     this.setupMethods();
 
@@ -44,7 +45,7 @@ export default class VuexORMApollo {
       connectToDevTools: this.context.debugMode
     });
 
-    this.queryBuilder = new QueryBuilder(this.context);
+    this.queryBuilder = new QueryBuilder();
   }
 
   /**
@@ -125,7 +126,7 @@ export default class VuexORMApollo {
     const model: Model = this.context.getModel(state.$name);
 
     // Filter
-    const filter = params && params.filter ? this.queryBuilder.transformOutgoingData(model, params.filter) : {};
+    const filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
     const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode
@@ -154,7 +155,7 @@ export default class VuexORMApollo {
       const data = model.getRecordWithId(id);
 
       args = args || {};
-      args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
+      args[model.singularName] = Transformer.transformOutgoingData(model, data);
 
       const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
       const newRecord = await this.mutate(mutationName, args, dispatch, model, false);
@@ -192,7 +193,7 @@ export default class VuexORMApollo {
 
       if (value instanceof this.context.components.Model) {
         const model = this.context.getModel(inflection.singularize(value.$self().entity));
-        const transformedValue = this.queryBuilder.transformOutgoingData(model, value);
+        const transformedValue = Transformer.transformOutgoingData(model, value);
         this.context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
         args[key] = transformedValue;
       }
@@ -216,7 +217,7 @@ export default class VuexORMApollo {
 
       args = args || {};
       args['id'] = data.id;
-      args[model.singularName] = this.queryBuilder.transformOutgoingData(model, data);
+      args[model.singularName] = Transformer.transformOutgoingData(model, data);
 
       const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
       return this.mutate(mutationName, args, dispatch, model, false);
@@ -300,7 +301,7 @@ export default class VuexORMApollo {
     }
 
     // Transform incoming data into something useful
-    return this.queryBuilder.transformIncomingData(response.data as Data, model, mutation);
+    return Transformer.transformIncomingData(response.data as Data, model, mutation);
   }
 
   /**
