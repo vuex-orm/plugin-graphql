@@ -145,7 +145,7 @@ query Post($id: ID!) {
 }
         `.trim() + "\n");
 
-      const post = store.getters['entities/posts/query']().withAll().where('id', 42).first();
+      const post = Post.query().withAll().where('id', 42).first();
       expect(post.title).toEqual('Example Post 5');
       expect(post.comments.length).toEqual(1);
       expect(post.comments[0].content).toEqual('Works!');
@@ -375,7 +375,7 @@ mutation CreatePost($post: PostInput!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        const user = store.getters['entities/users/find'](1);
+        const user = User.find(1);
         user.name = 'Snoopy';
 
         await store.dispatch('entities/users/push', { data: user });
@@ -427,7 +427,7 @@ mutation DeleteUser($id: ID!) {
 
   describe('custom mutation', () => {
     it('sends the correct query to the API', async () => {
-      const post = store.getters['entities/posts/find'](1);
+      const post = Post.find(1);
       const response = {
         data: {
           upvotePost: {
@@ -492,7 +492,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
       let user = insertedData.users[0];
       expect(user.$isPersisted).toBeFalsy();
 
-      user = store.getters['entities/users/find'](user.id);
+      user = User.find(user.id);
       expect(user.$isPersisted).toBeFalsy();
     });
 
@@ -556,7 +556,7 @@ mutation UpvotePost($post: PostInput!, $captchaToken: String!) {
         await store.dispatch('entities/users/fetch', { filter: { id: 1 } });
       });
 
-      const user = store.getters['entities/users/find'](1);
+      const user = User.find(1);
       expect(user.$isPersisted).toBeTruthy();
     });
   });

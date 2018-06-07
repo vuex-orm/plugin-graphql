@@ -185,7 +185,7 @@ describe('QueryBuilder', () => {
 
   describe('.transformOutgoingData', () => {
     it('transforms models to a useful data hashmap', () => {
-      const user = store.getters['entities/users/query']().first();
+      const user = User.query().first();
       const transformedData = queryBuilder.transformOutgoingData(vuexOrmApollo.context.getModel('user'), user);
       expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown' });
     });
