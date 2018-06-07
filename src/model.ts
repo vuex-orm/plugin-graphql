@@ -1,5 +1,5 @@
-import ORMModel from "@vuex-orm/core/lib/model/Model";
-import { Field, } from './interfaces';
+import ORMModel from '@vuex-orm/core/lib/model/Model';
+import { Field } from './interfaces';
 import Context from './context';
 const inflection = require('inflection');
 

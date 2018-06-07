@@ -1,6 +1,6 @@
 import Logger from './logger';
 import Model from './model';
-import ORMModel from "@vuex-orm/core/lib/model/Model";
+import ORMModel from '@vuex-orm/core/lib/model/Model';
 import { Components, Options } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from './utils';
 const inflection = require('inflection');

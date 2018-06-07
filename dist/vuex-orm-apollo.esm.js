@@ -9998,11 +9998,6 @@ var VuexORMApollo = /** @class */ (function () {
         // this.components.subActions.destroyAll = this.destroyAll.bind(this);
     };
     /**
-     * Helper to dispatch actions on the store
-     */
-    VuexORMApollo.prototype.dispatch = function (params) {
-    };
-    /**
      * Will be called, when dispatch('entities/something/fetch') is called.
      *
      * @param {any} state The Vuex State from Vuex-ORM
