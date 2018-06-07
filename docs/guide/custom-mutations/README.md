@@ -6,7 +6,14 @@
 Along with the CRUD mutations you may want to send custom GraphQL mutations. We support this via the `mutate` action:
 
 ```javascript
-Post.dispatch('mutate', { mutation: 'upvotePost', id: post.id });
+const post = Post.query().first();
+await post.$mutate({ mutation: 'upvotePost' });
+
+// is the same as
+await Post.mutate({ mutation: 'upvotePost', id: post.id });
+
+// or
+await Post.dispatch('mutate', { mutation: 'upvotePost', id: post.id });
 ```
 
 As you can see you have to privide the mutation name and any further arguments you want to pass. In this case we send

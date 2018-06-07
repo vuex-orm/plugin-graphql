@@ -9,7 +9,15 @@ the `persist` action.
 Via calling
 
 ```javascript
-Post.dispatch('persist', { id: post.id });
+const post = await Post.create({
+  content: 'Lorem Ipsum dolor sit amet',
+  title: 'Example Post',
+  user: user.query().first()
+});
+
+await post.$persist();
+// or
+await post.$dispatch('persist', { id: post.id });
 ```
 
 the post record is send to the GraphQL by generating the following query:

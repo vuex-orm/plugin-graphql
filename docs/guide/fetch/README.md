@@ -2,11 +2,18 @@
 
 [[toc]]
 
-The `fetch` action is for loading data from the GraphQL API into your Vuex-Store. The simplest way to call the fetch
+The `fetch` action is for loading data from the GraphQL API into your Vuex-Store.
+
+
+## Fetching all records
+
+The simplest way to call the fetch
 method is without any arguments. This will query all records from the GraphQL API:
 
 ```javascript
-Comment.dispatch('fetch');
+await Comment.fetch();
+// or
+await Comment.dispatch('fetch')
 ```
 
 This produces the following GraphQL query:
@@ -46,7 +53,7 @@ author user loaded.
 So using the regular Vuex-ORM getters should work out of the box now:
 
 ```javascript
-const comments = Comment.getters('all');
+const comments = Comment.all();
 ```
 
 When fetching all returned records replace the respective existing records in the Vuex-ORM database.
@@ -57,7 +64,9 @@ When fetching all returned records replace the respective existing records in th
 You can also fetch single records via ID:
 
 ```javascript
-Comment.dispatch('fetch', { filter: { id: 42 }});
+await Comment.fetch({ id: 42 });
+// or
+await Comment.dispatch('fetch', { filter: { id: 42 }})
 ```
 
 It automatically recognizes, that you're requesting a single record and sends a GraphQL Query for a single record:
@@ -95,7 +104,9 @@ query Comment($id: ID!) {
 Additionally you can pass a filter object to the fetch action like this:
 
 ```javascript
-Comment.dispatch('fetch', { filter: { postId: 15, deleted: false }});
+await Comment.fetch({ postId: 15, deleted: false });
+// or
+await Comment.dispatch('fetch', { filter: { postId: 15, deleted: false }})
 ``` 
 
 This will generate the following GraphQL query:
@@ -147,7 +158,7 @@ recommend the usage of async/await.
   export default {
     // Use a computed property for the component state to keep it reactive
     computed: {
-      post: () => Post.getters('find')(1)
+      post: () => Post.find(1)
     },
     
     created () {
@@ -164,7 +175,7 @@ recommend the usage of async/await.
     methods: {
       // Loads the data from the server and stores them in the Vuex Store.
       async fetchData () {
-        await Post.dispatch('fetch', { id: this.$route.params.id });
+        await Post.fetch({ filter: { id: this.$route.params.id }});
       }
     }
   }
@@ -174,8 +185,11 @@ recommend the usage of async/await.
 
 ## Caching
 
-Apollo-Client caches same queries. To bypass caching set the second param of the `fetch` action to `true`:
+Apollo-Client caches same queries. To bypass caching set the second param of the `fetch` action to `true`
+when using the convenience method or add `bypassCache: true` to the arguments of the `dispatch()` call
 
 ```javascript
-User.dispatch('fetch', { filter: { id: 42 }, bypassCache: true });
+await Comment.fetch({ id: 42 }, true );
+// Or
+await Comment.dispatch('fetch', { filter: { id: 42 }, bypassCache: true })
 ```

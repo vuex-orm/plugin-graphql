@@ -8,7 +8,10 @@ your server via GraphQL. For this use case we have the `push` action.
 Via calling
 
 ```javascript
-Post.dispatch('push', { data: post });
+const post = Post.query().first();
+await await post.$push();
+// or
+await post.$dispatch('push', { data: post });
 ```
 
 the post record is send to the GraphQL by generating the following query:

@@ -31,10 +31,10 @@ The following table lists all actions and what they do:
 
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
-**R**EAD | getters['find'] & getters['findAll'] | [dispatch('fetch')](/guide/fetch)
-**C**REATE | dispatch('create') | [dispatch('persist')](/guide/persist)
-**U**PDATE | dispatch('save') | [dispatch('push')](/guide/push)
-**D**ELETE | dispatch('delete') | [dispatch('destroy')](/guide/destroy)
+**R**EAD | [`find()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-single-data), [`all()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-all-data), [`query()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#query-builder) | [`fetch()`](/guide/fetch)
+**C**REATE | [`create()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) or [`insert()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) | [`$persist()`](/guide/persist)
+**U**PDATE | [`$update()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#updates) | [`$push()`](/guide/push)
+**D**ELETE | [`$delete()`](https://vuex-orm.github.io/vuex-orm/store/deleting-data.html) | [`$destroy()`](/guide/destroy)
 
 See the example below to get an idea of how this plugin interacts with Vuex-ORM.
 
@@ -65,13 +65,13 @@ After [installing](/guide/setup) this plugin you can load data in your component
       /**
        * Returns all users with reactivity.
        */ 
-      users: () => User.getters['all']()
+      users: () => User.all()
     },
 
 
     async mounted() {
       // Load all users form the server
-      await User.dispatch('fetch');
+      await User.fetch();
     },
     
     
@@ -80,8 +80,7 @@ After [installing](/guide/setup) this plugin you can load data in your component
       * Deletes the user from Vuex Store and from the server. 
       */
       async destroy(user) {
-        User.dispatch('delete', user.id);
-        await User.dispatch('destroy', { id: user.id });
+        await user.$deleteAndDestroy();
       }
     }
   }
