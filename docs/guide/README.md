@@ -65,7 +65,7 @@ After [installing](/guide/setup) this plugin you can load data in your component
       /**
        * Returns all users with reactivity.
        */ 
-      users: () => User.all()
+      users: () => User.query().withAll().all()
     },
 
 

@@ -2,7 +2,7 @@ import Model from './model';
 import { ApolloClient, FetchPolicy } from 'apollo-client';
 import { HttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-import { Data, ActionParams, Arguments, DispatchFunction, PatchedModel } from './interfaces';
+import { Data, ActionParams, Arguments, DispatchFunction, PatchedModel, Options } from './interfaces';
 import QueryBuilder from './queryBuilder';
 import { upcaseFirstLetter } from './utils';
 import Context from './context';
@@ -26,14 +26,16 @@ export default class VuexORMApollo {
    * @param components
    * @param options
    */
-  public constructor (components: Components, options: any) {
+  public constructor (components: Components, options: Options) {
     this.context = new Context(components, options);
 
     this.setupMethods();
 
     this.httpLink = new HttpLink({
       uri: options.url ? options.url : '/graphql',
-      credentials: 'same-origin'
+      credentials: options.credentials ? options.credentials : 'same-origin',
+      headers: options.headers ? options.headers : {},
+      useGETForQueries: Boolean(options.useGETForQueries)
     });
 
     this.apolloClient = new ApolloClient({

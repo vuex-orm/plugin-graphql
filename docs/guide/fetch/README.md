@@ -53,7 +53,7 @@ author user loaded.
 So using the regular Vuex-ORM getters should work out of the box now:
 
 ```javascript
-const comments = Comment.all();
+const comments = Comment.query().withAll().all();
 ```
 
 When fetching all returned records replace the respective existing records in the Vuex-ORM database.

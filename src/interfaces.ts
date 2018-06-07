@@ -1,6 +1,16 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
+import Database from '@vuex-orm/core/lib/database/Database';
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
+
+export interface Options {
+  database: Database;
+  url?: string;
+  headers?: { [index: string]: any };
+  credentials?: string;
+  useGETForQueries?: boolean;
+  debug?: boolean;
+}
 
 export interface ActionParams {
   commit: any;

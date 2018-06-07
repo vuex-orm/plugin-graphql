@@ -30,8 +30,11 @@ VuexORM.use(VuexORMApollo, { database });
 These are the possible options to pass when calling `VuexORM.use()`:
 
 - `database` (required): The Vuex-ORM database.
-- `url` (optional, default: `/graphql`): The URL to the graphql api. Will be passed to apollo-client.
 - `debug` (optional, default: `false`): Set to true to activate the debug logging.
+- `url` (optional, default: `/graphql`): The URL to the graphql api. Will be passed to apollo-client.
+- `headers` (optional, default: `{}`) HTTP Headers. See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
+- `credentials` (optional, default: `same-origin`) Credentials Policy. See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
+- `useGETForQueries` (optional, default: `false`) Use GET for queries (not for mutations). See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
 
 More options will come in future releases.
 

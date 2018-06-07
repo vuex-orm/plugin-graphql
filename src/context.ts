@@ -70,7 +70,7 @@ export default class Context {
     model.baseModel.fields = () => {
       const originalFields = originalFieldGenerator();
 
-      originalFields['$isPersisted'] = model.baseModel.attr(false);
+      originalFields['$isPersisted'] = model.baseModel.boolean(false);
 
       return originalFields;
     };

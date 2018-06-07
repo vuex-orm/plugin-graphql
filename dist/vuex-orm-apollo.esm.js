@@ -9836,7 +9836,7 @@ var Context = /** @class */ (function () {
         var originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
         model.baseModel.fields = function () {
             var originalFields = originalFieldGenerator();
-            originalFields['$isPersisted'] = model.baseModel.attr(false);
+            originalFields['$isPersisted'] = model.baseModel.boolean(false);
             return originalFields;
         };
     };
@@ -9894,7 +9894,9 @@ var VuexORMApollo = /** @class */ (function () {
         this.setupMethods();
         this.httpLink = new HttpLink({
             uri: options.url ? options.url : '/graphql',
-            credentials: 'same-origin'
+            credentials: options.credentials ? options.credentials : 'same-origin',
+            headers: options.headers ? options.headers : {},
+            useGETForQueries: Boolean(options.useGETForQueries)
         });
         this.apolloClient = new ApolloClient({
             link: this.httpLink,
