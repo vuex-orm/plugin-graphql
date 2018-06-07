@@ -2,7 +2,7 @@ import Model from './model';
 import { ApolloClient, FetchPolicy } from 'apollo-client';
 import { HttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-import {Data, ActionParams, Arguments, DispatchFunction, PatchedModel} from './interfaces';
+import { Data, ActionParams, Arguments, DispatchFunction, PatchedModel } from './interfaces';
 import QueryBuilder from './queryBuilder';
 import { upcaseFirstLetter } from './utils';
 import Context from './context';
@@ -74,51 +74,41 @@ export default class VuexORMApollo {
     this.context.components.subActions.destroy = this.destroy.bind(this);
     this.context.components.subActions.mutate = this.customMutation.bind(this);
 
-
     // Register static model convenience methods
-    (this.context.components.Model as (typeof PatchedModel)).fetch = async function(filter: any, bypassCache = false) {
+    (this.context.components.Model as (typeof PatchedModel)).fetch = async function (filter: any, bypassCache = false) {
       let filterObj = filter;
       if (typeof filterObj !== 'object') filterObj = { id: filter };
       return this.dispatch('fetch', { filter: filterObj, bypassCache });
     };
 
-    (this.context.components.Model as (typeof PatchedModel)).mutate = async function(params: any) {
+    (this.context.components.Model as (typeof PatchedModel)).mutate = async function (params: any) {
       return this.dispatch('mutate', params);
     };
 
-
     // Register model convenience methods
-    this.context.components.Model.prototype.$mutate = async function(params: any) {
+    this.context.components.Model.prototype.$mutate = async function (params: any) {
       if (!params['id']) params['id'] = this.id;
       return this.$dispatch('mutate', params);
     };
 
-    this.context.components.Model.prototype.$persist = async function(args: any) {
+    this.context.components.Model.prototype.$persist = async function (args: any) {
       return this.$dispatch('persist', { id: this.id, args });
     };
 
-    this.context.components.Model.prototype.$push = async function(args: any) {
+    this.context.components.Model.prototype.$push = async function (args: any) {
       return this.$dispatch('push', { data: this, args });
     };
 
-    this.context.components.Model.prototype.$destroy = async function() {
+    this.context.components.Model.prototype.$destroy = async function () {
       return this.$dispatch('destroy', { id: this.id });
     };
 
-    this.context.components.Model.prototype.$deleteAndDestroy = async function() {
+    this.context.components.Model.prototype.$deleteAndDestroy = async function () {
       await this.$delete();
       return this.$destroy();
     };
 
     // this.components.subActions.destroyAll = this.destroyAll.bind(this);
-  }
-
-
-  /**
-   * Helper to dispatch actions on the store
-   */
-  public dispatch(params: ActionParams) {
-
   }
 
   /**
