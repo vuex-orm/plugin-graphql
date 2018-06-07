@@ -87,6 +87,10 @@ After [installing](/guide/setup) this plugin you can load data in your component
 </script>
 ```
 
+::: tip
+Vuex-ORM-Apollo works with the [Apollo Dev Tools](https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm)!
+:::
+
 
 ## License
 
