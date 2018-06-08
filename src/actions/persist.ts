@@ -1,41 +1,57 @@
-import Context from "../common/context";
-import Transformer from "../graphql/transformer";
-import {ActionParams} from "../support/interfaces";
-import Action from "./action";
-import {upcaseFirstLetter} from "../support/utils";
+import Context from '../common/context';
+import { ActionParams, Data } from '../support/interfaces';
+import Action from './action';
+import NameGenerator from '../graphql/name-generator';
+import Model from '../orm/model';
 
+/**
+ * Persist action for sending a create mutation. Will be used for record.$persist().
+ */
 export default class Persist extends Action {
   /**
-   * Will be called, when dispatch('entities/something/persist') is called.
-   *
-   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {string} id ID of the record to persist
-   * @returns {Promise<void>}
+   * @returns {Promise<Data>} The saved record
    */
-  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<any> {
+  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<Data> {
     if (id) {
-      const context = Context.getInstance();
-      const model = context.getModel(state.$name);
-      const data = model.getRecordWithId(id);
-
-      args = args || {};
-      args[model.singularName] = Transformer.transformOutgoingData(model, data);
-
-      const mutationName = `create${upcaseFirstLetter(model.singularName)}`;
-      const newRecord = await Action.mutation(mutationName, args, dispatch, model, false);
-
+      const model = this.getModelFromState(state);
+      const mutationName = NameGenerator.getNameForPersist(model);
       const oldRecord = model.getRecordWithId(id);
 
-      if (oldRecord && !oldRecord.$isPersisted) {
-        // The server generated another ID, this is very likely to happen.
-        // in this case Action.mutation has inserted a new record instead of updating the existing one.
-        // We can see that because $isPersisted is still false then.
-        context.logger.log('Dropping deprecated record with ID', oldRecord.id);
-        await model.baseModel.delete({ where: oldRecord.id });
-      }
+      // Arguments
+      args = this.prepareArgs(args);
+      this.addRecordToArgs(args, model, oldRecord);
+
+      // Send mutation
+      const newRecord = await Action.mutation(mutationName, args, dispatch, model);
+
+      // Delete the old record if necessary
+      await this.deleteObsoleteRecord(model, oldRecord);
 
       return newRecord;
+    } else {
+      throw new Error("The persist action requires the 'id' to be set");
+    }
+  }
+
+  /**
+   * It's very likely that the server generated different ID for this record.
+   * In this case Action.mutation has inserted a new record instead of updating the existing one.
+   * We can see that because $isPersisted is still false then. In this case we just delete the old record.
+   *
+   * @param {Model} model
+   * @param {Data} record
+   * @returns {Promise<void>}
+   */
+  private static async deleteObsoleteRecord (model: Model, record: Data) {
+    if (record && !record.$isPersisted) {
+      // The server generated another ID, this is very likely to happen.
+      // in this case Action.mutation has inserted a new record instead of updating the existing one.
+      // We can see that because $isPersisted is still false then.
+      Context.getInstance().logger.log('Dropping deprecated record with ID', record.id);
+      await model.baseModel.delete({ where: record.id });
     }
   }
 }

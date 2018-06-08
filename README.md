@@ -48,6 +48,27 @@ $ yarn run coverage
 Generate test coverage in coverage directory.
 
 
+```bash
+yarn docs:build
+```
+
+Builds the documentation.
+
+
+```bash
+yarn docs:dev
+```
+
+Spawns a server for the documentation.
+
+
+```bash
+yarn docs:depoy
+```
+
+Deploys the documentation.
+
+
 ## License
 
 Vuex ORM Apollo is open-sourced software licensed under the [MIT license](https://github.com/phortx/vuex-orm-apollo/blob/master/LICENSE.md).

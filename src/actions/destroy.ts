@@ -1,26 +1,28 @@
-import Context from "../common/context";
-import {ActionParams} from "../support/interfaces";
-import Action from "./action";
-import {upcaseFirstLetter} from "../support/utils";
+import { ActionParams } from '../support/interfaces';
+import Action from './action';
+import NameGenerator from '../graphql/name-generator';
 
+/**
+ * Destroy action for sending a delete mutation. Will be used for record.$destroy().
+ */
 export default class Destroy extends Action {
   /**
-   * Will be called, when dispatch('entities/something/destroy') is called.
-   *
-   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {State} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {string} id ID of the record to delete
-   * @returns {Promise<void>}
+   * @returns {Promise<any>} true
    */
-  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<any> {
+  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<boolean> {
     if (id) {
-      const model = Context.getInstance().getModel(state.$name);
-      const mutationName = `delete${upcaseFirstLetter(model.singularName)}`;
+      const model = this.getModelFromState(state);
+      const mutationName = NameGenerator.getNameForDestroy(model);
 
-      args = args || {};
-      args['id'] = id;
+      args = this.prepareArgs(args, id);
 
-      return Action.mutation(mutationName, args, dispatch, model, false);
+      await Action.mutation(mutationName, args, dispatch, model);
+      return true;
+    } else {
+      throw new Error("The destroy action requires the 'id' to be set");
     }
   }
 }

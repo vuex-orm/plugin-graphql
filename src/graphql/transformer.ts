@@ -4,20 +4,24 @@ import Context from '../common/context';
 import { downcaseFirstLetter } from '../support/utils';
 const inflection = require('inflection');
 
+/**
+ * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
+ * vice versa.
+ */
 export default class Transformer {
   /**
    * Transforms outgoing data. Use for variables param.
    *
-   * Omits relations and some fields.
+   * Omits relations and some other fields.
    *
    * @param model
    * @param {Data} data
    * @returns {Data}
    */
   public static transformOutgoingData (model: Model, data: Data): Data {
+    const context = Context.getInstance();
     const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
-    const context = Context.getInstance();
 
     Object.keys(data).forEach((key) => {
       const value = data[key];
@@ -53,7 +57,8 @@ export default class Transformer {
    * @param {boolean} recursiveCall
    * @returns {Data}
    */
-  public static transformIncomingData (data: Data | Array<Data>, model: Model, mutation: boolean = false, recursiveCall: boolean = false): Data {
+  public static transformIncomingData (data: Data | Array<Data>, model: Model, mutation: boolean = false,
+                                       recursiveCall: boolean = false): Data {
     let result: Data = {};
     const context = Context.getInstance();
 
@@ -83,7 +88,7 @@ export default class Transformer {
 
               result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
             }
-          } else if (model.isFieldNumber(model.fields.get(key))) {
+          } else if (Model.isFieldNumber(model.fields.get(key))) {
             result[key] = parseFloat(data[key]);
           } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphicRelation(key)) {
             result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));

@@ -1,13 +1,16 @@
 import Model from 'app/orm/model';
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
+import Context from "app/common/context";
 
 let model;
 let store;
 let vuexOrmApollo;
+let context;
 
 beforeEach(async () => {
   [store, vuexOrmApollo] = await setupMockData();
-  model = vuexOrmApollo.context.getModel('user');
+  context = Context.getInstance();
+  model = context.getModel('user');
 });
 
 describe('Model', () => {

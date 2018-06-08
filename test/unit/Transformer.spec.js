@@ -1,12 +1,15 @@
 import Transformer from "../../src/graphql/transformer";
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
+import Context from "app/common/context";
 
 let store;
 let vuexOrmApollo;
+let context;
 
 
 beforeEach(async () => {
   [store, vuexOrmApollo] = await setupMockData();
+  context = Context.getInstance();
 });
 
 
@@ -14,7 +17,7 @@ describe('Transformer', () => {
   describe('.transformOutgoingData', () => {
     it('transforms models to a useful data hashmap', () => {
       const user = User.query().first();
-      const transformedData = Transformer.transformOutgoingData(vuexOrmApollo.context.getModel('user'), user);
+      const transformedData = Transformer.transformOutgoingData(context.getModel('user'), user);
       expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown' });
     });
   });
@@ -190,8 +193,8 @@ describe('Transformer', () => {
         ]
       };
 
-      const contract = vuexOrmApollo.context.getModel('contract');
-      const post = vuexOrmApollo.context.getModel('post');
+      const contract = context.getModel('contract');
+      const post = context.getModel('post');
       expect(Transformer.transformIncomingData(incomingData1, contract, false)).toEqual(expectedData1);
       expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
     });
@@ -233,7 +236,7 @@ describe('Transformer', () => {
           }
         };
 
-      const model = vuexOrmApollo.context.getModel('contract');
+      const model = context.getModel('contract');
       const transformedData = Transformer.transformIncomingData(incomingData, model, true);
 
       expect(transformedData).toEqual(expectedData);

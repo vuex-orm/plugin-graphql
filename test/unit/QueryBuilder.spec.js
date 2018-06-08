@@ -1,20 +1,23 @@
 import QueryBuilder from 'app/graphql/query-builder';
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
-import {prettify} from "../../src/support/utils";
+import {prettify} from "app/support/utils";
+import Context from "app/common/context";
 
+let context;
 let store;
 let vuexOrmApollo;
 
 
 beforeEach(async () => {
   [store, vuexOrmApollo] = await setupMockData();
+  context = Context.getInstance();
 });
 
 
 describe('QueryBuilder', () => {
   describe('.buildArguments', () => {
     it('can generate signatures', () => {
-      const model = vuexOrmApollo.context.getModel('post');
+      const model = context.getModel('post');
       let args = QueryBuilder.buildArguments(model, {
         content: 'Foo Bar',
         title: 'Example',
@@ -27,7 +30,7 @@ describe('QueryBuilder', () => {
     });
 
     it('can generate fields with variables', () => {
-      const model = vuexOrmApollo.context.getModel('post');
+      const model = context.getModel('post');
       let args = QueryBuilder.buildArguments(model, {
         content: 'Foo Bar',
         title: 'Example',
@@ -40,7 +43,7 @@ describe('QueryBuilder', () => {
     });
 
     it('can generate filter field with variables', () => {
-      const model = vuexOrmApollo.context.getModel('post');
+      const model = context.getModel('post');
       let args = QueryBuilder.buildArguments(model, {
         content: 'Foo Bar',
         title: 'Example',
@@ -55,7 +58,7 @@ describe('QueryBuilder', () => {
 
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
-      const fields = QueryBuilder.buildRelationsQuery(vuexOrmApollo.context.getModel('post'));
+      const fields = QueryBuilder.buildRelationsQuery(context.getModel('post'));
       const query = prettify(`query test { ${fields} }`).trim();
 
       expect(query).toEqual(`
@@ -81,7 +84,7 @@ query test {
 
   describe('.buildField', () => {
     it('generates query fields for all model fields and relations', () => {
-      let query = QueryBuilder.buildField(vuexOrmApollo.context.getModel('user'), true, { age: 32 });
+      let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 });
       query = prettify(`query users { ${query} }`).trim();
 
       expect(query).toEqual(`
@@ -103,7 +106,7 @@ query users {
     it('generates a complete query for a model', () => {
       const args = { title: 'Example Post 1' };
 
-      let query = QueryBuilder.buildQuery('query', vuexOrmApollo.context.getModel('post'), null, args, true);
+      let query = QueryBuilder.buildQuery('query', context.getModel('post'), null, args, true);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -135,7 +138,7 @@ query Posts($title: String!) {
 
     it('generates a complete create mutation query for a model', () => {
       const variables = { post: { id: 15, userId: 2, title: 'test', content: 'even more test' } };
-      let post = vuexOrmApollo.context.getModel('post');
+      let post = context.getModel('post');
       let query = QueryBuilder.buildQuery('mutation', post, 'createPost', variables, false);
       query = prettify(query.loc.source.body);
 
@@ -166,7 +169,7 @@ mutation CreatePost($post: PostInput!) {
 
     it('generates a complete update mutation query for a model', () => {
       const variables = { id: 2, post: { id: 2, userId: 1, title: 'test', content: 'Even more test' } };
-      let post = vuexOrmApollo.context.getModel('post');
+      let post = context.getModel('post');
       let query = QueryBuilder.buildQuery('mutation', post, 'updatePost', variables, false);
       query = prettify(query.loc.source.body);
 
@@ -198,7 +201,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
 
 
     it('generates a complete delete mutation query for a model', () => {
-      let query = QueryBuilder.buildQuery('mutation', vuexOrmApollo.context.getModel('user'), 'deleteUser', { id: 15 });
+      let query = QueryBuilder.buildQuery('mutation', context.getModel('user'), 'deleteUser', { id: 15 });
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`

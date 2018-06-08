@@ -1,17 +1,31 @@
-import {ApolloClient, FetchPolicy} from "apollo-client";
-import {InMemoryCache} from "apollo-cache-inmemory";
-import {HttpLink} from "apollo-link-http";
-import Context from "../common/context";
-import {Arguments, Data} from "../support/interfaces";
-import Transformer from "./transformer";
-import Model from "../orm/model";
+import { ApolloClient, FetchPolicy } from 'apollo-client';
+import { InMemoryCache } from 'apollo-cache-inmemory';
+import { HttpLink } from 'apollo-link-http';
+import Context from '../common/context';
+import { Arguments, Data } from '../support/interfaces';
+import Transformer from './transformer';
+import Model from '../orm/model';
 
-
+/**
+ * This class takes care of the communication with the graphql endpoint by leveraging the awesome apollo-client lib.
+ */
 export default class Apollo {
+  /**
+   * The http link instance to use.
+   * @type {HttpLink}
+   */
   private readonly httpLink: HttpLink;
+
+  /**
+   * The ApolloClient instance
+   * @type {ApolloClient}
+   */
   private readonly apolloClient: ApolloClient<any>;
 
-  public constructor() {
+  /**
+   * @constructor
+   */
+  public constructor () {
     const context = Context.getInstance();
 
     this.httpLink = new HttpLink({
@@ -35,7 +49,7 @@ export default class Apollo {
    * @param {Arguments} variables Optional. The variables to send with the query
    * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
    * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
-   * @returns {Promise<Data>}
+   * @returns {Promise<Data>} The new records
    */
   public async request (model: Model, query: any, variables?: Arguments, mutation: boolean = false,
                         bypassCache: boolean = false): Promise<Data> {

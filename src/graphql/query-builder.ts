@@ -5,19 +5,17 @@ import gql from 'graphql-tag';
 import Context from '../common/context';
 
 /**
- * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
- * format of the GraphQL API.
+ * Contains all logic to build GraphQL queries/mutations.
  */
 export default class QueryBuilder {
-
-
   /**
    * Builds a field for the GraphQL query and a specific model
    *
    * @param {Model|string} model The model to use
    * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
    * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations). Mainly for recursion
+   * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
+   *                                    Mainly for recursion
    * @param {string} name Optional name of the field. If not provided, this will be the model name
    * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
    *                                See buildArguments
@@ -68,7 +66,7 @@ export default class QueryBuilder {
    * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
    * @param {Arguments} args Arguments for the query
    * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
-   * @returns {any}
+   * @returns {any} Whatever gql() returns
    */
   public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
     const context = Context.getInstance();
@@ -107,17 +105,17 @@ export default class QueryBuilder {
    *
    * There are three types of arguments:
    *
-   * 1) Signatures with simple types (signature = true)
-   *      mutation createUser($name: String!)
+   * 1) Signatures with primitive types (signature = true)
+   *      => 'mutation createUser($name: String!)'
    *
    * 2) Signatures with object types (signature = true, args = { user: { __type: 'User' }})
-   *      mutation createUser($user: UserInput!)
+   *      => 'mutation createUser($user: UserInput!)'
    *
    * 3) Fields with variables (signature = false)
-   *      query user(id: $id)
+   *      => 'user(id: $id)'
    *
    * 4) Filter fields with variables (signature = false, filter = true)
-   *      query users(filter: { active: $active })
+   *      => 'users(filter: { active: $active })'
    *
    * @param model
    * @param {Arguments | undefined} args
@@ -204,10 +202,13 @@ export default class QueryBuilder {
   }
 
   /**
+   * Generates the fields for all related models.
    *
    * @param {Model} model
    * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
    * @returns {string}
+   *
+   * @todo https://github.com/vuex-orm/vuex-orm-apollo/issues/13
    */
   private static buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []): string {
     if (model === null) return '';
@@ -240,6 +241,12 @@ export default class QueryBuilder {
     return relationQueries.join('\n');
   }
 
+  /**
+   * Tells if a model should be ignored because it's included in the ignoreModels array.
+   * @param {Model} model
+   * @param {Array<Model>} ignoreModels
+   * @returns {boolean}
+   */
   private static shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
     return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
   }

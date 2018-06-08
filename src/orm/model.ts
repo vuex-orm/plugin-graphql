@@ -4,37 +4,105 @@ import Context from '../common/context';
 const inflection = require('inflection');
 
 /**
- * Own model class with some helpers
+ * Wrapper around a Vuex-ORM model with some useful methods
  */
 export default class Model {
+  /**
+   * The singular name of a model like `blogPost`
+   * @type {string}
+   */
   public readonly singularName: string;
+
+  /**
+   * The plural name of a model like `blogPosts`
+   * @type {string}
+   */
   public readonly pluralName: string;
+
+  /**
+   * The original Vuex-ORM model
+   */
   public readonly baseModel: ORMModel;
+
+  /**
+   * The fields of the model
+   * @type {Map<string, Field>}
+   */
   public readonly fields: Map<string, Field> = new Map<string, Field>();
-  private readonly context: Context;
 
-  public constructor (baseModel: ORMModel, context: Context) {
+  /**
+   * @constructor
+   * @param {Model} baseModel The original Vuex-ORM model
+   */
+  public constructor (baseModel: ORMModel) {
     this.baseModel = baseModel;
-    this.context = context;
 
+    // Generate name variants
     this.singularName = inflection.singularize(this.baseModel.entity);
     this.pluralName = inflection.pluralize(this.baseModel.entity);
 
+    // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
-
     Object.keys(fields).forEach((name: string) => {
       this.fields.set(name, fields[name]);
     });
   }
 
   /**
+   * Tells if a field is a numeric field.
+   *
+   * @param {Field | undefined} field
+   * @returns {boolean}
+   */
+  public static isFieldNumber (field: Field | undefined): boolean {
+    if (!field) return false;
+
+    const context = Context.getInstance();
+    return field instanceof context.components.Number || field instanceof context.components.Increment;
+  }
+
+  /**
+   * Tells if a field is a attribute (and thus not a relation)
+   * @param {Field} field
+   * @returns {boolean}
+   */
+  public static isFieldAttribute (field: Field): boolean {
+    const context = Context.getInstance();
+
+    return field instanceof context.components.Increment ||
+      field instanceof context.components.Attr ||
+      field instanceof context.components.String ||
+      field instanceof context.components.Number ||
+      field instanceof context.components.Boolean;
+  }
+
+  /**
+   * Adds $isPersisted and other meta fields to the model by overwriting the fields() method.
+   * @todo is this a good way to add fields?
+   * @param {Model} model
+   */
+  public static augment (model: Model) {
+    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
+
+    model.baseModel.fields = () => {
+      const originalFields = originalFieldGenerator();
+
+      originalFields['$isPersisted'] = model.baseModel.boolean(false);
+
+      return originalFields;
+    };
+  }
+
+  /**
+   * Returns all fields which should be included in a graphql query: All attributes which are not included in the
+   * skipFields array or start with $.
    * @returns {Array<string>} field names which should be queried
    */
   public getQueryFields (): Array<string> {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
-      if (this.isFieldAttribute(field) && !this.skipField(name)) {
+      if (Model.isFieldAttribute(field) && !this.skipField(name)) {
         fields.push(name);
       }
     });
@@ -44,7 +112,7 @@ export default class Model {
 
   /**
    * Tells if a field should be ignored. This is true for fields that start with a `$` or is it is within the skipField
-   * property.
+   * property or is the foreignKey of a belongsTo/hasOne relation.
    *
    * @param {string} field
    * @returns {boolean}
@@ -53,11 +121,13 @@ export default class Model {
     if (field.startsWith('$')) return true;
     if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
 
+    const context = Context.getInstance();
+
     let shouldSkipField: boolean = false;
 
     this.getRelations().forEach((relation: Field) => {
       if (
-        (relation instanceof this.context.components.BelongsTo || relation instanceof this.context.components.HasOne) &&
+        (relation instanceof context.components.BelongsTo || relation instanceof context.components.HasOne) &&
         relation.foreignKey === field
       ) {
         shouldSkipField = true;
@@ -70,13 +140,13 @@ export default class Model {
   }
 
   /**
-   * @returns {Map<string, Field>} all relations of the model which should be queried
+   * @returns {Map<string, Field>} all relations of the model which should be included in a graphql query
    */
   public getRelations (): Map<string, Field> {
     const relations = new Map<string, Field>();
 
     this.fields.forEach((field: Field, name: string) => {
-      if (!this.isFieldAttribute(field)) {
+      if (!Model.isFieldAttribute(field)) {
         relations.set(name, field);
       }
     });
@@ -85,23 +155,24 @@ export default class Model {
   }
 
   /**
-   * This accepts a field like `subjectType` and checks if this just randomly is called `...Type` or it is part
-   * of a polymorph relation.
+   * This accepts a field like `subjectType` and checks if this is just randomly named `...Type` or it is part
+   * of a polymorphic relation.
    * @param {string} name
    * @returns {boolean}
    */
   public isTypeFieldOfPolymorphicRelation (name: string): boolean {
+    const context = Context.getInstance();
     let found: boolean = false;
 
-    this.context.models.forEach((model) => {
+    context.models.forEach((model) => {
       if (found) return false;
 
       model.getRelations().forEach((relation) => {
-        if (relation instanceof this.context.components.MorphMany ||
-          relation instanceof this.context.components.MorphedByMany ||
-          relation instanceof this.context.components.MorphOne ||
-          relation instanceof this.context.components.MorphTo ||
-          relation instanceof this.context.components.MorphToMany) {
+        if (relation instanceof context.components.MorphMany ||
+          relation instanceof context.components.MorphedByMany ||
+          relation instanceof context.components.MorphOne ||
+          relation instanceof context.components.MorphTo ||
+          relation instanceof context.components.MorphToMany) {
 
           if (relation.type === name && relation.related && relation.related.entity === this.baseModel.entity) {
             found = true;
@@ -118,19 +189,18 @@ export default class Model {
     return found;
   }
 
+  /**
+   * Returns a record of this model with the given ID.
+   * @param {number} id
+   * @returns {any}
+   */
   public getRecordWithId (id: number) {
     return this.baseModel.query().withAllRecursive().where('id', id).first();
   }
 
-  public isFieldNumber (field: Field | undefined): boolean {
-    if (!field) return false;
-    return field instanceof this.context.components.Number ||
-      field instanceof this.context.components.Increment;
-  }
-
   /**
-   * Determines if we should eager load (means: add a query field) a related entity. belongsTo or hasOne related
-   * entities are always eager loaded. Others can be added to the eagerLoad array of the model.
+   * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo or
+   * hasOne related entities are always eager loaded. Others can be added to the `eagerLoad` array of the model.
    *
    * @param {Field} field Relation field
    * @param {Model} relatedModel Related model
@@ -145,26 +215,5 @@ export default class Model {
 
     const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
     return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
-  }
-
-
-  public static augment (model: Model) {
-    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
-
-    model.baseModel.fields = () => {
-      const originalFields = originalFieldGenerator();
-
-      originalFields['$isPersisted'] = model.baseModel.boolean(false);
-
-      return originalFields;
-    };
-  }
-
-  private isFieldAttribute (field: Field): boolean {
-    return field instanceof this.context.components.Increment ||
-      field instanceof this.context.components.Attr ||
-      field instanceof this.context.components.String ||
-      field instanceof this.context.components.Number ||
-      field instanceof this.context.components.Boolean;
   }
 }

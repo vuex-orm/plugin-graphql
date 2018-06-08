@@ -1,27 +1,30 @@
-import Context from "../common/context";
-import {ActionParams} from "../support/interfaces";
-import Action from "./action";
-import {upcaseFirstLetter} from "../support/utils";
-import Transformer from "../graphql/transformer";
+import { ActionParams, Data } from '../support/interfaces';
+import Action from './action';
+import NameGenerator from '../graphql/name-generator';
 
+/**
+ * Push action for sending a update mutation. Will be used for record.$push().
+ */
 export default class Push extends Action {
   /**
-   * Will be called, when dispatch('entities/something/push') is called.
-   * @param {any} state The Vuex State from Vuex-ORM
+   * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {Arguments} data New data to save
-   * @returns {Promise<Data | {}>}
+   * @returns {Promise<Data>} The updated record
    */
-  public static async call ({ state, dispatch }: ActionParams, { data, args }: ActionParams) {
+  public static async call ({ state, dispatch }: ActionParams, { data, args }: ActionParams): Promise<Data> {
     if (data) {
-      const model = Context.getInstance().getModel(state.$name);
+      const model = this.getModelFromState(state);
+      const mutationName = NameGenerator.getNameForPush(model);
 
-      args = args || {};
-      args['id'] = data.id;
-      args[model.singularName] = Transformer.transformOutgoingData(model, data);
+      // Arguments
+      args = this.prepareArgs(args, data.id);
+      this.addRecordToArgs(args, model, data);
 
-      const mutationName = `update${upcaseFirstLetter(model.singularName)}`;
-      return Action.mutation(mutationName, args, dispatch, model, false);
+      // Send the mutation
+      return Action.mutation(mutationName, args, dispatch, model);
+    } else {
+      throw new Error("The persist action requires the 'data' to be set");
     }
   }
 }

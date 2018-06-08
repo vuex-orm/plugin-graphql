@@ -1,5 +1,5 @@
-import {parse} from "graphql/language/parser";
-import {print} from "graphql/language/printer";
+import { parse } from 'graphql/language/parser';
+import { print } from 'graphql/language/printer';
 
 /**
  * Capitalizes the first letter of the given string.

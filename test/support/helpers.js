@@ -24,14 +24,13 @@ export function createStore (entities) {
     database.register(entity.model, entity.module || {})
   });
 
-  const plugin = new VuexORMApolloPlugin();
-  VuexORM.use(plugin, { database: database });
+  VuexORM.use(VuexORMApolloPlugin, { database: database });
 
   const store = new Vuex.Store({
     plugins: [VuexORM.install(database)]
   });
 
-  return [store, plugin.instance];
+  return [store, VuexORMApolloPlugin.instance];
 }
 
 
