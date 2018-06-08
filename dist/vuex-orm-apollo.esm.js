@@ -10051,8 +10051,8 @@ var QueryBuilder = /** @class */ (function () {
                 !_this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
                 var multiple = !(field instanceof context.components.BelongsTo ||
                     field instanceof context.components.HasOne);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
                 ignoreRelations.push(model.singularName + "." + relatedModel.singularName);
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
             }
         });
         return relationQueries.join('\n');
@@ -10066,7 +10066,9 @@ var QueryBuilder = /** @class */ (function () {
      */
     QueryBuilder.shouldRelationBeIgnored = function (model, relatedModel, ignoreRelations) {
         var relevantRelation = model.singularName + "." + relatedModel.singularName;
-        return ignoreRelations.find(function (r) { return r === relevantRelation; }) !== undefined;
+        return ignoreRelations.find(function (r) {
+            return r === relevantRelation;
+        }) !== undefined;
     };
     return QueryBuilder;
 }());

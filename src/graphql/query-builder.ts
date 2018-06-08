@@ -234,8 +234,8 @@ export default class QueryBuilder {
         const multiple: boolean = !(field instanceof context.components.BelongsTo ||
           field instanceof context.components.HasOne);
 
-        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
         ignoreRelations.push(`${model.singularName}.${relatedModel.singularName}`);
+        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
       }
     });
 
@@ -251,6 +251,8 @@ export default class QueryBuilder {
    */
   private static shouldRelationBeIgnored (model: Model, relatedModel: Model, ignoreRelations: Array<string>): boolean {
     const relevantRelation = `${model.singularName}.${relatedModel.singularName}`;
-    return ignoreRelations.find((r) => r === relevantRelation) !== undefined;
+    return ignoreRelations.find((r) => {
+      return r === relevantRelation;
+    }) !== undefined;
   }
 }
