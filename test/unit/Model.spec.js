@@ -49,4 +49,100 @@ describe('Model', () => {
       });
     });
   });
+
+  describe('.isFiedNumber', () => {
+    it('returns true when the field is numeric', () => {
+      model = context.getModel('post');
+      expect(Model.isFieldNumber(model.fields.get('otherId'))).toEqual(true);
+      expect(Model.isFieldNumber(model.fields.get('id'))).toEqual(true);
+    });
+
+    it('returns false when the field is not numeric', () => {
+      model = context.getModel('post');
+      expect(Model.isFieldNumber(model.fields.get('title'))).toEqual(false);
+      expect(Model.isFieldNumber(model.fields.get('user'))).toEqual(false);
+    });
+  });
+
+  describe('.isFieldAttribute', () => {
+    it('returns true when the field is a attribute', () => {
+      model = context.getModel('post');
+      expect(Model.isFieldAttribute(model.fields.get('title'))).toEqual(true);
+      expect(Model.isFieldAttribute(model.fields.get('id'))).toEqual(true);
+      expect(Model.isFieldAttribute(model.fields.get('userId'))).toEqual(true);
+    });
+
+    it('returns false when the field is a relation', () => {
+      model = context.getModel('post');
+      expect(Model.isFieldAttribute(model.fields.get('user'))).toEqual(false);
+    });
+  });
+
+  describe('.augment', () => {
+    it('adds $isPersited to the fields', () => {
+      // FIXME how to test that?
+    });
+  });
+
+  describe('.skipField', () => {
+    it('returns true for a field which starts with a $', () => {
+      const model = context.getModel('post');
+      expect(model.skipField('$isPersisted')).toEqual(true);
+    });
+
+    it('returns true for a field which is listed within skipFields', () => {
+      const model = context.getModel('video');
+      expect(model.skipField('ignoreMe')).toEqual(true);
+    });
+
+    it('returns true for a field which is the foreignKey of a belongsTo or hasOne relation', () => {
+      const model = context.getModel('post');
+      expect(model.skipField('userId')).toEqual(true);
+    });
+
+    it('returns false for normal fields', () => {
+      const model = context.getModel('post');
+      expect(model.skipField('id')).toEqual(false);
+      expect(model.skipField('title')).toEqual(false);
+    });
+  });
+
+  describe('.isTypeFieldOfPolymorphicRelation', () => {
+    it('returns true for the type field of a polymorphic relation', () => {
+      const model = context.getModel('comment');
+      expect(model.isTypeFieldOfPolymorphicRelation('subjectType')).toEqual(true);
+    });
+
+    it('returns false for a normal attribute which just ends with `Type`', () => {
+      const model = context.getModel('contract');
+      expect(model.isTypeFieldOfPolymorphicRelation('contractType')).toEqual(false);
+    });
+  });
+
+  describe('.getRecordWithId', () => {
+    it('returns the record with the id of the model type', () => {
+      const model = context.getModel('post');
+      const expectedRecord = model.baseModel.query().withAllRecursive().where('id', 2).first();
+      expect(model.getRecordWithId(2)).toEqual(expectedRecord);
+    });
+  });
+
+  describe('.shouldEagerLoadRelation', () => {
+    it('returns true if field is a belongsTo or hasOne relation', () => {
+      const model = context.getModel('post');
+      expect(model.shouldEagerLoadRelation(model.fields.get('user'), context.getModel('user'))).toEqual(true);
+
+      // TODO test hasOne
+    });
+
+    it('returns true if field is in the eagerLoad array', () => {
+      const model = context.getModel('post');
+      expect(model.shouldEagerLoadRelation(model.fields.get('comments'), context.getModel('comment'))).toEqual(true);
+    });
+
+    it('returns false if field neither belongsTo/hasOne nor in the eagerLoad array', () => {
+      const model = context.getModel('user');
+      expect(model.shouldEagerLoadRelation(model.fields.get('comments'), context.getModel('comment'))).toEqual(false);
+    });
+  });
 });

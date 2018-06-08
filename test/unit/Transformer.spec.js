@@ -1,4 +1,4 @@
-import Transformer from "../../src/graphql/transformer";
+import Transformer from "app/graphql/transformer";
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
 import Context from "app/common/context";
 

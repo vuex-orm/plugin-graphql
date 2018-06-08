@@ -41,9 +41,10 @@ export class Post extends ORMModel {
     return {
       id: this.increment(null),
       content: this.string(''),
-      title: this.string(''),
+      title: this.attr(),
       userId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
+      published: this.boolean(true),
       user: this.belongsTo(User, 'userId'),
       comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
@@ -88,6 +89,7 @@ export class Contract extends ORMModel {
       id: this.increment(),
       name: this.attr(''),
       displayName: this.attr(''),
+      contractType: this.string(''),
       slug: this.attr(''),
 
       contractOptions: this.belongsToMany(ContractOption, ContractContractOption, 'contractId',
@@ -125,7 +127,6 @@ export async function setupMockData() {
     { model: ContractContractOption }
   ]);
 
-  await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
   await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
   await User.insert({ data: { id: 2, name: 'Peppermint Patty' }});
   await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});

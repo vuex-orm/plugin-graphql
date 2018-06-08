@@ -73,7 +73,7 @@ export default class Context {
     this.options = options;
 
     this.database = options.database;
-    this.debugMode = options.debug as boolean;
+    this.debugMode = Boolean(options.debug);
     this.logger = new Logger(this.debugMode);
 
     if (!options.database) {

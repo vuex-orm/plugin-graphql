@@ -17,6 +17,7 @@ describe('VuexORMApollo', () => {
             __typename: 'post',
             id: 42,
             otherId: 13548,
+            published: true,
             title: 'Example Post 5',
             content: 'Foo',
             comments: {
@@ -50,6 +51,7 @@ query Post($id: ID!) {
     content
     title
     otherId
+    published
     user {
       id
       name
@@ -217,6 +219,7 @@ query Users {
             __typename: 'post',
             id: 42,
             otherId: 13548,
+            published: true,
             title: 'Example post 1',
             content: 'Foo',
             comments: {
@@ -248,6 +251,7 @@ query Users {
           content: "Foo",
           id: 1,
           otherId: 9,
+          published: true,
           title: "Example post 1",
           userId: 1,
           user: {
@@ -265,6 +269,7 @@ mutation CreatePost($post: PostInput!) {
     content
     title
     otherId
+    published
     user {
       id
       name
@@ -361,6 +366,7 @@ mutation DeleteUser($id: ID!) {
             __typename: 'post',
             id: 1,
             otherId: 13548,
+            published: true,
             title: 'Example Post 1',
             content: 'Foo',
             comments: {
@@ -389,6 +395,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     content
     title
     otherId
+    published
     user {
       id
       name

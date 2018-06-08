@@ -56,6 +56,7 @@ describe('QueryBuilder', () => {
     });
   });
 
+
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
       const fields = QueryBuilder.buildRelationsQuery(context.getModel('post'));
@@ -79,7 +80,6 @@ query test {
       `.trim());
     });
   });
-
 
 
   describe('.buildField', () => {
@@ -117,6 +117,7 @@ query Posts($title: String!) {
       content
       title
       otherId
+      published
       user {
         id
         name
@@ -149,6 +150,7 @@ mutation CreatePost($post: PostInput!) {
     content
     title
     otherId
+    published
     user {
       id
       name
@@ -180,6 +182,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
     content
     title
     otherId
+    published
     user {
       id
       name
@@ -213,6 +216,35 @@ mutation DeleteUser($id: ID!) {
 }
       `.trim() + "\n");
 
+    });
+  });
+
+
+  describe('.determineAttributeType', () => {
+    it('throws a exception when the input is something unknown', () => {
+      const model = context.getModel('post');
+      expect(() => QueryBuilder.determineAttributeType(model, 'asdfsfa', undefined))
+        .toThrowError("Can't find suitable graphql type for variable asdfsfa for model post");
+    });
+
+    it('returns String for string typed fields', () => {
+      const model = context.getModel('post');
+      expect(QueryBuilder.determineAttributeType(model, 'title', 'Example')).toEqual('String');
+    });
+
+    it('returns Int for number typed fields', () => {
+      const model = context.getModel('post');
+      expect(QueryBuilder.determineAttributeType(model, 'userId', 15)).toEqual('Int');
+    });
+
+    it('returns Boolean for boolean typed fields', () => {
+      const model = context.getModel('post');
+      expect(QueryBuilder.determineAttributeType(model, 'published', true)).toEqual('Boolean');
+    });
+
+    it('returns String for string typed values in generic fields', () => {
+      const model = context.getModel('post');
+      expect(QueryBuilder.determineAttributeType(model, 'generic', 'test')).toEqual('String');
     });
   });
 });
