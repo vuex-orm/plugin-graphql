@@ -25,6 +25,7 @@ export interface ActionParams {
   data?: Data;
   args?: Arguments;
   bypassCache?: boolean;
+  query?: string;
 }
 
 export interface Data {
@@ -47,6 +48,7 @@ export interface Field {
 }
 
 export class PatchedModel extends ORMModel {
-  static async fetch (filter: any, bypassCache = false): Promise<any> { return undefined; }
+  static async fetch (filter: any, bypassCache: boolean = false): Promise<any> { return undefined; }
   static async mutate (params: any): Promise<any> { return undefined; }
+  static async customQuery (query: string, params: any, bypassCache: boolean = false): Promise<any> { return undefined; }
 }

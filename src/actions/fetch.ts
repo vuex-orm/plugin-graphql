@@ -27,7 +27,7 @@ export default class Fetch extends Action {
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter['id'];
     const name: string = NameGenerator.getNameForFetch(model, multiple);
-    const query = QueryBuilder.buildQuery('query', model, name, filter, multiple);
+    const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
     const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);

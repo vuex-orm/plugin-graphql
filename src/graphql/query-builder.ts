@@ -28,13 +28,14 @@ export default class QueryBuilder {
                      args?: Arguments,
                      ignoreModels: Array<Model> = [],
                      name?: string,
+                     filter: boolean = false,
                      allowIdFields: boolean = false): string {
 
     const context = Context.getInstance();
     model = context.getModel(model);
     ignoreModels.push(model);
 
-    let params: string = this.buildArguments(model, args, false, multiple, allowIdFields);
+    let params: string = this.buildArguments(model, args, false, filter, allowIdFields);
 
     const fields = `
       ${model.getQueryFields().join(' ')}
@@ -66,9 +67,11 @@ export default class QueryBuilder {
    * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
    * @param {Arguments} args Arguments for the query
    * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
+   * @param {boolean} filter When true the query arguments are passed via a filter object.
    * @returns {any} Whatever gql() returns
    */
-  public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
+  public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean,
+                            filter?: boolean) {
     const context = Context.getInstance();
 
     // model
@@ -94,7 +97,7 @@ export default class QueryBuilder {
     // build query
     const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, false)} {\n` +
-      `  ${this.buildField(model, multiple, args, [], name, true)}\n` +
+      `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
       `}`;
 
     return gql(query);
@@ -234,7 +237,7 @@ export default class QueryBuilder {
         const multiple: boolean = !(field instanceof context.components.BelongsTo ||
           field instanceof context.components.HasOne);
 
-        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels, name));
+        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreModels, name, false));
       }
     });
 

@@ -84,7 +84,7 @@ query test {
 
   describe('.buildField', () => {
     it('generates query fields for all model fields and relations', () => {
-      let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 });
+      let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
       query = prettify(`query users { ${query} }`).trim();
 
       expect(query).toEqual(`
@@ -106,7 +106,7 @@ query users {
     it('generates a complete query for a model', () => {
       const args = { title: 'Example Post 1' };
 
-      let query = QueryBuilder.buildQuery('query', context.getModel('post'), null, args, true);
+      let query = QueryBuilder.buildQuery('query', context.getModel('post'), null, args, true, true);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`

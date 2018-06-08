@@ -357,6 +357,133 @@ mutation DeleteUser($id: ID!) {
   });
 
 
+  describe('custom query', () => {
+    it('via Model method sends the correct query to the API', async () => {
+      const response = {
+        data: {
+          unpublishedPosts: {
+            nodes: [
+              {
+                __typename: 'post',
+                id: 1,
+                otherId: 13548,
+                published: false,
+                title: 'Example Post 1',
+                content: 'Foo',
+                comments: {
+                  __typename: 'comment',
+                  nodes: []
+                },
+                user: {
+                  __typename: 'user',
+                  id: 2,
+                  name: 'Johnny Imba',
+                }
+              }
+            ],
+            __typename: 'post'
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        await Post.customQuery('unpublishedPosts', { userId: 2 });
+      });
+
+      expect(request.variables.userId).toEqual(2);
+      expect(request.query).toEqual(`
+query UnpublishedPosts($userId: ID!) {
+  unpublishedPosts(userId: $userId) {
+    nodes {
+      id
+      content
+      title
+      otherId
+      published
+      user {
+        id
+        name
+        __typename
+      }
+      comments {
+        nodes {
+          id
+          content
+          subjectId
+          subjectType
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+
+    it('via record method sends the correct query to the API', async () => {
+      const post = Post.find(1);
+      const response = {
+        data: {
+          example: {
+            __typename: 'post',
+            id: 1,
+            otherId: 13548,
+            published: false,
+            title: 'Example Post 1',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: []
+            },
+            user: {
+              __typename: 'user',
+              id: 2,
+              name: 'Johnny Imba',
+            }
+          }
+        }
+      };
+
+      const request = await sendWithMockFetch(response, async () => {
+        await post.$customQuery('example', { userId: 2 });
+      });
+
+      expect(request.variables.userId).toEqual(2);
+      expect(request.variables.id).toEqual(1);
+      expect(request.query).toEqual(`
+query Example($userId: ID!, $id: ID!) {
+  example(userId: $userId, id: $id) {
+    id
+    content
+    title
+    otherId
+    published
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+  });
+
+
   describe('custom mutation', () => {
     it('sends the correct query to the API', async () => {
       const post = Post.find(1);

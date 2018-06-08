@@ -25,6 +25,7 @@ themeConfig:
     - /guide/persist/
     - /guide/push/
     - /guide/destroy/
+    - /guide/custom-queries/
     - /guide/custom-mutations/
     - /guide/relationships/
     - /guide/eager-loading/
