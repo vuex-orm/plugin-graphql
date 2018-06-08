@@ -1,4 +1,4 @@
-import Logger from 'app/logger';
+import Logger from 'app/common/logger';
 import gql from 'graphql-tag';
 
 describe('Logger', () => {

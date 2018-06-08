@@ -1,4 +1,4 @@
-import { downcaseFirstLetter, upcaseFirstLetter } from 'app/utils';
+import { downcaseFirstLetter, upcaseFirstLetter } from 'app/support/utils';
 
 describe('capitalizeFirstLetter', () => {
   it('capitalizes the first letter of a string', () => {

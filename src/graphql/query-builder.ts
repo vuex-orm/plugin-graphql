@@ -1,24 +1,15 @@
-import { parse } from 'graphql/language/parser';
-import Model from './model';
-import { print } from 'graphql/language/printer';
-import { Arguments, Field } from './interfaces';
-import { upcaseFirstLetter } from './utils';
+import Model from '../orm/model';
+import { Arguments, Field } from '../support/interfaces';
+import { upcaseFirstLetter } from '../support/utils';
 import gql from 'graphql-tag';
-import Context from './context';
+import Context from '../common/context';
 
 /**
  * Contains all logic to build GraphQL queries and transform variables between the format Vuex-ORM requires and the
  * format of the GraphQL API.
  */
 export default class QueryBuilder {
-  /**
-   * Takes a string with a graphql query and formats it. Useful for debug output and the tests.
-   * @param {string} query
-   * @returns {string}
-   */
-  public static prettify (query: string): string {
-    return print(parse(query));
-  }
+
 
   /**
    * Builds a field for the GraphQL query and a specific model
@@ -34,7 +25,7 @@ export default class QueryBuilder {
    *
    * @todo Do we need the allowIdFields param?
    */
-  public buildField (model: Model | string,
+  public static buildField (model: Model | string,
                      multiple: boolean = true,
                      args?: Arguments,
                      ignoreModels: Array<Model> = [],
@@ -79,7 +70,7 @@ export default class QueryBuilder {
    * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
    * @returns {any}
    */
-  public buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
+  public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean) {
     const context = Context.getInstance();
 
     // model
@@ -135,7 +126,7 @@ export default class QueryBuilder {
    * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
    * @returns {String}
    */
-  private buildArguments (model: Model, args?: Arguments, signature: boolean = false, filter: boolean = false,
+  private static buildArguments (model: Model, args?: Arguments, signature: boolean = false, filter: boolean = false,
                           allowIdFields: boolean = true): string {
     if (args === undefined) return '';
 
@@ -193,7 +184,7 @@ export default class QueryBuilder {
    * @param {string} value
    * @returns {string}
    */
-  private determineAttributeType (model: Model, key: string, value: any): string {
+  private static determineAttributeType (model: Model, key: string, value: any): string {
     const field: undefined | Field = model.fields.get(key);
     const context = Context.getInstance();
 
@@ -218,7 +209,7 @@ export default class QueryBuilder {
    * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
    * @returns {string}
    */
-  private buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []): string {
+  private static buildRelationsQuery (model: (null | Model), ignoreModels: Array<Model> = []): string {
     if (model === null) return '';
 
     const context = Context.getInstance();
@@ -236,7 +227,7 @@ export default class QueryBuilder {
         context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
-      if (this.shouldEagerLoadRelation(model, field, relatedModel) &&
+      if (model.shouldEagerLoadRelation(field, relatedModel) &&
           !this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
 
         const multiple: boolean = !(field instanceof context.components.BelongsTo ||
@@ -249,27 +240,7 @@ export default class QueryBuilder {
     return relationQueries.join('\n');
   }
 
-  /**
-   * Determines if we should eager load (means: add a query field) a related entity. belongsTo or hasOne related
-   * entities are always eager loaded. Others can be added to the eagerLoad array of the model.
-   *
-   * @param {Model} model The base model
-   * @param {Field} field Relation field
-   * @param {Model} relatedModel Related model
-   * @returns {boolean}
-   */
-  private shouldEagerLoadRelation (model: Model, field: Field, relatedModel: Model): boolean {
-    const context = Context.getInstance();
-
-    if (field instanceof context.components.HasOne || field instanceof context.components.BelongsTo) {
-      return true;
-    }
-
-    const eagerLoadList: Array<String> = model.baseModel.eagerLoad || [];
-    return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
-  }
-
-  private shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
+  private static shouldModelBeIgnored (model: Model, ignoreModels: Array<Model>): boolean {
     return ignoreModels.find((m) => m.singularName === model.singularName) !== undefined;
   }
 }

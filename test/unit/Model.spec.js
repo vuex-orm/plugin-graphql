@@ -1,4 +1,4 @@
-import Model from 'app/model';
+import Model from 'app/orm/model';
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
 
 let model;

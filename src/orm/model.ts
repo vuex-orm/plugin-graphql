@@ -1,6 +1,6 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
-import { Field } from './interfaces';
-import Context from './context';
+import { Field } from '../support/interfaces';
+import Context from '../common/context';
 const inflection = require('inflection');
 
 /**
@@ -34,7 +34,7 @@ export default class Model {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
-      if (this.fieldIsAttribute(field) && !this.skipField(name)) {
+      if (this.isFieldAttribute(field) && !this.skipField(name)) {
         fields.push(name);
       }
     });
@@ -76,7 +76,7 @@ export default class Model {
     const relations = new Map<string, Field>();
 
     this.fields.forEach((field: Field, name: string) => {
-      if (!this.fieldIsAttribute(field)) {
+      if (!this.isFieldAttribute(field)) {
         relations.set(name, field);
       }
     });
@@ -90,7 +90,7 @@ export default class Model {
    * @param {string} name
    * @returns {boolean}
    */
-  public isTypeFieldOfPolymorphRelation (name: string): boolean {
+  public isTypeFieldOfPolymorphicRelation (name: string): boolean {
     let found: boolean = false;
 
     this.context.models.forEach((model) => {
@@ -122,13 +122,45 @@ export default class Model {
     return this.baseModel.query().withAllRecursive().where('id', id).first();
   }
 
-  public fieldIsNumber (field: Field | undefined): boolean {
+  public isFieldNumber (field: Field | undefined): boolean {
     if (!field) return false;
     return field instanceof this.context.components.Number ||
       field instanceof this.context.components.Increment;
   }
 
-  private fieldIsAttribute (field: Field): boolean {
+  /**
+   * Determines if we should eager load (means: add a query field) a related entity. belongsTo or hasOne related
+   * entities are always eager loaded. Others can be added to the eagerLoad array of the model.
+   *
+   * @param {Field} field Relation field
+   * @param {Model} relatedModel Related model
+   * @returns {boolean}
+   */
+  public shouldEagerLoadRelation (field: Field, relatedModel: Model): boolean {
+    const context = Context.getInstance();
+
+    if (field instanceof context.components.HasOne || field instanceof context.components.BelongsTo) {
+      return true;
+    }
+
+    const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
+    return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
+  }
+
+
+  public static augment (model: Model) {
+    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
+
+    model.baseModel.fields = () => {
+      const originalFields = originalFieldGenerator();
+
+      originalFields['$isPersisted'] = model.baseModel.boolean(false);
+
+      return originalFields;
+    };
+  }
+
+  private isFieldAttribute (field: Field): boolean {
     return field instanceof this.context.components.Increment ||
       field instanceof this.context.components.Attr ||
       field instanceof this.context.components.String ||

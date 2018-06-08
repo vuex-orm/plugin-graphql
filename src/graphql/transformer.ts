@@ -1,7 +1,7 @@
-import { Data, Field } from './interfaces';
-import Model from './model';
-import Context from './context';
-import { downcaseFirstLetter } from './utils';
+import { Data, Field } from '../support/interfaces';
+import Model from '../orm/model';
+import Context from '../common/context';
+import { downcaseFirstLetter } from '../support/utils';
 const inflection = require('inflection');
 
 export default class Transformer {
@@ -83,9 +83,9 @@ export default class Transformer {
 
               result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
             }
-          } else if (model.fieldIsNumber(model.fields.get(key))) {
+          } else if (model.isFieldNumber(model.fields.get(key))) {
             result[key] = parseFloat(data[key]);
-          } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphRelation(key)) {
+          } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphicRelation(key)) {
             result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
           } else {
             result[key] = data[key];

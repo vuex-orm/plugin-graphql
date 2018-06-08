@@ -1,4 +1,4 @@
-import Transformer from "../../src/transformer";
+import Transformer from "../../src/graphql/transformer";
 import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
 
 let store;

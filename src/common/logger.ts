@@ -1,7 +1,7 @@
-import QueryBuilder from './queryBuilder';
 import { DocumentNode } from 'graphql';
-import { Arguments } from './interfaces';
+import { Arguments } from '../support/interfaces';
 import { FetchPolicy } from 'apollo-client';
+import {prettify} from "../support/utils";
 
 export default class Logger {
   private readonly enabled: boolean;
@@ -51,9 +51,9 @@ export default class Logger {
       try {
         let prettified = '';
         if (typeof query === 'object' && query.loc) {
-          prettified = QueryBuilder.prettify(query.loc.source.body);
+          prettified = prettify(query.loc.source.body);
         } else {
-          prettified = QueryBuilder.prettify(query as string);
+          prettified = prettify(query as string);
         }
 
         this.group('Sending query:', prettified.split('\n')[1].replace('{', '').trim());

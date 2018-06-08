@@ -1,8 +1,9 @@
 import Logger from './logger';
-import Model from './model';
+import Model from '../orm/model';
 import ORMModel from '@vuex-orm/core/lib/model/Model';
 import { Components, Options } from '@vuex-orm/core/lib/plugins/use';
-import { downcaseFirstLetter } from './utils';
+import { downcaseFirstLetter } from '../support/utils';
+import Apollo from "../graphql/apollo";
 const inflection = require('inflection');
 
 export default class Context {
@@ -14,6 +15,7 @@ export default class Context {
   public readonly models: Map<string, Model> = new Map();
   public readonly debugMode: boolean = false;
   public readonly logger: Logger;
+  public apollo!: Apollo;
 
   /**
    * Private constructor, called by the setup method
@@ -31,15 +33,6 @@ export default class Context {
     if (!options.database) {
       throw new Error('database param is required to initialize vuex-orm-apollo!');
     }
-
-    this.collectModels();
-
-    this.logger.group('Context setup');
-    this.logger.log('components', this.components);
-    this.logger.log('options', this.options);
-    this.logger.log('database', this.database);
-    this.logger.log('models', this.models);
-    this.logger.groupEnd();
   }
 
   public static getInstance () {
@@ -48,6 +41,17 @@ export default class Context {
 
   public static setup (components: Components, options: Options) {
     this.instance = new Context(components, options);
+
+    this.instance.apollo = new Apollo();;
+    this.instance.collectModels();
+
+    this.instance.logger.group('Context setup');
+    this.instance.logger.log('components', this.instance.components);
+    this.instance.logger.log('options', this.instance.options);
+    this.instance.logger.log('database', this.instance.database);
+    this.instance.logger.log('models', this.instance.models);
+    this.instance.logger.groupEnd();
+
     return this.instance;
   }
 
@@ -68,6 +72,7 @@ export default class Context {
     return model;
   }
 
+
   /**
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
@@ -75,20 +80,7 @@ export default class Context {
     this.database.entities.forEach((entity: any) => {
       const model: Model = new Model(entity.model as ORMModel, this);
       this.models.set(model.singularName, model);
-
-      this.augmentModel(model);
+      Model.augment(model);
     });
-  }
-
-  private augmentModel (model: Model) {
-    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
-
-    model.baseModel.fields = () => {
-      const originalFields = originalFieldGenerator();
-
-      originalFields['$isPersisted'] = model.baseModel.boolean(false);
-
-      return originalFields;
-    };
   }
 }
