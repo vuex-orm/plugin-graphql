@@ -24,6 +24,7 @@ export interface ActionParams {
   id?: number;
   data?: Data;
   args?: Arguments;
+  variables?: Arguments;
   bypassCache?: boolean;
   query?: string;
 }

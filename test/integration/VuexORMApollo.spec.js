@@ -545,6 +545,96 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     });
   });
 
+
+  describe('simple mutation', () => {
+    it('sends my query to the api', async () => {
+      let result;
+
+      const response = {
+        data: {
+          sendSms: {
+            __typename: 'smsStatus',
+            delivered: true
+          }
+        }
+      };
+
+      const query = `
+mutation SendSms($to: string!, $text: string!) {
+  sendSms(to: $to, text: $text) {
+    delivered
+  }
+}`;
+
+      const request = await sendWithMockFetch(response, async () => {
+        result = await store.dispatch('entities/simpleMutation', {
+          query,
+          variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+        });
+      });
+
+      expect(request.variables).toEqual({ to: '+4912345678', text: 'GraphQL is awesome!' });
+      expect(result).toEqual({
+        sendSms: {
+          __typename: 'smsStatus',
+          delivered: true,
+        }
+      });
+      expect(request.query).toEqual(`
+mutation SendSms($to: string!, $text: string!) {
+  sendSms(to: $to, text: $text) {
+    delivered
+    __typename
+  }
+}
+      `.trim() + "\n");
+    });
+  });
+
+
+  describe('simple query', () => {
+    it('sends my query to the api', async () => {
+      let result;
+
+      const response = {
+        data: {
+          __typename: 'status',
+          backend: true,
+          smsGateway: false,
+          paypalIntegration: true
+        }
+      };
+
+      const query = `
+query status {
+  backend
+  smsGateway
+  paypalIntegration
+}`;
+
+      const request = await sendWithMockFetch(response, async () => {
+        result = await store.dispatch('entities/simpleQuery', { query, variables: {} });
+      });
+
+      const idSymbol = Object.getOwnPropertySymbols(result)[0];
+
+      expect(result).toEqual({
+        backend: true,
+        smsGateway: false,
+        paypalIntegration: true,
+        [idSymbol]: "ROOT_QUERY"
+      });
+      expect(request.query).toEqual(`
+query status {
+  backend
+  smsGateway
+  paypalIntegration
+}
+      `.trim() + "\n");
+    });
+  });
+
+
   describe('$isPersisted', () => {
     it('is false for newly created records', async () => {
       const insertedData = await User.insert({ data: { name: 'Snoopy' }} );

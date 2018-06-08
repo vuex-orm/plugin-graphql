@@ -3,6 +3,8 @@ import Context from './common/context';
 import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { Destroy, Fetch, Mutate, Persist, Push } from './actions';
 import Query from './actions/query';
+import SimpleQuery from './actions/simple-query';
+import SimpleMutation from './actions/simple-mutation';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -24,6 +26,9 @@ export default class VuexORMApollo {
    */
   private static setupActions () {
     const context = Context.getInstance();
+
+    context.components.rootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+    context.components.rootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
 
     context.components.subActions.fetch = Fetch.call.bind(Fetch);
     context.components.subActions.persist = Persist.call.bind(Persist);

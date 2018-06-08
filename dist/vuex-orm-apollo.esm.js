@@ -9464,191 +9464,6 @@ var Transformer = /** @class */ (function () {
     return Transformer;
 }());
 
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-/**
- * This class takes care of the communication with the graphql endpoint by leveraging the awesome apollo-client lib.
- */
-var Apollo = /** @class */ (function () {
-    /**
-     * @constructor
-     */
-    function Apollo() {
-        var context = Context.getInstance();
-        this.httpLink = new HttpLink({
-            uri: context.options.url ? context.options.url : '/graphql',
-            credentials: context.options.credentials ? context.options.credentials : 'same-origin',
-            headers: context.options.headers ? context.options.headers : {},
-            useGETForQueries: Boolean(context.options.useGETForQueries)
-        });
-        this.apolloClient = new ApolloClient({
-            link: this.httpLink,
-            cache: new InMemoryCache(),
-            connectToDevTools: context.debugMode
-        });
-    }
-    /**
-     * Sends a request to the GraphQL API via apollo
-     * @param model
-     * @param {any} query The query to send (result from gql())
-     * @param {Arguments} variables Optional. The variables to send with the query
-     * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
-     * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
-     * @returns {Promise<Data>} The new records
-     */
-    Apollo.prototype.request = function (model, query, variables, mutation, bypassCache) {
-        if (mutation === void 0) { mutation = false; }
-        if (bypassCache === void 0) { bypassCache = false; }
-        return __awaiter(this, void 0, void 0, function () {
-            var fetchPolicy, response;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-                        Context.getInstance().logger.logQuery(query, variables, fetchPolicy);
-                        if (!mutation) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
-                    case 1:
-                        response = _a.sent();
-                        return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, this.apolloClient.query({ query: query, variables: variables, fetchPolicy: fetchPolicy })];
-                    case 3:
-                        response = _a.sent();
-                        _a.label = 4;
-                    case 4: 
-                    // Transform incoming data into something useful
-                    return [2 /*return*/, Transformer.transformIncomingData(response.data, model, mutation)];
-                }
-            });
-        });
-    };
-    return Apollo;
-}());
-
-var inflection$2 = require('inflection');
-/**
- * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
- *
- * It's a singleton class, so just call Context.getInstance() anywhere you need the context.
- */
-var Context = /** @class */ (function () {
-    /**
-     * Private constructor, called by the setup method
-     *
-     * @constructor
-     * @param {Components} components The Vuex-ORM Components collection
-     * @param {Options} options The options passed to VuexORM.install
-     */
-    function Context(components, options) {
-        /**
-         * Collection of all Vuex-ORM models wrapped in a Model instance.
-         * @type {Map<any, any>}
-         */
-        this.models = new Map();
-        /**
-         * When true, the logging is enabled.
-         * @type {boolean}
-         */
-        this.debugMode = false;
-        this.components = components;
-        this.options = options;
-        this.database = options.database;
-        this.debugMode = options.debug;
-        this.logger = new Logger(this.debugMode);
-        if (!options.database) {
-            throw new Error('database param is required to initialize vuex-orm-apollo!');
-        }
-    }
-    /**
-     * Get the singleton instance of the context.
-     * @returns {Context}
-     */
-    Context.getInstance = function () {
-        return this.instance;
-    };
-    /**
-     * This is called only once and creates a new instance of the Context.
-     * @param {Components} components The Vuex-ORM Components collection
-     * @param {Options} options The options passed to VuexORM.install
-     * @returns {Context}
-     */
-    Context.setup = function (components, options) {
-        this.instance = new Context(components, options);
-        this.instance.apollo = new Apollo();
-        this.instance.collectModels();
-        this.instance.logger.group('Context setup');
-        this.instance.logger.log('components', this.instance.components);
-        this.instance.logger.log('options', this.instance.options);
-        this.instance.logger.log('database', this.instance.database);
-        this.instance.logger.log('models', this.instance.models);
-        this.instance.logger.groupEnd();
-        return this.instance;
-    };
-    /**
-     * Returns a model from the model collection by it's name
-     *
-     * @param {Model|string} model A Model instance, a singular or plural name of the model
-     * @param {boolean} allowNull When true this method returns null instead of throwing an exception when no model was
-     *                            found. Default is false
-     * @returns {Model}
-     */
-    Context.prototype.getModel = function (model, allowNull) {
-        if (allowNull === void 0) { allowNull = false; }
-        if (typeof model === 'string') {
-            var name_1 = inflection$2.singularize(downcaseFirstLetter(model));
-            model = this.models.get(name_1);
-            if (!allowNull && !model)
-                throw new Error("No such model " + name_1 + "!");
-        }
-        return model;
-    };
-    /**
-     * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
-     */
-    Context.prototype.collectModels = function () {
-        var _this = this;
-        this.database.entities.forEach(function (entity) {
-            var model = new Model(entity.model);
-            _this.models.set(model.singularName, model);
-            Model.augment(model);
-        });
-    };
-    return Context;
-}());
-
 var parse = parser.parse;
 
 // Strip insignificant whitespace
@@ -9828,6 +9643,208 @@ gql.disableExperimentalFragmentVariables = disableExperimentalFragmentVariables;
 
 var src = gql;
 
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+/**
+ * This class takes care of the communication with the graphql endpoint by leveraging the awesome apollo-client lib.
+ */
+var Apollo = /** @class */ (function () {
+    /**
+     * @constructor
+     */
+    function Apollo() {
+        var context = Context.getInstance();
+        this.httpLink = new HttpLink({
+            uri: context.options.url ? context.options.url : '/graphql',
+            credentials: context.options.credentials ? context.options.credentials : 'same-origin',
+            headers: context.options.headers ? context.options.headers : {},
+            useGETForQueries: Boolean(context.options.useGETForQueries)
+        });
+        this.apolloClient = new ApolloClient({
+            link: this.httpLink,
+            cache: new InMemoryCache(),
+            connectToDevTools: context.debugMode
+        });
+    }
+    /**
+     * Sends a request to the GraphQL API via apollo
+     * @param model
+     * @param {any} query The query to send (result from gql())
+     * @param {Arguments} variables Optional. The variables to send with the query
+     * @param {boolean} mutation Optional. If this is a mutation (true) or a query (false, default)
+     * @param {boolean} bypassCache If true the query will be send to the server without using the cache. For queries only
+     * @returns {Promise<Data>} The new records
+     */
+    Apollo.prototype.request = function (model, query, variables, mutation, bypassCache) {
+        if (mutation === void 0) { mutation = false; }
+        if (bypassCache === void 0) { bypassCache = false; }
+        return __awaiter(this, void 0, void 0, function () {
+            var fetchPolicy, response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
+                        Context.getInstance().logger.logQuery(query, variables, fetchPolicy);
+                        if (!mutation) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
+                    case 1:
+                        response = _a.sent();
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, this.apolloClient.query({ query: query, variables: variables, fetchPolicy: fetchPolicy })];
+                    case 3:
+                        response = _a.sent();
+                        _a.label = 4;
+                    case 4: 
+                    // Transform incoming data into something useful
+                    return [2 /*return*/, Transformer.transformIncomingData(response.data, model, mutation)];
+                }
+            });
+        });
+    };
+    Apollo.prototype.simpleQuery = function (query, variables, bypassCache) {
+        if (bypassCache === void 0) { bypassCache = false; }
+        return __awaiter(this, void 0, void 0, function () {
+            var fetchPolicy;
+            return __generator(this, function (_a) {
+                fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
+                return [2 /*return*/, this.apolloClient.query({ query: src(query), variables: variables, fetchPolicy: fetchPolicy })];
+            });
+        });
+    };
+    Apollo.prototype.simpleMutation = function (query, variables) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this.apolloClient.mutate({ mutation: src(query), variables: variables })];
+            });
+        });
+    };
+    return Apollo;
+}());
+
+var inflection$2 = require('inflection');
+/**
+ * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
+ *
+ * It's a singleton class, so just call Context.getInstance() anywhere you need the context.
+ */
+var Context = /** @class */ (function () {
+    /**
+     * Private constructor, called by the setup method
+     *
+     * @constructor
+     * @param {Components} components The Vuex-ORM Components collection
+     * @param {Options} options The options passed to VuexORM.install
+     */
+    function Context(components, options) {
+        /**
+         * Collection of all Vuex-ORM models wrapped in a Model instance.
+         * @type {Map<any, any>}
+         */
+        this.models = new Map();
+        /**
+         * When true, the logging is enabled.
+         * @type {boolean}
+         */
+        this.debugMode = false;
+        this.components = components;
+        this.options = options;
+        this.database = options.database;
+        this.debugMode = Boolean(options.debug);
+        this.logger = new Logger(this.debugMode);
+        if (!options.database) {
+            throw new Error('database param is required to initialize vuex-orm-apollo!');
+        }
+    }
+    /**
+     * Get the singleton instance of the context.
+     * @returns {Context}
+     */
+    Context.getInstance = function () {
+        return this.instance;
+    };
+    /**
+     * This is called only once and creates a new instance of the Context.
+     * @param {Components} components The Vuex-ORM Components collection
+     * @param {Options} options The options passed to VuexORM.install
+     * @returns {Context}
+     */
+    Context.setup = function (components, options) {
+        this.instance = new Context(components, options);
+        this.instance.apollo = new Apollo();
+        this.instance.collectModels();
+        this.instance.logger.group('Context setup');
+        this.instance.logger.log('components', this.instance.components);
+        this.instance.logger.log('options', this.instance.options);
+        this.instance.logger.log('database', this.instance.database);
+        this.instance.logger.log('models', this.instance.models);
+        this.instance.logger.groupEnd();
+        return this.instance;
+    };
+    /**
+     * Returns a model from the model collection by it's name
+     *
+     * @param {Model|string} model A Model instance, a singular or plural name of the model
+     * @param {boolean} allowNull When true this method returns null instead of throwing an exception when no model was
+     *                            found. Default is false
+     * @returns {Model}
+     */
+    Context.prototype.getModel = function (model, allowNull) {
+        if (allowNull === void 0) { allowNull = false; }
+        if (typeof model === 'string') {
+            var name_1 = inflection$2.singularize(downcaseFirstLetter(model));
+            model = this.models.get(name_1);
+            if (!allowNull && !model)
+                throw new Error("No such model " + name_1 + "!");
+        }
+        return model;
+    };
+    /**
+     * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
+     */
+    Context.prototype.collectModels = function () {
+        var _this = this;
+        this.database.entities.forEach(function (entity) {
+            var model = new Model(entity.model);
+            _this.models.set(model.singularName, model);
+            Model.augment(model);
+        });
+    };
+    return Context;
+}());
+
 /**
  * Contains all logic to build GraphQL queries/mutations.
  */
@@ -9849,14 +9866,15 @@ var QueryBuilder = /** @class */ (function () {
      *
      * @todo Do we need the allowIdFields param?
      */
-    QueryBuilder.buildField = function (model, multiple, args, ignoreModels, name, allowIdFields) {
+    QueryBuilder.buildField = function (model, multiple, args, ignoreModels, name, filter, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
         if (ignoreModels === void 0) { ignoreModels = []; }
+        if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = false; }
         var context = Context.getInstance();
         model = context.getModel(model);
         ignoreModels.push(model);
-        var params = this.buildArguments(model, args, false, multiple, allowIdFields);
+        var params = this.buildArguments(model, args, false, filter, allowIdFields);
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreModels) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
@@ -9873,9 +9891,10 @@ var QueryBuilder = /** @class */ (function () {
      * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
      * @param {Arguments} args Arguments for the query
      * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
+     * @param {boolean} filter When true the query arguments are passed via a filter object.
      * @returns {any} Whatever gql() returns
      */
-    QueryBuilder.buildQuery = function (type, model, name, args, multiple) {
+    QueryBuilder.buildQuery = function (type, model, name, args, multiple, filter) {
         var context = Context.getInstance();
         // model
         model = context.getModel(model);
@@ -9897,7 +9916,7 @@ var QueryBuilder = /** @class */ (function () {
             name = (multiple ? model.pluralName : model.singularName);
         // build query
         var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, false) + " {\n" +
-            ("  " + this.buildField(model, multiple, args, [], name, true) + "\n") +
+            ("  " + this.buildField(model, multiple, args, [], name, filter, true) + "\n") +
             "}";
         return src(query);
     };
@@ -10035,7 +10054,7 @@ var QueryBuilder = /** @class */ (function () {
                 !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
                 var multiple = !(field instanceof context.components.BelongsTo ||
                     field instanceof context.components.HasOne);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels, name));
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels, name, false));
             }
         });
         return relationQueries.join('\n');
@@ -10454,7 +10473,7 @@ var Fetch = /** @class */ (function (_super) {
                         bypassCache = params && params.bypassCache;
                         multiple = !filter['id'];
                         name = NameGenerator.getNameForFetch(model, multiple);
-                        query = QueryBuilder.buildQuery('query', model, name, filter, multiple);
+                        query = QueryBuilder.buildQuery('query', model, name, filter, multiple, multiple);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 1:
                         data = _b.sent();
@@ -10748,6 +10767,16 @@ var Push = /** @class */ (function (_super) {
     return Push;
 }(Action));
 
+var __extends$13 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -10757,6 +10786,246 @@ var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 var __generator$8 = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+/**
+ * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
+ */
+var Query = /** @class */ (function (_super) {
+    __extends$13(Query, _super);
+    function Query() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * @param {any} state The Vuex state
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {ActionParams} params Optional params to send with the query
+     * @returns {Promise<Data>} The fetched records as hash
+     */
+    Query.call = function (_a, params) {
+        var state = _a.state, dispatch = _a.dispatch;
+        return __awaiter$8(this, void 0, void 0, function () {
+            var context, model, filter, bypassCache, multiple, name_1, query, data;
+            return __generator$8(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!(params && params.query)) return [3 /*break*/, 2];
+                        context = Context.getInstance();
+                        model = this.getModelFromState(state);
+                        filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
+                        bypassCache = params && params.bypassCache;
+                        multiple = !filter['id'];
+                        name_1 = params.query;
+                        query = QueryBuilder.buildQuery('query', model, name_1, filter, multiple, false);
+                        return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
+                    case 1:
+                        data = _b.sent();
+                        // Insert incoming data into the store
+                        return [2 /*return*/, Store.insertData(data, dispatch)];
+                    case 2: throw new Error("The customQuery action requires the query name ('query') to be set");
+                }
+            });
+        });
+    };
+    return Query;
+}(Action));
+
+var __extends$14 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator$9 = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+/**
+ * SimpleQuery action for sending a model unrelated simple query.
+ */
+var SimpleQuery = /** @class */ (function (_super) {
+    __extends$14(SimpleQuery, _super);
+    function SimpleQuery() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {string} query The query to send
+     * @param {Arguments} variables
+     * @param {boolean} bypassCache Whether to bypass the cache
+     * @returns {Promise<any>} The result
+     */
+    SimpleQuery.call = function (_a, _b) {
+        var dispatch = _a.dispatch;
+        var query = _b.query, bypassCache = _b.bypassCache, variables = _b.variables;
+        return __awaiter$9(this, void 0, void 0, function () {
+            var result;
+            return __generator$9(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        if (!query) return [3 /*break*/, 2];
+                        variables = this.prepareArgs(variables);
+                        return [4 /*yield*/, Context.getInstance().apollo.simpleQuery(query, variables, bypassCache)];
+                    case 1:
+                        result = _c.sent();
+                        return [2 /*return*/, result.data];
+                    case 2: throw new Error("The simpleQuery action requires the 'query' to be set");
+                }
+            });
+        });
+    };
+    return SimpleQuery;
+}(Action));
+
+var __extends$15 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator$10 = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+/**
+ * SimpleMutation action for sending a model unrelated simple mutation.
+ */
+var SimpleMutation = /** @class */ (function (_super) {
+    __extends$15(SimpleMutation, _super);
+    function SimpleMutation() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {string} query The query to send
+     * @param {Arguments} variables
+     * @returns {Promise<any>} The result
+     */
+    SimpleMutation.call = function (_a, _b) {
+        var dispatch = _a.dispatch;
+        var query = _b.query, variables = _b.variables;
+        return __awaiter$10(this, void 0, void 0, function () {
+            var result;
+            return __generator$10(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        if (!query) return [3 /*break*/, 2];
+                        variables = this.prepareArgs(variables);
+                        return [4 /*yield*/, Context.getInstance().apollo.simpleMutation(query, variables)];
+                    case 1:
+                        result = _c.sent();
+                        return [2 /*return*/, result.data];
+                    case 2: throw new Error("The simpleMutation action requires the 'query' to be set");
+                }
+            });
+        });
+    };
+    return SimpleMutation;
+}(Action));
+
+var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator$11 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
@@ -10802,24 +11071,27 @@ var VuexORMApollo = /** @class */ (function () {
      */
     VuexORMApollo.setupActions = function () {
         var context = Context.getInstance();
+        context.components.rootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+        context.components.rootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
         context.components.subActions.fetch = Fetch.call.bind(Fetch);
         context.components.subActions.persist = Persist.call.bind(Persist);
         context.components.subActions.push = Push.call.bind(Push);
         context.components.subActions.destroy = Destroy.call.bind(Destroy);
         context.components.subActions.mutate = Mutate.call.bind(Mutate);
+        context.components.subActions.query = Query.call.bind(Query);
     };
     /**
-     * This method will setup following model methods: Model.fetch, Model.mutate, record.$mutate, record.$persist,
-     * record.$push, record.$destroy and record.$deleteAndDestroy
+     * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
+     * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
      */
     VuexORMApollo.setupModelMethods = function () {
         var context = Context.getInstance();
         // Register static model convenience methods
         context.components.Model.fetch = function (filter, bypassCache) {
             if (bypassCache === void 0) { bypassCache = false; }
-            return __awaiter$8(this, void 0, void 0, function () {
+            return __awaiter$11(this, void 0, void 0, function () {
                 var filterObj;
-                return __generator$8(this, function (_a) {
+                return __generator$11(this, function (_a) {
                     filterObj = filter;
                     if (typeof filterObj !== 'object')
                         filterObj = { id: filter };
@@ -10828,47 +11100,65 @@ var VuexORMApollo = /** @class */ (function () {
             });
         };
         context.components.Model.mutate = function (params) {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     return [2 /*return*/, this.dispatch('mutate', params)];
+                });
+            });
+        };
+        context.components.Model.customQuery = function (query, filter, bypassCache) {
+            if (bypassCache === void 0) { bypassCache = false; }
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
+                    return [2 /*return*/, this.dispatch('query', { query: query, filter: filter, bypassCache: bypassCache })];
                 });
             });
         };
         // Register model convenience methods
         var model = context.components.Model.prototype;
         model.$mutate = function (params) {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     if (!params['id'])
                         params['id'] = this.id;
                     return [2 /*return*/, this.$dispatch('mutate', params)];
                 });
             });
         };
+        model.$customQuery = function (query, filter, bypassCache) {
+            if (bypassCache === void 0) { bypassCache = false; }
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
+                    if (!filter['id'])
+                        filter['id'] = this.id;
+                    return [2 /*return*/, this.$dispatch('query', { query: query, filter: filter, bypassCache: bypassCache })];
+                });
+            });
+        };
         model.$persist = function (args) {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('persist', { id: this.id, args: args })];
                 });
             });
         };
         model.$push = function (args) {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('push', { data: this, args: args })];
                 });
             });
         };
         model.$destroy = function () {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('destroy', { id: this.id })];
                 });
             });
         };
         model.$deleteAndDestroy = function () {
-            return __awaiter$8(this, void 0, void 0, function () {
-                return __generator$8(this, function (_a) {
+            return __awaiter$11(this, void 0, void 0, function () {
+                return __generator$11(this, function (_a) {
                     switch (_a.label) {
                         case 0: return [4 /*yield*/, this.$delete()];
                         case 1:

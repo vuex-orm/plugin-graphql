@@ -5,6 +5,7 @@ import Context from '../common/context';
 import { Arguments, Data } from '../support/interfaces';
 import Transformer from './transformer';
 import Model from '../orm/model';
+import gql from 'graphql-tag';
 
 /**
  * This class takes care of the communication with the graphql endpoint by leveraging the awesome apollo-client lib.
@@ -66,5 +67,14 @@ export default class Apollo {
 
     // Transform incoming data into something useful
     return Transformer.transformIncomingData(response.data as Data, model, mutation);
+  }
+
+  public async simpleQuery (query: string, variables: Arguments, bypassCache: boolean = false): Promise<any> {
+    const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
+    return this.apolloClient.query({ query: gql(query), variables, fetchPolicy });
+  }
+
+  public async simpleMutation (query: string, variables: Arguments): Promise<any> {
+    return this.apolloClient.mutate({ mutation: gql(query), variables });
   }
 }
