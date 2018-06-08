@@ -9857,7 +9857,7 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Model|string} model The model to use
      * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
      * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
+     * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
      *                                    Mainly for recursion
      * @param {string} name Optional name of the field. If not provided, this will be the model name
      * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
@@ -9866,16 +9866,15 @@ var QueryBuilder = /** @class */ (function () {
      *
      * @todo Do we need the allowIdFields param?
      */
-    QueryBuilder.buildField = function (model, multiple, args, ignoreModels, name, filter, allowIdFields) {
+    QueryBuilder.buildField = function (model, multiple, args, ignoreRelations, name, filter, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
-        if (ignoreModels === void 0) { ignoreModels = []; }
+        if (ignoreRelations === void 0) { ignoreRelations = []; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = false; }
         var context = Context.getInstance();
         model = context.getModel(model);
-        ignoreModels.push(model);
         var params = this.buildArguments(model, args, false, filter, allowIdFields);
-        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreModels) + "\n    ";
+        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreRelations) + "\n    ";
         if (multiple) {
             return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
         }
@@ -10026,14 +10025,12 @@ var QueryBuilder = /** @class */ (function () {
      * Generates the fields for all related models.
      *
      * @param {Model} model
-     * @param {Array<Model>} ignoreModels The models in this list are ignored (while traversing relations).
+     * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
      * @returns {string}
-     *
-     * @todo https://github.com/vuex-orm/vuex-orm-apollo/issues/13
      */
-    QueryBuilder.buildRelationsQuery = function (model, ignoreModels) {
+    QueryBuilder.buildRelationsQuery = function (model, ignoreRelations) {
         var _this = this;
-        if (ignoreModels === void 0) { ignoreModels = []; }
+        if (ignoreRelations === void 0) { ignoreRelations = []; }
         if (model === null)
             return '';
         var context = Context.getInstance();
@@ -10051,22 +10048,25 @@ var QueryBuilder = /** @class */ (function () {
                 context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
             }
             if (model.shouldEagerLoadRelation(field, relatedModel) &&
-                !_this.shouldModelBeIgnored(relatedModel, ignoreModels)) {
+                !_this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
                 var multiple = !(field instanceof context.components.BelongsTo ||
                     field instanceof context.components.HasOne);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreModels, name, false));
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
+                ignoreRelations.push(model.singularName + "." + relatedModel.singularName);
             }
         });
         return relationQueries.join('\n');
     };
     /**
-     * Tells if a model should be ignored because it's included in the ignoreModels array.
+     * Tells if a relation should be ignored because it's included in the ignoreRelations array.
      * @param {Model} model
-     * @param {Array<Model>} ignoreModels
+     * @param {Model} relatedModel
+     * @param {Array<string>} ignoreRelations
      * @returns {boolean}
      */
-    QueryBuilder.shouldModelBeIgnored = function (model, ignoreModels) {
-        return ignoreModels.find(function (m) { return m.singularName === model.singularName; }) !== undefined;
+    QueryBuilder.shouldRelationBeIgnored = function (model, relatedModel, ignoreRelations) {
+        var relevantRelation = model.singularName + "." + relatedModel.singularName;
+        return ignoreRelations.find(function (r) { return r === relevantRelation; }) !== undefined;
     };
     return QueryBuilder;
 }());

@@ -27,7 +27,12 @@ describe('VuexORMApollo', () => {
                 id: 15,
                 content: 'Works!',
                 subjectId: 42,
-                subjectType: 'Post'
+                subjectType: 'Post',
+                user: {
+                  __typename: 'user',
+                  id: 2,
+                  name: 'Charly Brown'
+                }
               }]
             },
             user: {
@@ -63,6 +68,11 @@ query Post($id: ID!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+          __typename
+        }
         __typename
       }
       __typename
@@ -229,7 +239,12 @@ query Users {
                 id: 15,
                 content: 'Works!',
                 subjectId: 42,
-                subjectType: 'Post'
+                subjectType: 'Post',
+                user: {
+                  __typename: 'user',
+                  id: 2,
+                  name: 'Charly Brown'
+                }
               }]
             },
             user: {
@@ -281,6 +296,11 @@ mutation CreatePost($post: PostInput!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+          __typename
+        }
         __typename
       }
       __typename
@@ -411,6 +431,11 @@ query UnpublishedPosts($userId: ID!) {
           content
           subjectId
           subjectType
+          user {
+            id
+            name
+            __typename
+          }
           __typename
         }
         __typename
@@ -472,6 +497,11 @@ query Example($userId: ID!, $id: ID!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+          __typename
+        }
         __typename
       }
       __typename
@@ -534,6 +564,11 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+          __typename
+        }
         __typename
       }
       __typename

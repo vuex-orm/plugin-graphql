@@ -74,6 +74,10 @@ query test {
       content
       subjectId
       subjectType
+      user {
+        id
+        name
+      }
     }
   }
 }
@@ -128,6 +132,10 @@ query Posts($title: String!) {
           content
           subjectId
           subjectType
+          user {
+            id
+            name
+          }
         }
       }
     }
@@ -161,6 +169,10 @@ mutation CreatePost($post: PostInput!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+        }
       }
     }
   }
@@ -193,6 +205,10 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
         content
         subjectId
         subjectType
+        user {
+          id
+          name
+        }
       }
     }
   }
