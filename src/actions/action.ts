@@ -21,13 +21,12 @@ export default class Action {
    * @param {Data | undefined} variables Variables to send with the mutation
    * @param {Function} dispatch Vuex Dispatch method for the model
    * @param {Model} model The model this mutation affects.
+   * @param {boolean} multiple Tells if we're requesting a single record or multiple.
    * @returns {Promise<any>}
    */
   protected static async mutation (name: string, variables: Data | undefined, dispatch: DispatchFunction,
-                                   model: Model): Promise<any> {
+                                   model: Model, multiple: boolean = false): Promise<any> {
     if (variables) {
-      // FIXME for custom mutations multiple could be true. Maybe check for an ID?
-      const multiple = false;
       const query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation

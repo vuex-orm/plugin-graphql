@@ -10232,16 +10232,17 @@ var Action = /** @class */ (function () {
      * @param {Data | undefined} variables Variables to send with the mutation
      * @param {Function} dispatch Vuex Dispatch method for the model
      * @param {Model} model The model this mutation affects.
+     * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    Action.mutation = function (name, variables, dispatch, model) {
+    Action.mutation = function (name, variables, dispatch, model, multiple) {
+        if (multiple === void 0) { multiple = false; }
         return __awaiter$2(this, void 0, void 0, function () {
-            var multiple, query, newData, insertedData;
+            var query, newData, insertedData;
             return __generator$2(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (!variables) return [3 /*break*/, 4];
-                        multiple = false;
                         query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
                         return [4 /*yield*/, Context.getInstance().apollo.request(model, query, variables, true)];
                     case 1:
@@ -10559,7 +10560,7 @@ var Mutate = /** @class */ (function (_super) {
                 // transformOutgoingData()
                 this.transformArgs(args);
                 // Send the mutation
-                return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model)];
+                return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model, !args['id'])];
             });
         });
     };
@@ -10742,6 +10743,7 @@ var Push = /** @class */ (function (_super) {
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {Arguments} data New data to save
+     * @param {Arguments} args Additional arguments
      * @returns {Promise<Data>} The updated record
      */
     Push.call = function (_a, _b) {

@@ -21,6 +21,6 @@ export default class Mutate extends Action {
     this.transformArgs(args);
 
     // Send the mutation
-    return Action.mutation(mutationName, args, dispatch, model);
+    return Action.mutation(mutationName, args, dispatch, model, !args['id']);
   }
 }

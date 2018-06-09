@@ -10,6 +10,7 @@ export default class Push extends Action {
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {Arguments} data New data to save
+   * @param {Arguments} args Additional arguments
    * @returns {Promise<Data>} The updated record
    */
   public static async call ({ state, dispatch }: ActionParams, { data, args }: ActionParams): Promise<Data> {
