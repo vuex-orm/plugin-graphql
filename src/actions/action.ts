@@ -39,7 +39,7 @@ export default class Action {
 
         // Try to find the record to return
         if (insertedData[model.pluralName] && insertedData[model.pluralName][0]) {
-          return insertedData[model.pluralName][0];
+          return insertedData[model.pluralName][insertedData[model.pluralName].length - 1];
         } else {
           Context.getInstance().logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData,
             '. Fallback to find()');
