@@ -2,7 +2,6 @@ import QueryBuilder from '../graphql/query-builder';
 import Context from '../common/context';
 import { Store } from '../orm/store';
 import { Arguments, Data, DispatchFunction } from '../support/interfaces';
-import { upcaseFirstLetter } from '../support/utils';
 import Model from '../orm/model';
 import State from '@vuex-orm/core/lib/modules/State';
 import Transformer from '../graphql/transformer';
@@ -37,11 +36,13 @@ export default class Action {
         const insertedData: Data = await Store.insertData(newData, dispatch);
 
         // Try to find the record to return
-        if (insertedData[model.pluralName] && insertedData[model.pluralName][0]) {
-          return insertedData[model.pluralName][insertedData[model.pluralName].length - 1];
+        const records = insertedData[model.pluralName];
+        const newRecord = records[records.length - 1];
+        if (newRecord) {
+          return newRecord;
         } else {
-          Context.getInstance().logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData,
-            '. Fallback to find()');
+          Context.getInstance().logger.log("Couldn't find the record of type '", model.pluralName, "' within",
+            insertedData, '. Falling back to find()');
           return model.baseModel.query().last();
         }
       }

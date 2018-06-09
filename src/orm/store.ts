@@ -15,7 +15,7 @@ export class Store {
   public static async insertData (data: Data, dispatch: DispatchFunction): Promise<Data> {
     let insertedData: Data = {};
 
-    Object.keys(data).forEach(async (key) => {
+    await Promise.all(Object.keys(data).map(async (key) => {
       const value = data[key];
       Context.getInstance().logger.log('Inserting records', value);
       const newData = await dispatch('insertOrUpdate', { data:  value });
@@ -24,7 +24,7 @@ export class Store {
         if (!insertedData[dataKey]) insertedData[dataKey] = [];
         insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
       });
-    });
+    }));
 
     return insertedData;
   }

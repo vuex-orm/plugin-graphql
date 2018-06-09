@@ -28,7 +28,7 @@ export default class Persist extends Action {
       const newRecord = await Action.mutation(mutationName, args, dispatch, model);
 
       // Delete the old record if necessary
-      await this.deleteObsoleteRecord(model, oldRecord);
+      await this.deleteObsoleteRecord(model, newRecord, oldRecord);
 
       return newRecord;
     } else {
@@ -39,19 +39,15 @@ export default class Persist extends Action {
   /**
    * It's very likely that the server generated different ID for this record.
    * In this case Action.mutation has inserted a new record instead of updating the existing one.
-   * We can see that because $isPersisted is still false then. In this case we just delete the old record.
    *
    * @param {Model} model
    * @param {Data} record
    * @returns {Promise<void>}
    */
-  private static async deleteObsoleteRecord (model: Model, record: Data) {
-    if (record && !record.$isPersisted) {
-      // The server generated another ID, this is very likely to happen.
-      // in this case Action.mutation has inserted a new record instead of updating the existing one.
-      // We can see that because $isPersisted is still false then.
-      Context.getInstance().logger.log('Dropping deprecated record with ID', record.id);
-      await model.baseModel.delete({ where: record.id });
+  private static async deleteObsoleteRecord (model: Model, newRecord: Data, oldRecord: Data) {
+    if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
+      Context.getInstance().logger.log('Dropping deprecated record', oldRecord);
+      return oldRecord.$delete();
     }
   }
 }

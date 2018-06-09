@@ -10126,27 +10126,32 @@ var Store = /** @class */ (function () {
             var _this = this;
             var insertedData;
             return __generator$1(this, function (_a) {
-                insertedData = {};
-                Object.keys(data).forEach(function (key) { return __awaiter$1(_this, void 0, void 0, function () {
-                    var value, newData;
-                    return __generator$1(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                value = data[key];
-                                Context.getInstance().logger.log('Inserting records', value);
-                                return [4 /*yield*/, dispatch('insertOrUpdate', { data: value })];
-                            case 1:
-                                newData = _a.sent();
-                                Object.keys(newData).forEach(function (dataKey) {
-                                    if (!insertedData[dataKey])
-                                        insertedData[dataKey] = [];
-                                    insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
+                switch (_a.label) {
+                    case 0:
+                        insertedData = {};
+                        return [4 /*yield*/, Promise.all(Object.keys(data).map(function (key) { return __awaiter$1(_this, void 0, void 0, function () {
+                                var value, newData;
+                                return __generator$1(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            value = data[key];
+                                            Context.getInstance().logger.log('Inserting records', value);
+                                            return [4 /*yield*/, dispatch('insertOrUpdate', { data: value })];
+                                        case 1:
+                                            newData = _a.sent();
+                                            Object.keys(newData).forEach(function (dataKey) {
+                                                if (!insertedData[dataKey])
+                                                    insertedData[dataKey] = [];
+                                                insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
+                                            });
+                                            return [2 /*return*/];
+                                    }
                                 });
-                                return [2 /*return*/];
-                        }
-                    });
-                }); });
-                return [2 /*return*/, insertedData];
+                            }); }))];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, insertedData];
+                }
             });
         });
     };
@@ -10238,7 +10243,7 @@ var Action = /** @class */ (function () {
     Action.mutation = function (name, variables, dispatch, model, multiple) {
         if (multiple === void 0) { multiple = false; }
         return __awaiter$2(this, void 0, void 0, function () {
-            var query, newData, insertedData;
+            var query, newData, insertedData, records, newRecord;
             return __generator$2(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -10251,12 +10256,13 @@ var Action = /** @class */ (function () {
                         return [4 /*yield*/, Store.insertData(newData, dispatch)];
                     case 2:
                         insertedData = _a.sent();
-                        // Try to find the record to return
-                        if (insertedData[model.pluralName] && insertedData[model.pluralName][0]) {
-                            return [2 /*return*/, insertedData[model.pluralName][insertedData[model.pluralName].length - 1]];
+                        records = insertedData[model.pluralName];
+                        newRecord = records[records.length - 1];
+                        if (newRecord) {
+                            return [2 /*return*/, newRecord];
                         }
                         else {
-                            Context.getInstance().logger.log("Couldn't find the record of type", model.pluralName, 'in', insertedData, '. Fallback to find()');
+                            Context.getInstance().logger.log("Couldn't find the record of type '", model.pluralName, "' within", insertedData, '. Falling back to find()');
                             return [2 /*return*/, model.baseModel.query().last()];
                         }
                         _a.label = 3;
@@ -10645,7 +10651,7 @@ var Persist = /** @class */ (function (_super) {
                     case 1:
                         newRecord = _c.sent();
                         // Delete the old record if necessary
-                        return [4 /*yield*/, this.deleteObsoleteRecord(model, oldRecord)];
+                        return [4 /*yield*/, this.deleteObsoleteRecord(model, newRecord, oldRecord)];
                     case 2:
                         // Delete the old record if necessary
                         _c.sent();
@@ -10658,28 +10664,19 @@ var Persist = /** @class */ (function (_super) {
     /**
      * It's very likely that the server generated different ID for this record.
      * In this case Action.mutation has inserted a new record instead of updating the existing one.
-     * We can see that because $isPersisted is still false then. In this case we just delete the old record.
      *
      * @param {Model} model
      * @param {Data} record
      * @returns {Promise<void>}
      */
-    Persist.deleteObsoleteRecord = function (model, record) {
+    Persist.deleteObsoleteRecord = function (model, newRecord, oldRecord) {
         return __awaiter$6(this, void 0, void 0, function () {
             return __generator$6(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(record && !record.$isPersisted)) return [3 /*break*/, 2];
-                        // The server generated another ID, this is very likely to happen.
-                        // in this case Action.mutation has inserted a new record instead of updating the existing one.
-                        // We can see that because $isPersisted is still false then.
-                        Context.getInstance().logger.log('Dropping deprecated record with ID', record.id);
-                        return [4 /*yield*/, model.baseModel.delete({ where: record.id })];
-                    case 1:
-                        _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/];
+                if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
+                    Context.getInstance().logger.log('Dropping deprecated record', oldRecord);
+                    return [2 /*return*/, oldRecord.$delete()];
                 }
+                return [2 /*return*/];
             });
         });
     };
