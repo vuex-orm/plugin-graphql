@@ -10551,22 +10551,32 @@ var Mutate = /** @class */ (function (_super) {
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
+     * @param {string} name Name of the query
+     * @param {boolean} multiple Fetch one or multiple?
      * @param {Arguments} args Arguments for the mutation. Must contain a 'mutation' field.
      * @returns {Promise<Data>} The new record if any
      */
-    Mutate.call = function (_a, args) {
+    Mutate.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
+        var args = _b.args, multiple = _b.multiple, name = _b.name;
         return __awaiter$5(this, void 0, void 0, function () {
-            var model, mutationName;
-            return __generator$5(this, function (_b) {
-                model = this.getModelFromState(state);
-                mutationName = args['mutation'];
-                delete args['mutation'];
-                // There could be anything in the args, but we have to be sure that all records are gone through
-                // transformOutgoingData()
-                this.transformArgs(args);
-                // Send the mutation
-                return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model, !args['id'])];
+            var model;
+            return __generator$5(this, function (_c) {
+                if (name) {
+                    model = this.getModelFromState(state);
+                    args = this.prepareArgs(args);
+                    // There could be anything in the args, but we have to be sure that all records are gone through
+                    // transformOutgoingData()
+                    this.transformArgs(args);
+                    if (multiple === undefined)
+                        multiple = !args['id'];
+                    // Send the mutation
+                    return [2 /*return*/, Action.mutation(name, args, dispatch, model, multiple)];
+                }
+                else {
+                    throw new Error("The mutate action requires the mutation name ('mutation') to be set");
+                }
+                return [2 /*return*/];
             });
         });
     };
@@ -10824,30 +10834,34 @@ var Query = /** @class */ (function (_super) {
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {ActionParams} params Optional params to send with the query
+     * @param {string} name Name of the query
+     * @param {boolean} multiple Fetch one or multiple?
+     * @param {object} filter Filter object (arguments)
+     * @param {boolean} bypassCache Whether to bypass the cache
      * @returns {Promise<Data>} The fetched records as hash
      */
-    Query.call = function (_a, params) {
+    Query.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
+        var name = _b.name, multiple = _b.multiple, filter = _b.filter, bypassCache = _b.bypassCache;
         return __awaiter$8(this, void 0, void 0, function () {
-            var context, model, filter, bypassCache, multiple, name_1, query, data;
-            return __generator$8(this, function (_b) {
-                switch (_b.label) {
+            var context, model, query, data;
+            return __generator$8(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        if (!(params && params.query)) return [3 /*break*/, 2];
+                        if (!name) return [3 /*break*/, 2];
                         context = Context.getInstance();
                         model = this.getModelFromState(state);
-                        filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
-                        bypassCache = params && params.bypassCache;
-                        multiple = !filter['id'];
-                        name_1 = params.query;
-                        query = QueryBuilder.buildQuery('query', model, name_1, filter, multiple, false);
+                        // Filter
+                        filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
+                        if (multiple === undefined)
+                            multiple = !filter['id'];
+                        query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 1:
-                        data = _b.sent();
+                        data = _c.sent();
                         // Insert incoming data into the store
                         return [2 /*return*/, Store.insertData(data, dispatch)];
-                    case 2: throw new Error("The customQuery action requires the query name ('query') to be set");
+                    case 2: throw new Error("The customQuery action requires the query name ('name') to be set");
                 }
             });
         });
@@ -11107,32 +11121,35 @@ var VuexORMApollo = /** @class */ (function () {
                 });
             });
         };
-        context.components.Model.customQuery = function (query, filter, bypassCache) {
-            if (bypassCache === void 0) { bypassCache = false; }
+        context.components.Model.customQuery = function (_a) {
+            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
             return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
-                    return [2 /*return*/, this.dispatch('query', { query: query, filter: filter, bypassCache: bypassCache })];
+                return __generator$11(this, function (_b) {
+                    return [2 /*return*/, this.dispatch('query', { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
                 });
             });
         };
         // Register model convenience methods
         var model = context.components.Model.prototype;
-        model.$mutate = function (params) {
+        model.$mutate = function (_a) {
+            var name = _a.name, args = _a.args, multiple = _a.multiple;
             return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
-                    if (!params['id'])
-                        params['id'] = this.id;
-                    return [2 /*return*/, this.$dispatch('mutate', params)];
+                return __generator$11(this, function (_b) {
+                    args = args || {};
+                    if (!args['id'])
+                        args['id'] = this.id;
+                    return [2 /*return*/, this.$dispatch('mutate', { name: name, args: args, multiple: multiple })];
                 });
             });
         };
-        model.$customQuery = function (query, filter, bypassCache) {
-            if (bypassCache === void 0) { bypassCache = false; }
+        model.$customQuery = function (_a) {
+            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
             return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+                return __generator$11(this, function (_b) {
+                    filter = filter || {};
                     if (!filter['id'])
                         filter['id'] = this.id;
-                    return [2 /*return*/, this.$dispatch('query', { query: query, filter: filter, bypassCache: bypassCache })];
+                    return [2 /*return*/, this.$dispatch('query', { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
                 });
             });
         };

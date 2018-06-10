@@ -1,4 +1,4 @@
-import { PatchedModel, Options } from './support/interfaces';
+import {PatchedModel, Options, ActionParams} from './support/interfaces';
 import Context from './common/context';
 import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { Destroy, Fetch, Mutate, Persist, Push } from './actions';
@@ -52,26 +52,27 @@ export default class VuexORMApollo {
       return this.dispatch('fetch', { filter: filterObj, bypassCache });
     };
 
-    (context.components.Model as (typeof PatchedModel)).mutate = async function (params: any) {
+    (context.components.Model as (typeof PatchedModel)).mutate = async function (params: ActionParams) {
       return this.dispatch('mutate', params);
     };
 
-    (context.components.Model as (typeof PatchedModel)).customQuery = async function (query: string, filter: any,
-                                                                                      bypassCache = false) {
-      return this.dispatch('query', { query, filter, bypassCache });
+    (context.components.Model as (typeof PatchedModel)).customQuery = async function ({ name, filter, multiple, bypassCache }: ActionParams) {
+      return this.dispatch('query', { name, filter, multiple, bypassCache });
     };
 
     // Register model convenience methods
     const model = context.components.Model.prototype;
 
-    model.$mutate = async function (params: any) {
-      if (!params['id']) params['id'] = this.id;
-      return this.$dispatch('mutate', params);
+    model.$mutate = async function ({ name, args, multiple }: ActionParams) {
+      args = args || {};
+      if (!args['id']) args['id'] = this.id;
+      return this.$dispatch('mutate', { name, args, multiple });
     };
 
-    model.$customQuery = async function (query: string, filter: any, bypassCache: boolean = false) {
+    model.$customQuery = async function ({ name, filter, multiple, bypassCache }: ActionParams) {
+      filter = filter || {};
       if (!filter['id']) filter['id'] = this.id;
-      return this.$dispatch('query', { query, filter, bypassCache });
+      return this.$dispatch('query', { name, filter, multiple, bypassCache });
     };
 
     model.$persist = async function (args: any) {

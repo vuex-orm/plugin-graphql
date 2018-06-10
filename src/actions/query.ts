@@ -13,22 +13,25 @@ export default class Query extends Action {
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-   * @param {ActionParams} params Optional params to send with the query
+   * @param {string} name Name of the query
+   * @param {boolean} multiple Fetch one or multiple?
+   * @param {object} filter Filter object (arguments)
+   * @param {boolean} bypassCache Whether to bypass the cache
    * @returns {Promise<Data>} The fetched records as hash
    */
-  public static async call ({ state, dispatch }: ActionParams, params?: ActionParams): Promise<Data> {
-    if (params && params.query) {
+  public static async call ({ state, dispatch }: ActionParams,
+                            { name, multiple, filter, bypassCache }: ActionParams): Promise<Data> {
+    if (name) {
       const context = Context.getInstance();
       const model = this.getModelFromState(state);
 
       // Filter
-      const filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
-      const bypassCache = params && params.bypassCache;
+      filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
 
-      // When the filter contains an id, we query in singular mode
-      const multiple: boolean = !filter['id'];
-      const name: string = params.query;
-      const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
+      if (multiple === undefined) multiple = !filter['id'];
+
+      // Build query
+      const query = QueryBuilder.buildQuery('query', model, name, filter,  multiple, false);
 
       // Send the request to the GraphQL API
       const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
@@ -36,7 +39,7 @@ export default class Query extends Action {
       // Insert incoming data into the store
       return Store.insertData(data, dispatch);
     } else {
-      throw new Error("The customQuery action requires the query name ('query') to be set");
+      throw new Error("The customQuery action requires the query name ('name') to be set");
     }
   }
 }

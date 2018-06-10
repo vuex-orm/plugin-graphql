@@ -26,13 +26,13 @@ method Vuex-ORM.
 
 ```javascript
 const post = Post.query().first();
-await post.$customQuery({ query: 'example' });
+await post.$customQuery({ name: 'example' });
 
 // is the same as
-await Post.customQuery({ query: 'example', id: post.id });
+await Post.customQuery({ name: 'example', filter: { id: post.id } });
 
 // or
-await Post.dispatch('query', { query: 'example', id: post.id });
+await Post.dispatch('query', { name: 'example', filter: { id: post.id } });
 ```
 
 As you can see you have to provide the query name and any further arguments you want to pass. In this case we send
@@ -73,6 +73,13 @@ Variables:
 Like for all other operations, all records which are returned replace the respective existing records in the Vuex-ORM
 database.
 
+Following fields are allowed:
+
+- `name`: Required. The name of the query.
+- `multiple`: Whether the query is of a connection type (multiple records are returned) or not (single record is returned).
+- `filter`: Hash map with filters. These are passed as a filter typed variable like in fetch.
+- `bypassCache`: Whether to bypass the caching.
+
 
 ## Model unrelated simple query
 
@@ -104,6 +111,12 @@ The result contains a hash which is shaped like the request:
 
 Nothing is inserted in the Vuex store.
 
+Following fields are allowed:
+
+- `query`: Required. The GraphQL query.
+- `variables`: Variables to pass
+- `bypassCache`: Whether to bypass the caching.
+
 
 ## Model related custom mutation
 
@@ -111,13 +124,13 @@ Along with the CRUD mutations you may want to send custom GraphQL mutations. We 
 
 ```javascript
 const post = Post.query().first();
-await post.$mutate({ mutation: 'upvotePost' });
+await post.$mutate({ name: 'upvotePost' });
 
 // is the same as
-await Post.mutate({ mutation: 'upvotePost', id: post.id });
+await Post.mutate({ name: 'upvotePost', args: { id: post.id } });
 
 // or
-await Post.dispatch('mutate', { mutation: 'upvotePost', id: post.id });
+await Post.dispatch('mutate', { name: 'upvotePost', args: { id: post.id } });
 ```
 
 As you can see you have to provide the mutation name and any further arguments you want to pass. In this case we send
@@ -160,6 +173,13 @@ Like for all other operations, all records which are returned replace the respec
 database.
 
 
+Following fields are allowed:
+
+- `name`: Required. The name of the mutation.
+- `multiple`: Whether the mutation is of a connection type (multiple records are returned) or not (single record is returned).
+- `args`: Hash map with arguments (variables).
+
+
 ## Model unrelated simple mutation
 
 Like simple custom queries, you can also send simple custom mutations. The action (`simpleQuery`) stays the same.
@@ -191,3 +211,23 @@ The result contains a hash which is shaped like the request:
 ```
 
 Nothing is inserted in the Vuex store.
+
+Following fields are allowed:
+
+- `query`: Required. The GraphQL mutation query.
+- `variables`: Hash map with variables to pass.
+
+
+## Multiple or single record
+
+Vuex-ORM-Apollo tries to determine automatically if a  single record or a connection (multiple records) is returned by
+a query/mutation via checking if a `id` field is set in the filter/args/variables. But sometimes you have a
+query/mutation without ID but it still returns a single record or vice versa. For this case you can manually set the
+`multiple` field to tell the plugin how the result is shaped:
+
+```javascript
+await Post.customQuery({ name: 'example', multiple: true, filter: { id: post.id } });
+```
+
+In future versions of this project this might be obsolete because it could consume and analyze the schema to know
+how the queries and mutations are shaped.

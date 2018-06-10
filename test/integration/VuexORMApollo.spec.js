@@ -407,7 +407,7 @@ mutation DeleteUser($id: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await Post.customQuery('unpublishedPosts', { userId: 2 });
+        await Post.customQuery({ name: 'unpublishedPosts', filter: { userId: 2 }});
       });
 
       expect(request.variables.userId).toEqual(2);
@@ -473,7 +473,7 @@ query UnpublishedPosts($userId: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await post.$customQuery('example', { userId: 2 });
+        await post.$customQuery({ name: 'example', filter: { userId: 2 } });
       });
 
       expect(request.variables.userId).toEqual(2);
@@ -540,7 +540,7 @@ query Example($userId: ID!, $id: ID!) {
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        await post.$mutate({ mutation: 'upvotePost', captchaToken: '15' });
+        await post.$mutate({ name: 'upvotePost', args: { captchaToken: '15' } });
       });
 
       expect(request.variables.captchaToken).toEqual('15');
