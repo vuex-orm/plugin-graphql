@@ -1,4 +1,4 @@
-import {PatchedModel, Options, ActionParams} from './support/interfaces';
+import { PatchedModel, Options, ActionParams } from './support/interfaces';
 import Context from './common/context';
 import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { Destroy, Fetch, Mutate, Persist, Push } from './actions';

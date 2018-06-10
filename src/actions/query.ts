@@ -31,7 +31,7 @@ export default class Query extends Action {
       if (multiple === undefined) multiple = !filter['id'];
 
       // Build query
-      const query = QueryBuilder.buildQuery('query', model, name, filter,  multiple, false);
+      const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
 
       // Send the request to the GraphQL API
       const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
