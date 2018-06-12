@@ -12,11 +12,12 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
+    "suppressImplicitAnyIndexErrors": true,
 
     "lib": [
       "esnext.asynciterable",
       "dom",
-      "es2015"
+      "es2017"
     ],
 
     "baseUrl": ".",
