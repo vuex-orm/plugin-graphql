@@ -1,12 +1,14 @@
 # Introduction
 
-This [Vuex-ORM](https://github.com/vuex-orm/vuex-orm) plugin uses the
-[apollo-client](https://www.apollographql.com/client/) to let you sync your Vuex-ORM database with your server via
-a [GraphQL API](http://graphql.org/).
+Vuex-ORM-GraphQL is a plugin for the amazing [Vuex-ORM](https://github.com/vuex-orm/vuex-orm), which brings
+Object-Relational Mapping access to the Vuex Store. Vuex-ORM-GraphQL enhances Vuex-ORM to let you sync your Vuex state
+via the Vuex-ORM models with your server via a [GraphQL API](http://graphql.org/).
 
-::: warning
-This plugin is in BETA stage, please use with care.
-:::
+The plugin will automatically generate GraphQL queries and mutations based on your model definitions and thus hides
+the specifics of Network Communication, GraphQL, Caching, De- and Serialization of your Data and so on from the
+developer. Getting a record of a model from the server is as easy as calling `Product.fetch()`. This allows you to write
+sophisticated Single-Page Applications fast and efficient without worrying about GraphQL.
+
 
 ::: warning
 You should have basic knowledge of [Vue](https://vuejs.org/), [Vuex](https://vuex.vuejs.org/) and
