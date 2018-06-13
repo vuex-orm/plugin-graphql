@@ -3,12 +3,12 @@
 [[toc]]
 
 With custom mutations and custom queries we distinguish between model related and model unrelated (simple) custom
-quries/mutations. The difference is that model related queries/mutations always are tied to a model, so Vuex-ORM-Apollo
+quries/mutations. The difference is that model related queries/mutations always are tied to a model, so Vuex-ORM-GraphQL
 expected that the query/mutation type is the same as the model. A model related custom mutation `upvotePost` is expected
 to be of type `Post`. To make this even clearer, all model related queries and mutations are called on a specific Model
 or a record of this model.
 
-A simple query or simple mutation is not tied to a model. And so Vuex-ORM-Apollo doesn't expect the result to be of a
+A simple query or simple mutation is not tied to a model. And so Vuex-ORM-GraphQL doesn't expect the result to be of a
 specific type. Also the return value is not automatically inserted in the Vuex store.
 
 
@@ -41,7 +41,7 @@ of the record into the arguments list. The plugin automatically determines if th
 record is requests by looking in the arguments hash if there is a `id` field and respectively setups the query.
 
 A model related custom query is always tied to the model, so the plugin expects the return value of the custom query
-is of the model type. In this example that means, that Vuex-ORM-Apollo expects that the `example` query is of type `Post`. 
+is of the model type. In this example that means, that Vuex-ORM-GraphQL expects that the `example` query is of type `Post`. 
 
 This generates the following query:
 
@@ -139,7 +139,7 @@ of the record into the arguments list. The plugin automatically determines if th
 record is requests by looking in the arguments hash if there is a `id` field and respectively setups the query.
 
 A model related custom mutation is always tied to the model, so the plugin expects the return value of the custom query
-is of the model type. In this example that means, that Vuex-ORM-Apollo expects that the `upvotePost` mutation is of type
+is of the model type. In this example that means, that Vuex-ORM-GraphQL expects that the `upvotePost` mutation is of type
 `Post`.
 
 This generates the following query:
@@ -220,7 +220,7 @@ Following fields are allowed:
 
 ## Multiple or single record
 
-Vuex-ORM-Apollo tries to determine automatically if a  single record or a connection (multiple records) is returned by
+Vuex-ORM-GraphQL tries to determine automatically if a  single record or a connection (multiple records) is returned by
 a query/mutation via checking if a `id` field is set in the filter/args/variables. But sometimes you have a
 query/mutation without ID but it still returns a single record or vice versa. For this case you can manually set the
 `multiple` field to tell the plugin how the result is shaped:

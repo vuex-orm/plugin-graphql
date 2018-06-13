@@ -9,7 +9,7 @@ import SimpleMutation from './actions/simple-mutation';
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
  */
-export default class VuexORMApollo {
+export default class VuexORMGraphQL {
   /**
    * @constructor
    * @param {Components} components The Vuex-ORM Components collection
@@ -17,8 +17,8 @@ export default class VuexORMApollo {
    */
   public constructor (components: Components, options: Options) {
     Context.setup(components, options);
-    VuexORMApollo.setupActions();
-    VuexORMApollo.setupModelMethods();
+    VuexORMGraphQL.setupActions();
+    VuexORMGraphQL.setupModelMethods();
   }
 
   /**

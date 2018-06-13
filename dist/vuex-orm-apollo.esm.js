@@ -3518,12 +3518,11 @@ var Logger = /** @class */ (function () {
          * Fancy Vuex-ORM-Apollo prefix for all log messages.
          * @type {string[]}
          */
-        this.PREFIX = process.env.NODE_ENV === 'test' ? ['[Vuex-ORM-Apollo]'] :
-            [
-                '%c Vuex-ORM: Apollo Plugin %c',
-                'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
-                'background: transparent;'
-            ];
+        this.PREFIX = [
+            '%c Vuex-ORM: GraphQL Plugin %c',
+            'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
+            'background: transparent;'
+        ];
         this.enabled = enabled;
         this.log('Logging is enabled.');
     }
@@ -3538,21 +3537,11 @@ var Logger = /** @class */ (function () {
             messages[_i] = arguments[_i];
         }
         if (this.enabled) {
-            if (process.env.NODE_ENV === 'test') {
-                if (console.group) {
-                    console.group.apply(console, this.PREFIX.concat(messages));
-                }
-                else {
-                    console.log.apply(console, this.PREFIX.concat(messages));
-                }
+            if (console.groupCollapsed) {
+                console.groupCollapsed.apply(console, this.PREFIX.concat(messages));
             }
             else {
-                if (console.groupCollapsed) {
-                    console.groupCollapsed.apply(console, this.PREFIX.concat(messages));
-                }
-                else {
-                    console.log.apply(console, this.PREFIX.concat(messages));
-                }
+                console.log.apply(console, this.PREFIX.concat(messages));
             }
         }
     };
@@ -9785,7 +9774,7 @@ var Context = /** @class */ (function () {
         this.debugMode = Boolean(options.debug);
         this.logger = new Logger(this.debugMode);
         if (!options.database) {
-            throw new Error('database param is required to initialize vuex-orm-apollo!');
+            throw new Error('database param is required to initialize vuex-orm-graphql!');
         }
     }
     /**
@@ -10123,8 +10112,8 @@ var Store = /** @class */ (function () {
      */
     Store.insertData = function (data, dispatch) {
         return __awaiter$1(this, void 0, void 0, function () {
-            var _this = this;
             var insertedData;
+            var _this = this;
             return __generator$1(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -11070,21 +11059,21 @@ var __generator$11 = (undefined && undefined.__generator) || function (thisArg, 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
  */
-var VuexORMApollo = /** @class */ (function () {
+var VuexORMGraphQL = /** @class */ (function () {
     /**
      * @constructor
      * @param {Components} components The Vuex-ORM Components collection
      * @param {Options} options The options passed to VuexORM.install
      */
-    function VuexORMApollo(components, options) {
+    function VuexORMGraphQL(components, options) {
         Context.setup(components, options);
-        VuexORMApollo.setupActions();
-        VuexORMApollo.setupModelMethods();
+        VuexORMGraphQL.setupActions();
+        VuexORMGraphQL.setupModelMethods();
     }
     /**
      * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
      */
-    VuexORMApollo.setupActions = function () {
+    VuexORMGraphQL.setupActions = function () {
         var context = Context.getInstance();
         context.components.rootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
         context.components.rootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
@@ -11099,7 +11088,7 @@ var VuexORMApollo = /** @class */ (function () {
      * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
      * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
      */
-    VuexORMApollo.setupModelMethods = function () {
+    VuexORMGraphQL.setupModelMethods = function () {
         var context = Context.getInstance();
         // Register static model convenience methods
         context.components.Model.fetch = function (filter, bypassCache) {
@@ -11187,29 +11176,29 @@ var VuexORMApollo = /** @class */ (function () {
             });
         };
     };
-    return VuexORMApollo;
+    return VuexORMGraphQL;
 }());
 
 /**
  * Plugin class. This just provides a static install method for Vuex-ORM and stores the instance of the model
  * within this.instance.
  */
-var VuexORMApolloPlugin = /** @class */ (function () {
-    function VuexORMApolloPlugin() {
+var VuexORMGraphQLPlugin = /** @class */ (function () {
+    function VuexORMGraphQLPlugin() {
     }
     /**
-     * This is called, when VuexORM.install(VuexOrmApollo, options) is called.
+     * This is called, when VuexORM.install(VuexOrmGraphQL, options) is called.
      *
      * @param {Components} components The Vuex-ORM Components collection
      * @param {Options} options The options passed to VuexORM.install
-     * @returns {VuexORMApollo}
+     * @returns {VuexORMGraphQL}
      */
-    VuexORMApolloPlugin.install = function (components, options) {
-        var plugin = new VuexORMApolloPlugin();
-        plugin.instance = new VuexORMApollo(components, options);
+    VuexORMGraphQLPlugin.install = function (components, options) {
+        var plugin = new VuexORMGraphQLPlugin();
+        plugin.instance = new VuexORMGraphQL(components, options);
         return plugin.instance;
     };
-    return VuexORMApolloPlugin;
+    return VuexORMGraphQLPlugin;
 }());
 
-export default VuexORMApolloPlugin;
+export default VuexORMGraphQLPlugin;

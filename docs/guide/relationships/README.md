@@ -2,7 +2,7 @@
 
 [[toc]]
 
-This chapter describes how the Apollo-Plugin interacts with relationships. All relationships work out of the box.
+This chapter describes how the GraphQL-Plugin interacts with relationships. All relationships work out of the box.
 We take the examples from the [Vuex-ORM documentation for definition relationships](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html)
 and show what GraphQL queries will be generated.
 

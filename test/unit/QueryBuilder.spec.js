@@ -5,11 +5,11 @@ import Context from "app/common/context";
 
 let context;
 let store;
-let vuexOrmApollo;
+let vuexOrmGraphQL;
 
 
 beforeEach(async () => {
-  [store, vuexOrmApollo] = await setupMockData();
+  [store, vuexOrmGraphQL] = await setupMockData();
   context = Context.getInstance();
 });
 

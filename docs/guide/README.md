@@ -24,7 +24,7 @@ You should have basic knowledge of [Vue](https://vuejs.org/), [Vuex](https://vue
 
 ## Actions
 
-While using Vuex-ORM with the Apollo plugin you have to distinct between two types of Vuex actions:
+While using Vuex-ORM with the GraphQL plugin you have to distinct between two types of Vuex actions:
 
 - Vuex-ORM actions: Retrieve data from or save data to Vuex (`Vue Component <--> Vuex Store`)
 - Persistence actions: Load data from or persist data to the GraphQL API (`Vuex Store <--> GraphQL Server`)
@@ -90,11 +90,11 @@ After [installing](/guide/setup) this plugin you can load data in your component
 ```
 
 ::: tip
-Vuex-ORM-Apollo works with the [Apollo Dev Tools](https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm)!
+Vuex-ORM-GraphQL works with the [Apollo Dev Tools](https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm)!
 :::
 
 
 ## License
 
-Vuex ORM Apollo is open-sourced software licensed under the
-[MIT license](https://github.com/phortx/vuex-orm-apollo/blob/master/LICENSE.md).
+Vuex-ORM-GraphQL is open-sourced software licensed under the
+[MIT license](https://github.com/phortx/vuex-orm-graphql/blob/master/LICENSE.md).

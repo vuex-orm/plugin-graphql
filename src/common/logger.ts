@@ -20,12 +20,11 @@ export default class Logger {
    * Fancy Vuex-ORM-Apollo prefix for all log messages.
    * @type {string[]}
    */
-  private PREFIX = process.env.NODE_ENV === 'test' ? ['[Vuex-ORM-Apollo]'] :
-    [
-      '%c Vuex-ORM: Apollo Plugin %c',
-      'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
-      'background: transparent;'
-    ];
+  private readonly PREFIX = [
+    '%c Vuex-ORM: GraphQL Plugin %c',
+    'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
+    'background: transparent;'
+  ];
 
   /**
    * @constructor
@@ -43,18 +42,10 @@ export default class Logger {
    */
   public group (...messages: Array<any>): void {
     if (this.enabled) {
-      if (process.env.NODE_ENV === 'test') {
-        if (console.group) {
-          console.group(...this.PREFIX, ...messages);
-        } else {
-          console.log(...this.PREFIX, ...messages);
-        }
+      if (console.groupCollapsed) {
+        console.groupCollapsed(...this.PREFIX, ...messages);
       } else {
-        if (console.groupCollapsed) {
-          console.groupCollapsed(...this.PREFIX, ...messages);
-        } else {
-          console.log(...this.PREFIX, ...messages);
-        }
+        console.log(...this.PREFIX, ...messages);
       }
     }
   }

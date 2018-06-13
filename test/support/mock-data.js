@@ -115,9 +115,9 @@ export class ContractOption extends ORMModel {
 
 
 export async function setupMockData() {
-  let store, vuexOrmApollo;
+  let store, vuexOrmGraphQL;
 
-  [store, vuexOrmApollo] = createStore([
+  [store, vuexOrmGraphQL] = createStore([
     { model: User },
     { model: Post },
     { model: Video },
@@ -136,5 +136,5 @@ export async function setupMockData() {
   await Comment.insert({ data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
   await Comment.insert({ data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});
 
-  return [store, vuexOrmApollo];
+  return [store, vuexOrmGraphQL];
 }

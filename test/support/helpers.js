@@ -3,7 +3,7 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import VuexORM, { Database, Model } from '@vuex-orm/core';
 import fetchMock from 'fetch-mock';
-import VuexORMApolloPlugin from "app";
+import VuexORMGraphQLPlugin from "app";
 
 Vue.use(Vuex);
 
@@ -24,13 +24,13 @@ export function createStore (entities) {
     database.register(entity.model, entity.module || {})
   });
 
-  VuexORM.use(VuexORMApolloPlugin, { database: database });
+  VuexORM.use(VuexORMGraphQLPlugin, { database: database });
 
   const store = new Vuex.Store({
     plugins: [VuexORM.install(database)]
   });
 
-  return [store, VuexORMApolloPlugin.instance];
+  return [store, VuexORMGraphQLPlugin.instance];
 }
 
 

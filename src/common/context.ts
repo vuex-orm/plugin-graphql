@@ -51,7 +51,7 @@ export default class Context {
   public readonly debugMode: boolean = false;
 
   /**
-   * Our nice Vuex-ORM-Apollo logger
+   * Our nice Vuex-ORM-GraphQL logger
    * @type {Logger}
    */
   public readonly logger: Logger;
@@ -77,7 +77,7 @@ export default class Context {
     this.logger = new Logger(this.debugMode);
 
     if (!options.database) {
-      throw new Error('database param is required to initialize vuex-orm-apollo!');
+      throw new Error('database param is required to initialize vuex-orm-graphql!');
     }
   }
 

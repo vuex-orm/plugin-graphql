@@ -187,7 +187,7 @@ recommend the usage of async/await.
 
 ## Caching
 
-Apollo-Client caches same queries. To bypass caching set the second param of the `fetch` action to `true`
+The plugin caches same queries. To bypass caching set the second param of the `fetch` action to `true`
 when using the convenience method or add `bypassCache: true` to the arguments of the `dispatch()` call
 
 ```javascript

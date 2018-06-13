@@ -5,24 +5,24 @@
 
 ## Installation
 
-Installation of the Apollo plugin is easy. First add the package to your dependencies:
+Installation of the GraphQL plugin is easy. First add the package to your dependencies:
 
 ```bash
-$ yarn add @vuex-orm/plugin-apollo
+$ yarn add @vuex-orm/plugin-graphql
 ```
 
 or
 
 ```bash
-$ npm install --save @vuex-orm/plugin-apollo
+$ npm install --save @vuex-orm/plugin-graphql
 ```
 
 
 After that we setup the plugin. Add this after [registering your models to the database](https://vuex-orm.github.io/vuex-orm/prologue/getting-started.html#register-models-and-modules-to-the-vuex-store):
 
 ```javascript
-import VuexORMApollo from '@vuex-orm/plugin-apollo';
-VuexORM.use(VuexORMApollo, { database });
+import VuexORMGraphQL from '@vuex-orm/plugin-graphql';
+VuexORM.use(VuexORMGraphQL, { database });
 ```
 
 ## Possible options

@@ -2,11 +2,11 @@ import { setupMockData, User, Video, Post, Comment, ContractContractOption, Cont
 import {sendWithMockFetch} from "../support/helpers";
 
 let store;
-let vuexOrmApollo;
+let vuexOrmGraphQL;
 
-describe('VuexORMApollo', () => {
+describe('VuexORMGraphQL', () => {
   beforeEach(async () => {
-    [store, vuexOrmApollo] = await setupMockData();
+    [store, vuexOrmGraphQL] = await setupMockData();
   });
 
   describe('fetch', () => {

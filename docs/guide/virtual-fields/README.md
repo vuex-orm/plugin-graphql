@@ -26,7 +26,7 @@ export default class Product extends Model {
 }
 ```
 
-With this model definition, the apollo plugin will produce the following GraphQL Query when `fetch` is called:
+With this model definition, the GraphQL plugin will produce the following GraphQL Query when `fetch` is called:
 
 ```graphql
 query Posts() {

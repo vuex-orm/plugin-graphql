@@ -3,12 +3,12 @@ import { setupMockData, User, Video, Post, Comment, ContractContractOption, Cont
 import Context from "app/common/context";
 
 let store;
-let vuexOrmApollo;
+let vuexOrmGraphQL;
 let context;
 
 
 beforeEach(async () => {
-  [store, vuexOrmApollo] = await setupMockData();
+  [store, vuexOrmGraphQL] = await setupMockData();
   context = Context.getInstance();
 });
 
