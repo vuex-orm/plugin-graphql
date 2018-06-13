@@ -1,7 +1,7 @@
-title: 'Vuex-ORM Apollo Plugin'
+title: 'Vuex-ORM GraphQL Plugin'
 description: 'Vue + Vuex-ORM + GraphQL = <3'
 
-base: '/vuex-orm-apollo/'
+base: '/vuex-orm-graphql/'
 
 themeConfig:
   nav:
@@ -15,7 +15,7 @@ themeConfig:
       link: https://vuex-orm.github.io/vuex-orm/
 
     - text: GitHub
-      link: https://github.com/vuex-orm/vuex-orm-apollo
+      link: https://github.com/vuex-orm/vuex-orm-graphql
 
   sidebar:
     - ['/guide/', 'Introduction']
