@@ -1,5 +1,5 @@
 import Model from 'app/orm/model';
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data';
 import Context from "app/common/context";
 
 let model;
@@ -114,8 +114,8 @@ describe('Model', () => {
     });
 
     it('returns false for a normal attribute which just ends with `Type`', () => {
-      const model = context.getModel('contract');
-      expect(model.isTypeFieldOfPolymorphicRelation('contractType')).toEqual(false);
+      const model = context.getModel('tariff');
+      expect(model.isTypeFieldOfPolymorphicRelation('tariffType')).toEqual(false);
     });
   });
 

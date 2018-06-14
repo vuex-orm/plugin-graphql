@@ -1,5 +1,5 @@
 import Model from 'app/orm/model';
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data';
 import Context from "app/common/context";
 
 let store;

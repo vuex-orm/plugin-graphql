@@ -1,5 +1,5 @@
 import QueryBuilder from 'app/graphql/query-builder';
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import {prettify} from "app/support/utils";
 import Context from "app/common/context";
 

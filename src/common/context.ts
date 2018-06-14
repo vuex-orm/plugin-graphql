@@ -5,7 +5,7 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
-import {Data, Options, Schema} from '../support/interfaces';
+import { Data, Options, Schema } from '../support/interfaces';
 import { introspectionQuery } from 'graphql';
 const inflection = require('inflection');
 
