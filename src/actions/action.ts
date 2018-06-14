@@ -26,6 +26,9 @@ export default class Action {
   protected static async mutation (name: string, variables: Data | undefined, dispatch: DispatchFunction,
                                    model: Model, multiple: boolean = false): Promise<any> {
     if (variables) {
+      const context = Context.getInstance();
+      await context.loadSchema();
+
       const query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation

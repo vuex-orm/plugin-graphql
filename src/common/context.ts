@@ -5,7 +5,8 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
-import { Options } from '../support/interfaces';
+import {Data, Options, Schema} from '../support/interfaces';
+import { introspectionQuery } from 'graphql';
 const inflection = require('inflection');
 
 /**
@@ -62,6 +63,11 @@ export default class Context {
   public apollo!: Apollo;
 
   /**
+   * The graphql schema. Is null until the first request.
+   */
+  private schema: Schema | undefined;
+
+  /**
    * Private constructor, called by the setup method
    *
    * @constructor
@@ -109,6 +115,17 @@ export default class Context {
     this.instance.logger.groupEnd();
 
     return this.instance;
+  }
+
+  public async loadSchema () {
+    if (!this.schema) {
+      this.logger.log('Fetching GraphQL Schema initially ...');
+
+      const result = await this.apollo.simpleQuery(introspectionQuery, {}, true);
+      this.schema = result.data.__schema;
+
+      this.logger.log('GraphQL Schema successful fetched', this.schema);
+    }
   }
 
   /**

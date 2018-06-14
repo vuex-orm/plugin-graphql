@@ -43,6 +43,10 @@ export interface Arguments extends Object {
   [index: string]: any;
 }
 
+export interface Schema extends Object {
+  [index: string]: any;
+}
+
 export interface Field {
   related?: ORMModel;
   parent?: ORMModel;

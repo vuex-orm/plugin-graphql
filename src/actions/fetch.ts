@@ -18,6 +18,8 @@ export default class Fetch extends Action {
    */
   public static async call ({ state, dispatch }: ActionParams, params?: ActionParams): Promise<Data> {
     const context = Context.getInstance();
+    await context.loadSchema();
+
     const model = this.getModelFromState(state);
 
     // Filter

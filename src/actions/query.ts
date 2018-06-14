@@ -23,6 +23,8 @@ export default class Query extends Action {
                             { name, multiple, filter, bypassCache }: ActionParams): Promise<Data> {
     if (name) {
       const context = Context.getInstance();
+      await context.loadSchema();
+
       const model = this.getModelFromState(state);
 
       // Filter
