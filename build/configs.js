@@ -7,24 +7,24 @@ const resolve = _path => path.resolve(__dirname, '../', _path);
 const configs = {
   umdDev: {
     input: resolve('lib/index.cjs.js'),
-    file: resolve('dist/vuex-orm-apollo.js'),
+    file: resolve('dist/vuex-orm-graphql.js'),
     format: 'umd',
     env: 'development'
   },
   umdProd: {
     input: resolve('lib/index.cjs.js'),
-    file: resolve('dist/vuex-orm-apollo.min.js'),
+    file: resolve('dist/vuex-orm-graphql.min.js'),
     format: 'umd',
     env: 'production'
   },
   commonjs: {
     input: resolve('lib/index.cjs.js'),
-    file: resolve('dist/vuex-orm-apollo.common.js'),
+    file: resolve('dist/vuex-orm-graphql.common.js'),
     format: 'cjs'
   },
   esm: {
     input: resolve('lib/index.js'),
-    file: resolve('dist/vuex-orm-apollo.esm.js'),
+    file: resolve('dist/vuex-orm-graphql.esm.js'),
     format: 'es'
   }
 };
@@ -49,7 +49,7 @@ function genConfig (opts) {
     },
 
     output: {
-      name: 'VuexORMApollo',
+      name: 'VuexORMGraphQL',
       file: opts.file,
       format: opts.format
     }
