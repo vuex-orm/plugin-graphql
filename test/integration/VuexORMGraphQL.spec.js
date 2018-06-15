@@ -50,7 +50,7 @@ describe('VuexORMGraphQL', () => {
 
     const context = Context.getInstance();
     expect(!!context.schema).not.toEqual(false);
-    expect(context.schema.types[0].name).toEqual('Boolean')
+    expect(context.schema.getType('Post').name).toEqual('Post')
   });
 
   describe('fetch', () => {

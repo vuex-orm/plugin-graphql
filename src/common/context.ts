@@ -5,7 +5,8 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
-import { Data, Options, Schema } from '../support/interfaces';
+import { Data, Field, GraphQLSchema, GraphQLType, Options } from '../support/interfaces';
+import Schema from '../graphql/schema';
 const inflection = require('inflection');
 
 const introspectionQuery = `
@@ -158,9 +159,12 @@ export default class Context {
       };
 
       const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
-      this.schema = result.data.__schema;
+      this.schema = new Schema(result.data.__schema);
 
-      this.logger.log('GraphQL Schema successful fetched', this.schema);
+      this.logger.log('GraphQL Schema successful fetched', result);
+      this.logger.log('Starting to process the schema ...');
+      this.processSchema();
+      this.logger.log('Schema procession done ...');
     }
   }
 
@@ -190,6 +194,31 @@ export default class Context {
       const model: Model = new Model(entity.model as ORMModel);
       this.models.set(model.singularName, model);
       Model.augment(model);
+    });
+  }
+
+  private processSchema () {
+    this.models.forEach((model: Model) => {
+      let type: GraphQLType;
+
+      try {
+        type = this.schema!.getType(model.singularName);
+      } catch (error) {
+        this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
+        return;
+      }
+
+      model.fields.forEach((field: Field, fieldName: string) => {
+        if (!type.fields!.find(f => f.name === fieldName)) {
+          this.logger.warn(`Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`);
+
+          // TODO: Move skipFields to the model
+          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+          if (!model.baseModel.skipFields.includes(fieldName)) {
+            model.baseModel.skipFields.push(fieldName);
+          }
+        }
+      });
     });
   }
 }

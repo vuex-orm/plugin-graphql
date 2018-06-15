@@ -68,6 +68,16 @@ export default class Logger {
   }
 
   /**
+   * Wrapper for console.warn.
+   * @param {Array<any>} messages
+   */
+  public warn (...messages: Array<any>): void {
+    if (this.enabled) {
+      console.warn(...this.PREFIX, ...messages);
+    }
+  }
+
+  /**
    * Logs a graphql query in a readable format and with all information like fetch policy and variables.
    * @param {string | DocumentNode} query
    * @param {Arguments} variables

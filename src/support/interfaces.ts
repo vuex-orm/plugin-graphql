@@ -35,16 +35,34 @@ export interface Data {
   [index: string]: any;
 }
 
-export interface Filter extends Object {
+export interface Filter {
   [index: string]: any;
 }
 
-export interface Arguments extends Object {
+export interface Arguments {
   [index: string]: any;
 }
 
-export interface Schema extends Object {
-  [index: string]: any;
+export interface GraphQLType {
+  description: string;
+  name: string;
+  fields?: Array<GraphQLField>;
+  inputFields?: Array<GraphQLField>;
+}
+
+export interface GraphQLField {
+  description: string;
+  name: string;
+  type: GraphQLTypeDefinition;
+}
+
+export interface GraphQLTypeDefinition {
+  kind: string;
+  name: string;
+}
+
+export interface GraphQLSchema {
+  types: Array<GraphQLType>;
 }
 
 export interface Field {

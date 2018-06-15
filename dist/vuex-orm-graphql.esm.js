@@ -3566,6 +3566,19 @@ var Logger = /** @class */ (function () {
         }
     };
     /**
+     * Wrapper for console.warn.
+     * @param {Array<any>} messages
+     */
+    Logger.prototype.warn = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.warn.apply(console, this.PREFIX.concat(messages));
+        }
+    };
+    /**
      * Logs a graphql query in a readable format and with all information like fetch policy and variables.
      * @param {string | DocumentNode} query
      * @param {Arguments} variables
@@ -9832,6 +9845,42 @@ var Apollo = /** @class */ (function () {
     return Apollo;
 }());
 
+var Schema = /** @class */ (function () {
+    function Schema(schema) {
+        var _this = this;
+        this.schema = schema;
+        this.types = new Map();
+        this.mutations = new Map();
+        this.queries = new Map();
+        this.schema.types.forEach(function (t) { return _this.types.set(t.name, t); });
+        this.getType('Query').fields.forEach(function (f) { return _this.queries.set(f.name, f); });
+        this.getType('Mutation').fields.forEach(function (f) { return _this.mutations.set(f.name, f); });
+    }
+    Schema.prototype.getType = function (name) {
+        name = upcaseFirstLetter(name);
+        var type = this.types.get(name);
+        if (!type)
+            throw new Error("Couldn't find Type of name " + name + " in the GraphQL Schema.");
+        return type;
+    };
+    Schema.prototype.getMutation = function (name) {
+        var mutation = this.mutations.get(name);
+        if (!mutation)
+            throw new Error("Couldn't find Mutation of name " + name + " in the GraphQL Schema.");
+        return mutation;
+    };
+    Schema.prototype.getQuery = function (name) {
+        var query = this.types.get(name);
+        if (!query)
+            throw new Error("Couldn't find Query of name " + name + " in the GraphQL Schema.");
+        return query;
+    };
+    Schema.prototype.returnsConnection = function (field) {
+        return field.type.name.endsWith('TypeConnection');
+    };
+    return Schema;
+}());
+
 var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9941,8 +9990,11 @@ var Context = /** @class */ (function () {
                         return [4 /*yield*/, this.apollo.simpleQuery(introspectionQuery, {}, true, context)];
                     case 1:
                         result = _a.sent();
-                        this.schema = result.data.__schema;
-                        this.logger.log('GraphQL Schema successful fetched', this.schema);
+                        this.schema = new Schema(result.data.__schema);
+                        this.logger.log('GraphQL Schema successful fetched', result);
+                        this.logger.log('Starting to process the schema ...');
+                        this.processSchema();
+                        this.logger.log('Schema procession done ...');
                         _a.label = 2;
                     case 2: return [2 /*return*/];
                 }
@@ -9976,6 +10028,29 @@ var Context = /** @class */ (function () {
             var model = new Model(entity.model);
             _this.models.set(model.singularName, model);
             Model.augment(model);
+        });
+    };
+    Context.prototype.processSchema = function () {
+        var _this = this;
+        this.models.forEach(function (model) {
+            var type;
+            try {
+                type = _this.schema.getType(model.singularName);
+            }
+            catch (error) {
+                _this.logger.warn("Ignoring entity " + model.singularName + " because it's not in the schema.");
+                return;
+            }
+            model.fields.forEach(function (field, fieldName) {
+                if (!type.fields.find(function (f) { return f.name === fieldName; })) {
+                    _this.logger.warn("Ignoring field " + model.singularName + "." + fieldName + " because it's not in the schema.");
+                    // TODO: Move skipFields to the model
+                    model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+                    if (!model.baseModel.skipFields.includes(fieldName)) {
+                        model.baseModel.skipFields.push(fieldName);
+                    }
+                }
+            });
         });
     };
     return Context;

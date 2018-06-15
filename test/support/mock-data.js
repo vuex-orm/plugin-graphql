@@ -17,7 +17,6 @@ export class User extends ORMModel {
 export class Video extends ORMModel {
   static entity = 'videos';
   static eagerLoad = ['comments'];
-  static skipFields = ['ignoreMe'];
 
   static fields () {
     return {
