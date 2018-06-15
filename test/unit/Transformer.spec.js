@@ -1,19 +1,24 @@
 import Transformer from "app/graphql/transformer";
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import Context from "app/common/context";
+import Schema from "app/graphql/schema";
+import {introspectionResult} from "../support/mock-data";
 
 let store;
 let vuexOrmGraphQL;
 let context;
 
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-});
-
-
 describe('Transformer', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+
+    // Make sure schema is filled
+    context.schema = new Schema(introspectionResult.data.__schema);
+    context.processSchema();
+  });
+
   describe('.transformOutgoingData', () => {
     it('transforms models to a useful data hashmap', () => {
       const user = User.query().first();
@@ -26,15 +31,15 @@ describe('Transformer', () => {
   describe('.transformIncomingData', () => {
     it('transforms incoming data into a Vuex-ORM readable structure', () => {
       const incomingData1 = {
-        "contracts": {
+        "tariffs": {
           "nodes": [
             {
               "id": "1",
-              "name": "Contract S",
-              "displayName": "Contract S",
-              "slug": "contract-s",
+              "name": "Tariff S",
+              "displayName": "Tariff S",
+              "slug": "tariff-s",
               "checked": false,
-              "contractOptions": {
+              "tariffOptions": {
                 "nodes": [
                   {
                     "id": "1",
@@ -46,11 +51,11 @@ describe('Transformer', () => {
             },
             {
               "id": "2",
-              "name": "Contract M",
-              "displayName": "Contract M",
-              "slug": "contract-m",
+              "name": "Tariff M",
+              "displayName": "Tariff M",
+              "slug": "tariff-m",
               "checked": true,
-              "contractOptions": {
+              "tariffOptions": {
                 "nodes": [
                   {
                     "id": "1",
@@ -62,11 +67,11 @@ describe('Transformer', () => {
             },
             {
               "id": "3",
-              "name": "Contract L",
-              "displayName": "Contract L",
-              "slug": "contract-l",
+              "name": "Tariff L",
+              "displayName": "Tariff L",
+              "slug": "tariff-l",
               "checked": false,
-              "contractOptions": {
+              "tariffOptions": {
                 "nodes": [
                   {
                     "id": "1",
@@ -80,11 +85,11 @@ describe('Transformer', () => {
         }
       };
       const expectedData1 = {
-        "contracts": [
+        "tariffs": [
           {
             "$isPersisted": true,
             "checked": false,
-            "contractOptions": [
+            "tariffOptions": [
               {
                 "$isPersisted": true,
                 "description": "Very foo, much more bar",
@@ -92,15 +97,15 @@ describe('Transformer', () => {
                 "name": "Foo Bar 1",
               },
             ],
-            "displayName": "Contract S",
+            "displayName": "Tariff S",
             "id": 1,
-            "name": "Contract S",
-            "slug": "contract-s",
+            "name": "Tariff S",
+            "slug": "tariff-s",
           },
           {
             "$isPersisted": true,
             "checked": true,
-            "contractOptions": [
+            "tariffOptions": [
               {
                 "$isPersisted": true,
                 "description": "Very foo, much more bar",
@@ -108,15 +113,15 @@ describe('Transformer', () => {
                 "name": "Foo Bar 1",
               },
             ],
-            "displayName": "Contract M",
+            "displayName": "Tariff M",
             "id": 2,
-            "name": "Contract M",
-            "slug": "contract-m",
+            "name": "Tariff M",
+            "slug": "tariff-m",
           },
           {
             "$isPersisted": true,
             "checked": false,
-            "contractOptions": [
+            "tariffOptions": [
               {
                 "$isPersisted": true,
                 "description": "Very foo, much more bar",
@@ -124,10 +129,10 @@ describe('Transformer', () => {
                 "name": "Foo Bar 1",
               },
             ],
-            "displayName": "Contract L",
+            "displayName": "Tariff L",
             "id": 3,
-            "name": "Contract L",
-            "slug": "contract-l",
+            "name": "Tariff L",
+            "slug": "tariff-l",
           },
         ],
       };
@@ -193,21 +198,21 @@ describe('Transformer', () => {
         ]
       };
 
-      const contract = context.getModel('contract');
+      const tariff = context.getModel('tariff');
       const post = context.getModel('post');
-      expect(Transformer.transformIncomingData(incomingData1, contract, false)).toEqual(expectedData1);
+      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(expectedData1);
       expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
     });
 
 
     it('transforms incoming data after a mutation into a Vuex-ORM readable structure', () => {
       const incomingData = {
-        "createContract": {
+        "createTariff": {
           "id": "1",
-          "name": "Contract S",
-          "displayName": "Contract S",
-          "slug": "contract-s",
-          "contractOptions": {
+          "name": "Tariff S",
+          "displayName": "Tariff S",
+          "slug": "tariff-s",
+          "tariffOptions": {
             "nodes": [
               {
                 "id": "1",
@@ -219,9 +224,9 @@ describe('Transformer', () => {
         }
       };
       const expectedData = {
-        "contract": {
+        "tariff": {
             "$isPersisted": true,
-            "contractOptions": [
+            "tariffOptions": [
               {
                 "$isPersisted": true,
                 "description": "Very foo, much more bar",
@@ -229,14 +234,14 @@ describe('Transformer', () => {
                 "name": "Foo Bar 1",
               },
             ],
-            "displayName": "Contract S",
+            "displayName": "Tariff S",
             "id": 1,
-            "name": "Contract S",
-            "slug": "contract-s",
+            "name": "Tariff S",
+            "slug": "tariff-s",
           }
         };
 
-      const model = context.getModel('contract');
+      const model = context.getModel('tariff');
       const transformedData = Transformer.transformIncomingData(incomingData, model, true);
 
       expect(transformedData).toEqual(expectedData);

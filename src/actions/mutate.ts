@@ -1,5 +1,7 @@
 import { ActionParams, Arguments, Data } from '../support/interfaces';
 import Action from './action';
+import Context from '../common/context';
+import Schema from '../graphql/schema';
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
@@ -13,8 +15,10 @@ export default class Mutate extends Action {
    * @param {Arguments} args Arguments for the mutation. Must contain a 'mutation' field.
    * @returns {Promise<Data>} The new record if any
    */
-  public static async call ({ state, dispatch }: ActionParams, { args, multiple, name }: ActionParams): Promise<Data> {
+  public static async call ({ state, dispatch }: ActionParams, { args, name }: ActionParams): Promise<Data> {
     if (name) {
+      const context: Context = Context.getInstance();
+      const schema: Schema = await context.loadSchema();
       const model = this.getModelFromState(state);
       args = this.prepareArgs(args);
 
@@ -22,10 +26,8 @@ export default class Mutate extends Action {
       // transformOutgoingData()
       this.transformArgs(args);
 
-      if (multiple === undefined) multiple = !args['id'];
-
       // Send the mutation
-      return Action.mutation(name, args, dispatch, model, multiple);
+      return Action.mutation(name, args, dispatch, model);
     } else {
       throw new Error("The mutate action requires the mutation name ('mutation') to be set");
     }

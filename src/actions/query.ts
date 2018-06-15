@@ -5,6 +5,7 @@ import Transformer from '../graphql/transformer';
 import { ActionParams, Data } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
+import Schema from '../graphql/schema';
 
 /**
  * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
@@ -20,15 +21,17 @@ export default class Query extends Action {
    * @returns {Promise<Data>} The fetched records as hash
    */
   public static async call ({ state, dispatch }: ActionParams,
-                            { name, multiple, filter, bypassCache }: ActionParams): Promise<Data> {
+                            { name, filter, bypassCache }: ActionParams): Promise<Data> {
     if (name) {
-      const context = Context.getInstance();
+      const context: Context = Context.getInstance();
+      const schema: Schema = await context.loadSchema();
       const model = this.getModelFromState(state);
 
       // Filter
       filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
 
-      if (multiple === undefined) multiple = !filter['id'];
+      // Multiple?
+      const multiple: boolean = schema.returnsConnection(schema.getQuery(name));
 
       // Build query
       const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);

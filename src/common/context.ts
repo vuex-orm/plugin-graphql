@@ -5,8 +5,41 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
-import { Options } from '../support/interfaces';
+import { Data, Field, GraphQLSchema, GraphQLType, Options } from '../support/interfaces';
+import Schema from '../graphql/schema';
 const inflection = require('inflection');
+
+const introspectionQuery = `
+query {
+  __schema {
+  	types {
+      name
+      description
+
+      fields(includeDeprecated: true) {
+        name
+        description
+
+        type {
+          name
+          kind
+        }
+      }
+
+
+      inputFields {
+        name
+        description
+
+        type {
+          name
+          kind
+        }
+      }
+    }
+  }
+}
+`;
 
 /**
  * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
@@ -62,6 +95,11 @@ export default class Context {
   public apollo!: Apollo;
 
   /**
+   * The graphql schema. Is null until the first request.
+   */
+  public schema: Schema | undefined;
+
+  /**
    * Private constructor, called by the setup method
    *
    * @constructor
@@ -109,6 +147,52 @@ export default class Context {
     this.instance.logger.groupEnd();
 
     return this.instance;
+  }
+
+  public async loadSchema (): Promise<Schema> {
+    if (!this.schema) {
+      this.logger.log('Fetching GraphQL Schema initially ...');
+
+      // We send a custom header along with the request. This is required for our test suite to mock the schema request.
+      const context = {
+        headers: { 'X-GraphQL-Introspection-Query': 'true' }
+      };
+
+      const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
+      this.schema = new Schema(result.data.__schema);
+
+      this.logger.log('GraphQL Schema successful fetched', result);
+      this.logger.log('Starting to process the schema ...');
+      this.processSchema();
+      this.logger.log('Schema procession done ...');
+    }
+
+    return this.schema;
+  }
+
+  public processSchema () {
+    this.models.forEach((model: Model) => {
+      let type: GraphQLType;
+
+      try {
+        type = this.schema!.getType(model.singularName);
+      } catch (error) {
+        this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
+        return;
+      }
+
+      model.fields.forEach((field: Field, fieldName: string) => {
+        if (!type.fields!.find(f => f.name === fieldName)) {
+          this.logger.warn(`Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`);
+
+          // TODO: Move skipFields to the model
+          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+          if (!model.baseModel.skipFields.includes(fieldName)) {
+            model.baseModel.skipFields.push(fieldName);
+          }
+        }
+      });
+    });
   }
 
   /**

@@ -1,5 +1,6 @@
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data'
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import {sendWithMockFetch} from "../support/helpers";
+import Context from "app/common/context";
 
 let store;
 let vuexOrmGraphQL;
@@ -7,6 +8,51 @@ let vuexOrmGraphQL;
 describe('VuexORMGraphQL', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
+  });
+
+  it('fetches the schema on the first action', async () => {
+    const response = {
+      data: {
+        post: {
+          __typename: 'post',
+          id: 42,
+          otherId: 13548,
+          published: true,
+          title: 'Example Post 5',
+          content: 'Foo',
+          comments: {
+            __typename: 'comment',
+            nodes: [{
+              __typename: 'comment',
+              id: 15,
+              content: 'Works!',
+              subjectId: 42,
+              subjectType: 'Post',
+              user: {
+                __typename: 'user',
+                id: 2,
+                name: 'Charly Brown'
+              }
+            }]
+          },
+          user: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+          }
+        }
+      }
+    };
+
+    let request = await sendWithMockFetch(response, async () => {
+      await Post.fetch(42);
+    });
+
+    const context = Context.getInstance();
+    expect(!!context.schema).not.toEqual(false);
+    expect(context.schema.getType('Post').name).toEqual('Post');
+    expect(context.schema.getQuery('post').name).toEqual('post');
+    expect(context.schema.getMutation('createPost').name).toEqual('createPost');
   });
 
   describe('fetch', () => {
@@ -350,25 +396,71 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
     it('sends the correct query to the API', async () => {
       const response = {
         data: {
-          deleteUser: {
-            __typename: 'user',
-            id: 1,
-            name: 'Charlie Brown'
+          deletePost: {
+            __typename: 'post',
+            id: 42,
+            otherId: 13548,
+            published: true,
+            title: 'Example Post 5',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: [{
+                __typename: 'comment',
+                id: 15,
+                content: 'Works!',
+                subjectId: 42,
+                subjectType: 'Post',
+                user: {
+                  __typename: 'user',
+                  id: 2,
+                  name: 'Charly Brown'
+                }
+              }]
+            },
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Johnny Imba',
+            }
           }
         }
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        const user = User.find(1);
-        await user.$destroy();
+        const post = Post.find(1);
+        await post.$destroy();
       });
 
       expect(request.variables).toEqual({ id: 1 });
       expect(request.query).toEqual(`
-mutation DeleteUser($id: ID!) {
-  deleteUser(id: $id) {
+mutation DeletePost($id: ID!) {
+  deletePost(id: $id) {
     id
-    name
+    content
+    title
+    otherId
+    published
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        user {
+          id
+          name
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
     __typename
   }
 }

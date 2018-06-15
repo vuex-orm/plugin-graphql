@@ -69,12 +69,12 @@ export default class Apollo {
     return Transformer.transformIncomingData(response.data as Data, model, mutation);
   }
 
-  public async simpleQuery (query: string, variables: Arguments, bypassCache: boolean = false): Promise<any> {
+  public async simpleQuery (query: string, variables: Arguments, bypassCache: boolean = false, context?: Data): Promise<any> {
     const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-    return this.apolloClient.query({ query: gql(query), variables, fetchPolicy });
+    return this.apolloClient.query({ query: gql(query), variables, fetchPolicy, context });
   }
 
-  public async simpleMutation (query: string, variables: Arguments): Promise<any> {
-    return this.apolloClient.mutate({ mutation: gql(query), variables });
+  public async simpleMutation (query: string, variables: Arguments, context?: Data): Promise<any> {
+    return this.apolloClient.mutate({ mutation: gql(query), variables, context });
   }
 }

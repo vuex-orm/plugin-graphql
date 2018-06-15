@@ -1,20 +1,27 @@
 import NameGenerator from "app/graphql/name-generator";
 import Model from 'app/orm/model';
-import { setupMockData, User, Video, Post, Comment, ContractContractOption, Contract, ContractOption } from 'test/support/mock-data';
+import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data';
 import Context from "app/common/context";
+import Schema from "app/graphql/schema";
+import {introspectionResult} from "../support/mock-data";
 
 let model;
 let store;
 let vuexOrmGraphQL;
 let context;
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-  model = context.getModel('post');
-});
 
 describe('NameGenerator', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+    model = context.getModel('post');
+
+    // Make sure schema is filled
+    context.schema = new Schema(introspectionResult.data.__schema);
+    context.processSchema();
+  });
+
   describe('.getNameForPersist', () => {
     it('returns a correct create mutation name', () => {
       expect(NameGenerator.getNameForPersist(model)).toEqual('createPost');

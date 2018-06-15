@@ -3566,6 +3566,19 @@ var Logger = /** @class */ (function () {
         }
     };
     /**
+     * Wrapper for console.warn.
+     * @param {Array<any>} messages
+     */
+    Logger.prototype.warn = function () {
+        var messages = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            messages[_i] = arguments[_i];
+        }
+        if (this.enabled) {
+            console.warn.apply(console, this.PREFIX.concat(messages));
+        }
+    };
+    /**
      * Logs a graphql query in a readable format and with all information like fetch policy and variables.
      * @param {string | DocumentNode} query
      * @param {Arguments} variables
@@ -3769,6 +3782,64 @@ var Model = /** @class */ (function () {
     return Model;
 }());
 
+var fastJsonStableStringify = function (data, opts) {
+    if (!opts) opts = {};
+    if (typeof opts === 'function') opts = { cmp: opts };
+    var cycles = (typeof opts.cycles === 'boolean') ? opts.cycles : false;
+
+    var cmp = opts.cmp && (function (f) {
+        return function (node) {
+            return function (a, b) {
+                var aobj = { key: a, value: node[a] };
+                var bobj = { key: b, value: node[b] };
+                return f(aobj, bobj);
+            };
+        };
+    })(opts.cmp);
+
+    var seen = [];
+    return (function stringify (node) {
+        if (node && node.toJSON && typeof node.toJSON === 'function') {
+            node = node.toJSON();
+        }
+
+        if (node === undefined) return;
+        if (typeof node == 'number') return isFinite(node) ? '' + node : 'null';
+        if (typeof node !== 'object') return JSON.stringify(node);
+
+        var i, out;
+        if (Array.isArray(node)) {
+            out = '[';
+            for (i = 0; i < node.length; i++) {
+                if (i) out += ',';
+                out += stringify(node[i]) || 'null';
+            }
+            return out + ']';
+        }
+
+        if (node === null) return 'null';
+
+        if (seen.indexOf(node) !== -1) {
+            if (cycles) return JSON.stringify('__cycle__');
+            throw new TypeError('Converting circular structure to JSON');
+        }
+
+        var seenIndex = seen.push(node) - 1;
+        var keys = Object.keys(node).sort(cmp && cmp(node));
+        out = '';
+        for (i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            var value = stringify(node[key]);
+
+            if (!value) continue;
+            if (out) out += ',';
+            out += JSON.stringify(key) + ':' + value;
+        }
+        seen.splice(seenIndex, 1);
+        return '{' + out + '}';
+    })(data);
+};
+
 var __assign = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -3896,7 +3967,10 @@ function getStoreKeyName(fieldName, args, directives) {
     }
     var completeFieldName = fieldName;
     if (args) {
-        var stringifiedArgs = JSON.stringify(args);
+        // We can't use `JSON.stringify` here since it's non-deterministic,
+        // and can lead to different store key names being created even though
+        // the `args` object used during creation has the same properties/values.
+        var stringifiedArgs = fastJsonStableStringify(args);
         completeFieldName += "(" + stringifiedArgs + ")";
     }
     if (directives) {
@@ -4019,26 +4093,27 @@ function flattenSelections(selection) {
     })
         .reduce(function (selections, selected) { return selections.concat(selected); }, []));
 }
-var added = new Map();
 function getDirectiveNames(doc) {
-    var cached = added.get(doc);
-    if (cached)
-        return cached;
     // operation => [names of directives];
-    var directives = doc.definitions
+    var directiveNames = doc.definitions
         .filter(function (definition) {
         return definition.selectionSet && definition.selectionSet.selections;
     })
+        // operation => [[Selection]]
         .map(function (x) { return flattenSelections(x); })
+        // [[Selection]] => [Selection]
         .reduce(function (selections, selected) { return selections.concat(selected); }, [])
+        // [Selection] => [Selection with Directives]
         .filter(function (selection) {
         return selection.directives && selection.directives.length > 0;
     })
+        // [Selection with Directives] => [[Directives]]
         .map(function (selection) { return selection.directives; })
+        // [[Directives]] => [Directives]
         .reduce(function (directives, directive) { return directives.concat(directive); }, [])
+        // [Directives] => [Name]
         .map(function (directive) { return directive.name.value; });
-    added.set(doc, directives);
-    return directives;
+    return directiveNames;
 }
 function hasDirectives(names, doc) {
     return getDirectiveNames(doc).some(function (name) { return names.indexOf(name) > -1; });
@@ -4380,18 +4455,13 @@ function removeDirectivesFromDocument(directives, doc) {
     var fragments = createFragmentMap(getFragmentDefinitions(docClone));
     return isNotEmpty(operation, fragments) ? docClone : null;
 }
-var added$1 = new Map();
 function addTypenameToDocument(doc) {
     checkDocument(doc);
-    var cached = added$1.get(doc);
-    if (cached)
-        return cached;
     var docClone = cloneDeep(doc);
     docClone.definitions.forEach(function (definition) {
         var isRoot = definition.kind === 'OperationDefinition';
         addTypenameToSelectionSet(definition.selectionSet, isRoot);
     });
-    added$1.set(doc, docClone);
     return docClone;
 }
 var connectionRemoveConfig = {
@@ -4407,15 +4477,9 @@ var connectionRemoveConfig = {
         return willRemove;
     },
 };
-var removed = new Map();
 function removeConnectionDirectiveFromDocument(doc) {
     checkDocument(doc);
-    var cached = removed.get(doc);
-    if (cached)
-        return cached;
-    var docClone = removeDirectivesFromDocument([connectionRemoveConfig], doc);
-    removed.set(doc, docClone);
-    return docClone;
+    return removeDirectivesFromDocument([connectionRemoveConfig], doc);
 }
 
 function getEnv() {
@@ -4495,12 +4559,12 @@ function isEqual(a, b) {
     return false;
 }
 
-// taken straight from https://github.com/substack/deep-freeze to avoid import hassles with rollup
+// Taken (mostly) from https://github.com/substack/deep-freeze to avoid
+// import hassles with rollup.
 function deepFreeze(o) {
     Object.freeze(o);
     Object.getOwnPropertyNames(o).forEach(function (prop) {
-        if (o.hasOwnProperty(prop) &&
-            o[prop] !== null &&
+        if (o[prop] !== null &&
             (typeof o[prop] === 'object' || typeof o[prop] === 'function') &&
             !Object.isFrozen(o[prop])) {
             deepFreeze(o[prop]);
@@ -4547,6 +4611,18 @@ function warnOnceInDevelopment(msg, type) {
         }
     }
 }
+
+/**
+ * In order to make assertions easier, this function strips `symbol`'s from
+ * the incoming data.
+ *
+ * This can be handy when running tests against `apollo-client` for example,
+ * since it adds `symbol`'s to the data in the store. Jest's `toEqual`
+ * function now covers `symbol`'s (https://github.com/facebook/jest/pull/3437),
+ * which means all test data used in a `toEqual` comparison would also have to
+ * include `symbol`'s, to pass. By stripping `symbol`'s from the cache data
+ * we can compare against more simplified test data.
+ */
 
 /**
  * The current status of a query’s execution in our system.
@@ -5437,12 +5513,15 @@ var __extends$1 = (undefined && undefined.__extends) || (function () {
 // This simplified polyfill attempts to follow the ECMAScript Observable proposal.
 // See https://github.com/zenparsing/es-observable
 // rxjs interopt
-var Observable$3 = (function (_super) {
+var Observable$3 = /** @class */ (function (_super) {
     __extends$1(Observable$$1, _super);
     function Observable$$1() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     Observable$$1.prototype[result] = function () {
+        return this;
+    };
+    Observable$$1.prototype['@@observable'] = function () {
         return this;
     };
     return Observable$$1;
@@ -5483,7 +5562,7 @@ var generateErrorMessage = function (err) {
     message = message.replace(/\n$/, '');
     return message;
 };
-var ApolloError = (function (_super) {
+var ApolloError = /** @class */ (function (_super) {
     __extends$2(ApolloError, _super);
     // Constructs an instance of ApolloError given a GraphQLError
     // or a network error. Note that one of these has to be a valid
@@ -5500,7 +5579,9 @@ var ApolloError = (function (_super) {
             _this.message = errorMessage;
         }
         _this.extraInfo = extraInfo;
-        Object.setPrototypeOf(_this, ApolloError.prototype);
+        // We're not using `Object.setPrototypeOf` here as it isn't fully
+        // supported on Android (see issue #3236).
+        _this.__proto__ = ApolloError.prototype;
         return _this;
     }
     return ApolloError;
@@ -5539,7 +5620,7 @@ var hasError = function (storeValue, policy) {
             policy === 'none') ||
             storeValue.networkError);
 };
-var ObservableQuery = (function (_super) {
+var ObservableQuery = /** @class */ (function (_super) {
     __extends$3(ObservableQuery, _super);
     function ObservableQuery(_a) {
         var scheduler = _a.scheduler, options = _a.options, _b = _a.shouldSubscribe, shouldSubscribe = _b === void 0 ? true : _b;
@@ -5677,11 +5758,11 @@ var ObservableQuery = (function (_super) {
         }
         if (!isEqual(this.variables, variables)) {
             // update observable variables
-            this.variables = __assign$3({}, this.variables, variables);
+            this.variables = Object.assign({}, this.variables, variables);
         }
         if (!isEqual(this.options.variables, this.variables)) {
             // Update the existing options with new variables
-            this.options.variables = __assign$3({}, this.options.variables, this.variables);
+            this.options.variables = Object.assign({}, this.options.variables, this.variables);
         }
         // Override fetchPolicy for this call only
         // only network-only and no-cache are safe to use
@@ -5697,27 +5778,26 @@ var ObservableQuery = (function (_super) {
         if (!fetchMoreOptions.updateQuery) {
             throw new Error('updateQuery option is required. This function defines how to update the query data with the new results.');
         }
+        var combinedOptions;
         return Promise.resolve()
             .then(function () {
             var qid = _this.queryManager.generateQueryId();
-            var combinedOptions;
             if (fetchMoreOptions.query) {
                 // fetch a new query
                 combinedOptions = fetchMoreOptions;
             }
             else {
                 // fetch the same query with a possibly new variables
-                combinedOptions = __assign$3({}, _this.options, fetchMoreOptions, { variables: __assign$3({}, _this.variables, fetchMoreOptions.variables) });
+                combinedOptions = __assign$3({}, _this.options, fetchMoreOptions, { variables: Object.assign({}, _this.variables, fetchMoreOptions.variables) });
             }
             combinedOptions.fetchPolicy = 'network-only';
             return _this.queryManager.fetchQuery(qid, combinedOptions, FetchType.normal, _this.queryId);
         })
             .then(function (fetchMoreResult) {
-            _this.updateQuery(function (previousResult, _a) {
-                var variables = _a.variables;
+            _this.updateQuery(function (previousResult) {
                 return fetchMoreOptions.updateQuery(previousResult, {
                     fetchMoreResult: fetchMoreResult.data,
-                    variables: variables,
+                    variables: combinedOptions.variables,
                 });
             });
             return fetchMoreResult;
@@ -5766,7 +5846,7 @@ var ObservableQuery = (function (_super) {
     // will return null immediately.
     ObservableQuery.prototype.setOptions = function (opts) {
         var oldOptions = this.options;
-        this.options = __assign$3({}, this.options, opts);
+        this.options = Object.assign({}, this.options, opts);
         if (opts.pollInterval) {
             this.startPolling(opts.pollInterval);
         }
@@ -5819,7 +5899,6 @@ var ObservableQuery = (function (_super) {
             return this.result();
         }
         else {
-            this.lastVariables = this.variables;
             this.variables = newVariables;
             this.options.variables = newVariables;
             // See comment above
@@ -6025,7 +6104,7 @@ var __assign$4 = (undefined && undefined.__assign) || Object.assign || function(
     }
     return t;
 };
-var QueryScheduler = (function () {
+var QueryScheduler = /** @class */ (function () {
     function QueryScheduler(_a) {
         var queryManager = _a.queryManager, ssrMode = _a.ssrMode;
         // Map going from queryIds to query options that are in flight.
@@ -6153,7 +6232,7 @@ var QueryScheduler = (function () {
     return QueryScheduler;
 }());
 
-var MutationStore = (function () {
+var MutationStore = /** @class */ (function () {
     function MutationStore() {
         this.store = {};
     }
@@ -6201,7 +6280,7 @@ var __assign$5 = (undefined && undefined.__assign) || Object.assign || function(
     }
     return t;
 };
-var QueryStore = (function () {
+var QueryStore = /** @class */ (function () {
     function QueryStore() {
         this.store = {};
     }
@@ -6225,7 +6304,9 @@ var QueryStore = (function () {
         var previousVariables = null;
         if (query.storePreviousVariables &&
             previousQuery &&
-            previousQuery.networkStatus !== NetworkStatus.loading) {
+            previousQuery.networkStatus !== NetworkStatus.loading
+        // if the previous query was still loading, we don't want to remember it at all.
+        ) {
             if (!isEqual(previousQuery.variables, query.variables)) {
                 isSetVariables = true;
                 previousVariables = previousQuery.variables;
@@ -6269,7 +6350,8 @@ var QueryStore = (function () {
         // error action branch, but importantly *not* in the client result branch.
         // This is because the implementation of `fetchMore` *always* sets
         // `fetchPolicy` to `network-only` so we would never have a client result.
-        if (typeof query.fetchMoreForQueryId === 'string') {
+        if (typeof query.fetchMoreForQueryId === 'string' &&
+            this.store[query.fetchMoreForQueryId]) {
             this.store[query.fetchMoreForQueryId].networkStatus =
                 NetworkStatus.fetchMore;
         }
@@ -6285,7 +6367,8 @@ var QueryStore = (function () {
         // If we have a `fetchMoreForQueryId` then we need to update the network
         // status for that query. See the branch for query initialization for more
         // explanation about this process.
-        if (typeof fetchMoreForQueryId === 'string') {
+        if (typeof fetchMoreForQueryId === 'string' &&
+            this.store[fetchMoreForQueryId]) {
             this.store[fetchMoreForQueryId].networkStatus = NetworkStatus.ready;
         }
     };
@@ -6346,7 +6429,7 @@ var defaultQueryInfo = {
     observableQuery: null,
     subscriptions: [],
 };
-var QueryManager = (function () {
+var QueryManager = /** @class */ (function () {
     function QueryManager(_a) {
         var link = _a.link, _b = _a.queryDeduplication, queryDeduplication = _b === void 0 ? false : _b, store = _a.store, _c = _a.onBroadcast, onBroadcast = _c === void 0 ? function () { return undefined; } : _c, _d = _a.ssrMode, ssrMode = _d === void 0 ? false : _d;
         this.mutationStore = new MutationStore();
@@ -6462,19 +6545,22 @@ var QueryManager = (function () {
                     }
                     // allow for conditional refetches
                     // XXX do we want to make this the only API one day?
-                    if (typeof refetchQueries === 'function')
+                    if (typeof refetchQueries === 'function') {
                         refetchQueries = refetchQueries(storeResult);
-                    refetchQueries.forEach(function (refetchQuery) {
-                        if (typeof refetchQuery === 'string') {
-                            _this.refetchQueryByName(refetchQuery);
-                            return;
-                        }
-                        _this.query({
-                            query: refetchQuery.query,
-                            variables: refetchQuery.variables,
-                            fetchPolicy: 'network-only',
+                    }
+                    if (refetchQueries) {
+                        refetchQueries.forEach(function (refetchQuery) {
+                            if (typeof refetchQuery === 'string') {
+                                _this.refetchQueryByName(refetchQuery);
+                                return;
+                            }
+                            _this.query({
+                                query: refetchQuery.query,
+                                variables: refetchQuery.variables,
+                                fetchPolicy: 'network-only',
+                            });
                         });
-                    });
+                    }
                     _this.setQuery(mutationId, function () { return ({ document: undefined }); });
                     if (errorPolicy === 'ignore' &&
                         storeResult &&
@@ -6487,10 +6573,10 @@ var QueryManager = (function () {
         });
     };
     QueryManager.prototype.fetchQuery = function (queryId, options, fetchType, 
-        // This allows us to track if this is a query spawned by a `fetchMore`
-        // call for another query. We need this data to compute the `fetchMore`
-        // network status for the query this is fetching for.
-        fetchMoreForQueryId) {
+    // This allows us to track if this is a query spawned by a `fetchMore`
+    // call for another query. We need this data to compute the `fetchMore`
+    // network status for the query this is fetching for.
+    fetchMoreForQueryId) {
         var _this = this;
         var _a = options.variables, variables = _a === void 0 ? {} : _a, _b = options.metadata, metadata = _b === void 0 ? null : _b, _c = options.fetchPolicy, fetchPolicy = _c === void 0 ? 'cache-first' : _c;
         var cache = this.dataStore.getCache();
@@ -6784,7 +6870,8 @@ var QueryManager = (function () {
     QueryManager.prototype.query = function (options) {
         var _this = this;
         if (!options.query) {
-            throw new Error('query option is required. You must specify your GraphQL document in the query option.');
+            throw new Error('query option is required. You must specify your GraphQL document ' +
+                'in the query option.');
         }
         if (options.query.kind !== 'Document') {
             throw new Error('You must wrap the query string in a "gql" tag.');
@@ -6795,10 +6882,6 @@ var QueryManager = (function () {
         if (options.pollInterval) {
             throw new Error('pollInterval option only supported on watchQuery.');
         }
-        if (typeof options.notifyOnNetworkStatusChange !== 'undefined') {
-            throw new Error('Cannot call "query" with "notifyOnNetworkStatusChange" option. Only "watchQuery" has that option.');
-        }
-        options.notifyOnNetworkStatusChange = false;
         var requestId = this.idCounter;
         return new Promise(function (resolve, reject) {
             _this.addFetchQueryPromise(requestId, resolve, reject);
@@ -6958,6 +7041,8 @@ var QueryManager = (function () {
     QueryManager.prototype.startQuery = function (queryId, options, listener) {
         this.addQueryListener(queryId, listener);
         this.fetchQuery(queryId, options)
+            // `fetchQuery` returns a Promise. In case of a failure it should be caucht or else the
+            // console will show an `Uncaught (in promise)` message. Ignore the error for now.
             .catch(function () { return undefined; });
         return queryId;
     };
@@ -7067,6 +7152,8 @@ var QueryManager = (function () {
             if (!info.invalidated || !info.listeners)
                 return;
             info.listeners
+                // it's possible for the listener to be undefined if the query is being stopped
+                // See here for more detail: https://github.com/apollostack/apollo-client/issues/231
                 .filter(function (x) { return !!x; })
                 .forEach(function (listener) {
                 listener(_this.queryStore.get(id), info.newData);
@@ -7234,7 +7321,7 @@ var QueryManager = (function () {
     return QueryManager;
 }());
 
-var DataStore = (function () {
+var DataStore = /** @class */ (function () {
     function DataStore(initialCache) {
         this.cache = initialCache;
     }
@@ -7400,7 +7487,7 @@ var supportedDirectives = new ApolloLink(function (operation, forward) {
  * receive results from the server and cache the results in a store. It also delivers updates
  * to GraphQL queries through {@link Observable} instances.
  */
-var ApolloClient = (function () {
+var ApolloClient = /** @class */ (function () {
     /**
      * Constructs an instance of {@link ApolloClient}.
      *
@@ -7462,7 +7549,8 @@ var ApolloClient = (function () {
                 // First check if devtools is not installed
                 if (typeof window.__APOLLO_DEVTOOLS_GLOBAL_HOOK__ === 'undefined') {
                     // Only for Chrome
-                    if (window.navigator && window.navigator.userAgent.indexOf('Chrome') > -1) {
+                    if (window.navigator &&
+                        window.navigator.userAgent.indexOf('Chrome') > -1) {
                         // tslint:disable-next-line
                         console.debug('Download the Apollo DevTools ' +
                             'for a better development experience: ' +
@@ -7497,18 +7585,20 @@ var ApolloClient = (function () {
             options = __assign$7({}, this.defaultOptions.watchQuery, options);
         }
         // XXX Overwriting options is probably not the best way to do this long term...
-        if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
+        if (this.disableNetworkFetches &&
+            (options.fetchPolicy === 'network-only' ||
+                options.fetchPolicy === 'cache-and-network')) {
             options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
         return this.queryManager.watchQuery(options);
     };
     /**
-     * This resolves a single query according to the options specified and returns a
-     * {@link Promise} which is either resolved with the resulting data or rejected
-     * with an error.
+     * This resolves a single query according to the options specified and
+     * returns a {@link Promise} which is either resolved with the resulting data
+     * or rejected with an error.
      *
-     * @param options An object of type {@link WatchQueryOptions} that allows us to describe
-     * how this query should be treated e.g. whether it is a polling query, whether it should hit the
+     * @param options An object of type {@link QueryOptions} that allows us to
+     * describe how this query should be treated e.g. whether it should hit the
      * server at all or just resolve from the cache, etc.
      */
     ApolloClient.prototype.query = function (options) {
@@ -7519,7 +7609,8 @@ var ApolloClient = (function () {
         if (options.fetchPolicy === 'cache-and-network') {
             throw new Error('cache-and-network fetchPolicy can only be used with watchQuery');
         }
-        // XXX Overwriting options is probably not the best way to do this long term...
+        // XXX Overwriting options is probably not the best way to do this long
+        // term...
         if (this.disableNetworkFetches && options.fetchPolicy === 'network-only') {
             options = __assign$7({}, options, { fetchPolicy: 'cache-first' });
         }
@@ -7669,7 +7760,7 @@ var ApolloClient = (function () {
         })
             .then(function () { return Promise.all(_this.resetStoreCallbacks.map(function (fn) { return fn(); })); })
             .then(function () {
-            return _this.queryManager
+            return _this.queryManager && _this.queryManager.reFetchObservableQueries
                 ? _this.queryManager.reFetchObservableQueries()
                 : Promise.resolve(null);
         });
@@ -7836,14 +7927,6 @@ var justTypenameQuery = {
     ],
 };
 
-var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 var ApolloCache = /** @class */ (function () {
     function ApolloCache() {
     }
@@ -7915,7 +7998,7 @@ var ApolloCache = /** @class */ (function () {
             // tslint:disable-next-line
             var __typename = (typenameResult && typenameResult.__typename) || '__ClientData';
             // Add a type here to satisfy the inmemory cache
-            var dataToWrite = __assign$8({ __typename: __typename }, data);
+            var dataToWrite = Object.assign({ __typename: __typename }, data);
             this.writeFragment({
                 id: id,
                 fragment: fragmentFromPojo(dataToWrite, __typename),
@@ -7945,6 +8028,9 @@ var HeuristicFragmentMatcher = /** @class */ (function () {
     };
     HeuristicFragmentMatcher.prototype.match = function (idValue, typeCondition, context) {
         var obj = context.store.get(idValue.id);
+        if (!obj && idValue.id === 'ROOT_QUERY') {
+            return true;
+        }
         if (!obj) {
             return false;
         }
@@ -8019,7 +8105,7 @@ var __extends$5 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$8 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -8183,7 +8269,7 @@ function mergeWithGenerated(generatedKey, realKey, cache) {
             mergeWithGenerated(value.id, realValue.id, cache);
         }
         cache.delete(generatedKey);
-        cache.set(realKey, __assign$9({}, generated, real));
+        cache.set(realKey, __assign$8({}, generated, real));
     });
 }
 function isDataProcessed(dataId, field, processedData) {
@@ -8217,10 +8303,10 @@ function writeFieldToStore(_a) {
     if (!field.selectionSet || value === null) {
         storeValue =
             value != null && typeof value === 'object'
-                ?
+                ? // If the scalar value is a JSON blob, we have to "escape" it so it can’t pretend to be
                     // an id.
                     { type: 'json', json: value }
-                :
+                : // Otherwise, just store the scalar directly in the store.
                     value;
     }
     else if (Array.isArray(value)) {
@@ -8291,10 +8377,15 @@ function writeFieldToStore(_a) {
             }
             if (escapedId.generated) {
                 generatedKey = escapedId.id;
-                // we should only merge if it's an object of the same type
-                // otherwise, we should delete the generated object
+                // We should only merge if it's an object of the same type,
+                // otherwise we should delete the generated object
                 if (typenameChanged) {
-                    store.delete(generatedKey);
+                    // Only delete the generated object when the old object was
+                    // inlined, and the new object is not. This is indicated by
+                    // the old id being generated, and the new id being real.
+                    if (!generated) {
+                        store.delete(generatedKey);
+                    }
                 }
                 else {
                     shouldMerge = true;
@@ -8302,7 +8393,7 @@ function writeFieldToStore(_a) {
             }
         }
     }
-    var newStoreObj = __assign$9({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
+    var newStoreObj = __assign$8({}, store.get(dataId), (_b = {}, _b[storeFieldName] = storeValue, _b));
     if (shouldMerge) {
         mergeWithGenerated(generatedKey, storeValue.id, store);
     }
@@ -8480,7 +8571,7 @@ function merge(dest, src) {
 // for things like oneOf uses in React. At this stage I doubt many people
 // are using this like that, but in the future, who knows?
 
-var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$9 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -8514,7 +8605,7 @@ var ID_KEY = typeof Symbol !== 'undefined' ? Symbol('id') : '@@id';
  */
 function readQueryFromStore(options) {
     var optsPatch = { returnPartialData: false };
-    return diffQueryAgainstStore(__assign$10({}, options, optsPatch)).result;
+    return diffQueryAgainstStore(__assign$9({}, options, optsPatch)).result;
 }
 var readStoreResolver = function (fieldName, idValue, args, context, _a) {
     var resultKey = _a.resultKey, directives = _a.directives;
@@ -8641,7 +8732,7 @@ function addPreviousResultToIdValues(value, previousResult) {
     // If the value is an array, recurse over each item trying to add the `previousResult` for that
     // item.
     if (isIdValue(value)) {
-        return __assign$10({}, value, { previousResult: previousResult });
+        return __assign$9({}, value, { previousResult: previousResult });
     }
     else if (Array.isArray(value)) {
         var idToPreviousResult_1 = new Map();
@@ -8702,7 +8793,12 @@ function resultMapper(resultFields, idValue) {
             return idValue.previousResult;
         }
     }
-    resultFields[ID_KEY] = idValue.id;
+    Object.defineProperty(resultFields, ID_KEY, {
+        enumerable: false,
+        configurable: true,
+        writable: false,
+        value: idValue.id,
+    });
     return resultFields;
 }
 /**
@@ -8726,7 +8822,7 @@ function areNestedArrayItemsStrictlyEqual(a, b) {
     return a.every(function (item, i) { return areNestedArrayItemsStrictlyEqual(item, b[i]); });
 }
 
-var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$10 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -8747,7 +8843,7 @@ var RecordingCache = /** @class */ (function () {
         return recordedData;
     };
     RecordingCache.prototype.toObject = function () {
-        return __assign$11({}, this.data, this.recordedData);
+        return __assign$10({}, this.data, this.recordedData);
     };
     RecordingCache.prototype.get = function (dataId) {
         if (this.recordedData.hasOwnProperty(dataId)) {
@@ -8771,7 +8867,7 @@ var RecordingCache = /** @class */ (function () {
     };
     RecordingCache.prototype.replace = function (newData) {
         this.clear();
-        this.recordedData = __assign$11({}, newData);
+        this.recordedData = __assign$10({}, newData);
     };
     return RecordingCache;
 }());
@@ -8790,7 +8886,7 @@ var __extends$6 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$11 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -8822,10 +8918,11 @@ var InMemoryCache = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.optimistic = [];
         _this.watches = [];
+        _this.typenameDocumentCache = new WeakMap();
         // Set this while in a transaction to prevent broadcasts...
         // don't forget to turn it back on!
         _this.silenceBroadcast = false;
-        _this.config = __assign$12({}, defaultConfig, config);
+        _this.config = __assign$11({}, defaultConfig, config);
         // backwards compat
         if (_this.config.customResolvers) {
             console.warn('customResolvers have been renamed to cacheRedirects. Please update your config as we will be deprecating customResolvers in the next major version.');
@@ -8947,8 +9044,13 @@ var InMemoryCache = /** @class */ (function (_super) {
         this.broadcastWatches();
     };
     InMemoryCache.prototype.transformDocument = function (document) {
-        if (this.addTypename)
-            return addTypenameToDocument(document);
+        if (this.addTypename) {
+            var result = this.typenameDocumentCache.get(document);
+            if (!result) {
+                this.typenameDocumentCache.set(document, (result = addTypenameToDocument(document)));
+            }
+            return result;
+        }
         return document;
     };
     InMemoryCache.prototype.readQuery = function (options, optimistic) {
@@ -9005,7 +9107,7 @@ var InMemoryCache = /** @class */ (function (_super) {
     return InMemoryCache;
 }(ApolloCache));
 
-var __assign$13 = (undefined && undefined.__assign) || Object.assign || function(t) {
+var __assign$12 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
         for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
@@ -9091,17 +9193,17 @@ var selectHttpOptionsAndBody = function (operation, fallbackConfig) {
     for (var _i = 2; _i < arguments.length; _i++) {
         configs[_i - 2] = arguments[_i];
     }
-    var options = __assign$13({}, fallbackConfig.options, { headers: fallbackConfig.headers, credentials: fallbackConfig.credentials });
+    var options = __assign$12({}, fallbackConfig.options, { headers: fallbackConfig.headers, credentials: fallbackConfig.credentials });
     var http = fallbackConfig.http;
     /*
      * use the rest of the configs to populate the options
      * configs later in the list will overwrite earlier fields
      */
     configs.forEach(function (config) {
-        options = __assign$13({}, options, config.options, { headers: __assign$13({}, options.headers, config.headers) });
+        options = __assign$12({}, options, config.options, { headers: __assign$12({}, options.headers, config.headers) });
         if (config.credentials)
             options.credentials = config.credentials;
-        http = __assign$13({}, http, config.http);
+        http = __assign$12({}, http, config.http);
     });
     //The body depends on the http options
     var operationName = operation.operationName, extensions = operation.extensions, variables = operation.variables, query = operation.query;
@@ -9647,8 +9749,8 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -9723,27 +9825,99 @@ var Apollo = /** @class */ (function () {
             });
         });
     };
-    Apollo.prototype.simpleQuery = function (query, variables, bypassCache) {
+    Apollo.prototype.simpleQuery = function (query, variables, bypassCache, context) {
         if (bypassCache === void 0) { bypassCache = false; }
         return __awaiter(this, void 0, void 0, function () {
             var fetchPolicy;
             return __generator(this, function (_a) {
                 fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-                return [2 /*return*/, this.apolloClient.query({ query: src(query), variables: variables, fetchPolicy: fetchPolicy })];
+                return [2 /*return*/, this.apolloClient.query({ query: src(query), variables: variables, fetchPolicy: fetchPolicy, context: context })];
             });
         });
     };
-    Apollo.prototype.simpleMutation = function (query, variables) {
+    Apollo.prototype.simpleMutation = function (query, variables, context) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this.apolloClient.mutate({ mutation: src(query), variables: variables })];
+                return [2 /*return*/, this.apolloClient.mutate({ mutation: src(query), variables: variables, context: context })];
             });
         });
     };
     return Apollo;
 }());
 
+var Schema = /** @class */ (function () {
+    function Schema(schema) {
+        var _this = this;
+        this.schema = schema;
+        this.types = new Map();
+        this.mutations = new Map();
+        this.queries = new Map();
+        this.schema.types.forEach(function (t) { return _this.types.set(t.name, t); });
+        this.getType('Query').fields.forEach(function (f) { return _this.queries.set(f.name, f); });
+        this.getType('Mutation').fields.forEach(function (f) { return _this.mutations.set(f.name, f); });
+    }
+    Schema.prototype.getType = function (name) {
+        name = upcaseFirstLetter(name);
+        var type = this.types.get(name);
+        if (!type)
+            throw new Error("Couldn't find Type of name " + name + " in the GraphQL Schema.");
+        return type;
+    };
+    Schema.prototype.getMutation = function (name) {
+        var mutation = this.mutations.get(name);
+        if (!mutation)
+            throw new Error("Couldn't find Mutation of name " + name + " in the GraphQL Schema.");
+        return mutation;
+    };
+    Schema.prototype.getQuery = function (name) {
+        var query = this.queries.get(name);
+        if (!query)
+            throw new Error("Couldn't find Query of name " + name + " in the GraphQL Schema.");
+        return query;
+    };
+    Schema.prototype.returnsConnection = function (field) {
+        return field.type.name.endsWith('TypeConnection');
+    };
+    return Schema;
+}());
+
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator$1 = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 var inflection$2 = require('inflection');
+var introspectionQuery = "\nquery {\n  __schema {\n  \ttypes {\n      name\n      description\n\n      fields(includeDeprecated: true) {\n        name\n        description\n\n        type {\n          name\n          kind\n        }\n      }\n\n\n      inputFields {\n        name\n        description\n\n        type {\n          name\n          kind\n        }\n      }\n    }\n  }\n}\n";
 /**
  * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
  *
@@ -9801,6 +9975,54 @@ var Context = /** @class */ (function () {
         this.instance.logger.log('models', this.instance.models);
         this.instance.logger.groupEnd();
         return this.instance;
+    };
+    Context.prototype.loadSchema = function () {
+        return __awaiter$1(this, void 0, void 0, function () {
+            var context, result;
+            return __generator$1(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!this.schema) return [3 /*break*/, 2];
+                        this.logger.log('Fetching GraphQL Schema initially ...');
+                        context = {
+                            headers: { 'X-GraphQL-Introspection-Query': 'true' }
+                        };
+                        return [4 /*yield*/, this.apollo.simpleQuery(introspectionQuery, {}, true, context)];
+                    case 1:
+                        result = _a.sent();
+                        this.schema = new Schema(result.data.__schema);
+                        this.logger.log('GraphQL Schema successful fetched', result);
+                        this.logger.log('Starting to process the schema ...');
+                        this.processSchema();
+                        this.logger.log('Schema procession done ...');
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, this.schema];
+                }
+            });
+        });
+    };
+    Context.prototype.processSchema = function () {
+        var _this = this;
+        this.models.forEach(function (model) {
+            var type;
+            try {
+                type = _this.schema.getType(model.singularName);
+            }
+            catch (error) {
+                _this.logger.warn("Ignoring entity " + model.singularName + " because it's not in the schema.");
+                return;
+            }
+            model.fields.forEach(function (field, fieldName) {
+                if (!type.fields.find(function (f) { return f.name === fieldName; })) {
+                    _this.logger.warn("Ignoring field " + model.singularName + "." + fieldName + " because it's not in the schema.");
+                    // TODO: Move skipFields to the model
+                    model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+                    if (!model.baseModel.skipFields.includes(fieldName)) {
+                        model.baseModel.skipFields.push(fieldName);
+                    }
+                }
+            });
+        });
     };
     /**
      * Returns a model from the model collection by it's name
@@ -9989,26 +10211,32 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {string}
      */
     QueryBuilder.determineAttributeType = function (model, key, value) {
-        var field = model.fields.get(key);
         var context = Context.getInstance();
-        if (field && field instanceof context.components.String) {
-            return 'String';
-        }
-        else if (field && field instanceof context.components.Number) {
-            return 'Int';
-        }
-        else if (field && field instanceof context.components.Boolean) {
-            return 'Boolean';
+        var field = model.fields.get(key);
+        var schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
+        if (schemaField) {
+            return schemaField.type.name;
         }
         else {
-            if (typeof value === 'number')
-                return 'Int';
-            if (typeof value === 'string')
+            if (field instanceof context.components.String) {
                 return 'String';
-            if (typeof value === 'boolean')
+            }
+            else if (field && field instanceof context.components.Number) {
+                return 'Int';
+            }
+            else if (field && field instanceof context.components.Boolean) {
                 return 'Boolean';
+            }
+            else {
+                if (typeof value === 'number')
+                    return 'Int';
+                if (typeof value === 'string')
+                    return 'String';
+                if (typeof value === 'boolean')
+                    return 'Boolean';
+                throw new Error("Can't find suitable graphql type for field '" + model.singularName + "." + key + "'.");
+            }
         }
-        throw new Error("Can't find suitable graphql type for variable " + key + " for model " + model.singularName);
     };
     /**
      * Generates the fields for all related models.
@@ -10062,7 +10290,7 @@ var QueryBuilder = /** @class */ (function () {
     return QueryBuilder;
 }());
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10070,15 +10298,15 @@ var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$1 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$2 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10111,16 +10339,16 @@ var Store = /** @class */ (function () {
      * @return {Promise<Data>} Inserted data as hash
      */
     Store.insertData = function (data, dispatch) {
-        return __awaiter$1(this, void 0, void 0, function () {
+        return __awaiter$2(this, void 0, void 0, function () {
             var insertedData;
             var _this = this;
-            return __generator$1(this, function (_a) {
+            return __generator$2(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         insertedData = {};
-                        return [4 /*yield*/, Promise.all(Object.keys(data).map(function (key) { return __awaiter$1(_this, void 0, void 0, function () {
+                        return [4 /*yield*/, Promise.all(Object.keys(data).map(function (key) { return __awaiter$2(_this, void 0, void 0, function () {
                                 var value, newData;
-                                return __generator$1(this, function (_a) {
+                                return __generator$2(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
                                             value = data[key];
@@ -10177,7 +10405,7 @@ var NameGenerator = /** @class */ (function () {
     return NameGenerator;
 }());
 
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10185,15 +10413,15 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$2 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$3 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10229,21 +10457,25 @@ var Action = /** @class */ (function () {
      * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    Action.mutation = function (name, variables, dispatch, model, multiple) {
-        if (multiple === void 0) { multiple = false; }
-        return __awaiter$2(this, void 0, void 0, function () {
-            var query, newData, insertedData, records, newRecord;
-            return __generator$2(this, function (_a) {
+    Action.mutation = function (name, variables, dispatch, model) {
+        return __awaiter$3(this, void 0, void 0, function () {
+            var context, schema, multiple, query, newData, insertedData, records, newRecord;
+            return __generator$3(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!variables) return [3 /*break*/, 4];
+                        if (!variables) return [3 /*break*/, 5];
+                        context = Context.getInstance();
+                        return [4 /*yield*/, context.loadSchema()];
+                    case 1:
+                        schema = _a.sent();
+                        multiple = schema.returnsConnection(schema.getMutation(name));
                         query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
                         return [4 /*yield*/, Context.getInstance().apollo.request(model, query, variables, true)];
-                    case 1:
-                        newData = _a.sent();
-                        if (!(name !== NameGenerator.getNameForDestroy(model))) return [3 /*break*/, 3];
-                        return [4 /*yield*/, Store.insertData(newData, dispatch)];
                     case 2:
+                        newData = _a.sent();
+                        if (!(name !== NameGenerator.getNameForDestroy(model))) return [3 /*break*/, 4];
+                        return [4 /*yield*/, Store.insertData(newData, dispatch)];
+                    case 3:
                         insertedData = _a.sent();
                         records = insertedData[model.pluralName];
                         newRecord = records[records.length - 1];
@@ -10254,9 +10486,9 @@ var Action = /** @class */ (function () {
                             Context.getInstance().logger.log("Couldn't find the record of type '", model.pluralName, "' within", insertedData, '. Falling back to find()');
                             return [2 /*return*/, model.baseModel.query().last()];
                         }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/, true];
-                    case 4: return [2 /*return*/];
+                        _a.label = 4;
+                    case 4: return [2 /*return*/, true];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -10326,7 +10558,7 @@ var __extends$8 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10334,15 +10566,15 @@ var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$3 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$4 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10378,9 +10610,9 @@ var Destroy = /** @class */ (function (_super) {
     Destroy.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
-        return __awaiter$3(this, void 0, void 0, function () {
+        return __awaiter$4(this, void 0, void 0, function () {
             var model, mutationName;
-            return __generator$3(this, function (_c) {
+            return __generator$4(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 2];
@@ -10409,7 +10641,7 @@ var __extends$9 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10417,15 +10649,15 @@ var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$4 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$5 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10460,12 +10692,15 @@ var Fetch = /** @class */ (function (_super) {
      */
     Fetch.call = function (_a, params) {
         var state = _a.state, dispatch = _a.dispatch;
-        return __awaiter$4(this, void 0, void 0, function () {
+        return __awaiter$5(this, void 0, void 0, function () {
             var context, model, filter, bypassCache, multiple, name, query, data;
-            return __generator$4(this, function (_b) {
+            return __generator$5(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         context = Context.getInstance();
+                        return [4 /*yield*/, context.loadSchema()];
+                    case 1:
+                        _b.sent();
                         model = this.getModelFromState(state);
                         filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
                         bypassCache = params && params.bypassCache;
@@ -10473,7 +10708,7 @@ var Fetch = /** @class */ (function (_super) {
                         name = NameGenerator.getNameForFetch(model, multiple);
                         query = QueryBuilder.buildQuery('query', model, name, filter, multiple, multiple);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
-                    case 1:
+                    case 2:
                         data = _b.sent();
                         // Insert incoming data into the store
                         return [2 /*return*/, Store.insertData(data, dispatch)];
@@ -10494,7 +10729,7 @@ var __extends$10 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10502,15 +10737,15 @@ var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$5 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$6 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10547,25 +10782,26 @@ var Mutate = /** @class */ (function (_super) {
      */
     Mutate.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var args = _b.args, multiple = _b.multiple, name = _b.name;
-        return __awaiter$5(this, void 0, void 0, function () {
-            var model;
-            return __generator$5(this, function (_c) {
-                if (name) {
-                    model = this.getModelFromState(state);
-                    args = this.prepareArgs(args);
-                    // There could be anything in the args, but we have to be sure that all records are gone through
-                    // transformOutgoingData()
-                    this.transformArgs(args);
-                    if (multiple === undefined)
-                        multiple = !args['id'];
-                    // Send the mutation
-                    return [2 /*return*/, Action.mutation(name, args, dispatch, model, multiple)];
+        var args = _b.args, name = _b.name;
+        return __awaiter$6(this, void 0, void 0, function () {
+            var context, schema, model;
+            return __generator$6(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        if (!name) return [3 /*break*/, 2];
+                        context = Context.getInstance();
+                        return [4 /*yield*/, context.loadSchema()];
+                    case 1:
+                        schema = _c.sent();
+                        model = this.getModelFromState(state);
+                        args = this.prepareArgs(args);
+                        // There could be anything in the args, but we have to be sure that all records are gone through
+                        // transformOutgoingData()
+                        this.transformArgs(args);
+                        // Send the mutation
+                        return [2 /*return*/, Action.mutation(name, args, dispatch, model)];
+                    case 2: throw new Error("The mutate action requires the mutation name ('mutation') to be set");
                 }
-                else {
-                    throw new Error("The mutate action requires the mutation name ('mutation') to be set");
-                }
-                return [2 /*return*/];
             });
         });
     };
@@ -10582,7 +10818,7 @@ var __extends$11 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10590,15 +10826,15 @@ var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$6 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$7 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10634,9 +10870,9 @@ var Persist = /** @class */ (function (_super) {
     Persist.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
-        return __awaiter$6(this, void 0, void 0, function () {
+        return __awaiter$7(this, void 0, void 0, function () {
             var model, mutationName, oldRecord, newRecord;
-            return __generator$6(this, function (_c) {
+            return __generator$7(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 3];
@@ -10669,8 +10905,8 @@ var Persist = /** @class */ (function (_super) {
      * @returns {Promise<void>}
      */
     Persist.deleteObsoleteRecord = function (model, newRecord, oldRecord) {
-        return __awaiter$6(this, void 0, void 0, function () {
-            return __generator$6(this, function (_a) {
+        return __awaiter$7(this, void 0, void 0, function () {
+            return __generator$7(this, function (_a) {
                 if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
                     Context.getInstance().logger.log('Dropping deprecated record', oldRecord);
                     return [2 /*return*/, oldRecord.$delete()];
@@ -10692,7 +10928,7 @@ var __extends$12 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10700,15 +10936,15 @@ var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$7 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$8 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10745,9 +10981,9 @@ var Push = /** @class */ (function (_super) {
     Push.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
         var data = _b.data, args = _b.args;
-        return __awaiter$7(this, void 0, void 0, function () {
+        return __awaiter$8(this, void 0, void 0, function () {
             var model, mutationName;
-            return __generator$7(this, function (_c) {
+            return __generator$8(this, function (_c) {
                 if (data) {
                     model = this.getModelFromState(state);
                     mutationName = NameGenerator.getNameForPush(model);
@@ -10777,7 +11013,7 @@ var __extends$13 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10785,15 +11021,15 @@ var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$8 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$9 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10831,26 +11067,28 @@ var Query = /** @class */ (function (_super) {
      */
     Query.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var name = _b.name, multiple = _b.multiple, filter = _b.filter, bypassCache = _b.bypassCache;
-        return __awaiter$8(this, void 0, void 0, function () {
-            var context, model, query, data;
-            return __generator$8(this, function (_c) {
+        var name = _b.name, filter = _b.filter, bypassCache = _b.bypassCache;
+        return __awaiter$9(this, void 0, void 0, function () {
+            var context, schema, model, multiple, query, data;
+            return __generator$9(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        if (!name) return [3 /*break*/, 2];
+                        if (!name) return [3 /*break*/, 3];
                         context = Context.getInstance();
+                        return [4 /*yield*/, context.loadSchema()];
+                    case 1:
+                        schema = _c.sent();
                         model = this.getModelFromState(state);
                         // Filter
                         filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
-                        if (multiple === undefined)
-                            multiple = !filter['id'];
+                        multiple = schema.returnsConnection(schema.getQuery(name));
                         query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
-                    case 1:
+                    case 2:
                         data = _c.sent();
                         // Insert incoming data into the store
                         return [2 /*return*/, Store.insertData(data, dispatch)];
-                    case 2: throw new Error("The customQuery action requires the query name ('name') to be set");
+                    case 3: throw new Error("The customQuery action requires the query name ('name') to be set");
                 }
             });
         });
@@ -10868,7 +11106,7 @@ var __extends$14 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10876,15 +11114,15 @@ var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$9 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$10 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -10921,9 +11159,9 @@ var SimpleQuery = /** @class */ (function (_super) {
     SimpleQuery.call = function (_a, _b) {
         var dispatch = _a.dispatch;
         var query = _b.query, bypassCache = _b.bypassCache, variables = _b.variables;
-        return __awaiter$9(this, void 0, void 0, function () {
+        return __awaiter$10(this, void 0, void 0, function () {
             var result;
-            return __generator$9(this, function (_c) {
+            return __generator$10(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!query) return [3 /*break*/, 2];
@@ -10950,7 +11188,7 @@ var __extends$15 = (undefined && undefined.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -10958,15 +11196,15 @@ var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arg
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$10 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$11 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -11002,9 +11240,9 @@ var SimpleMutation = /** @class */ (function (_super) {
     SimpleMutation.call = function (_a, _b) {
         var dispatch = _a.dispatch;
         var query = _b.query, variables = _b.variables;
-        return __awaiter$10(this, void 0, void 0, function () {
+        return __awaiter$11(this, void 0, void 0, function () {
             var result;
-            return __generator$10(this, function (_c) {
+            return __generator$11(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!query) return [3 /*break*/, 2];
@@ -11021,7 +11259,7 @@ var SimpleMutation = /** @class */ (function (_super) {
     return SimpleMutation;
 }(Action));
 
-var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
@@ -11029,15 +11267,15 @@ var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arg
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator$11 = (undefined && undefined.__generator) || function (thisArg, body) {
+var __generator$12 = (undefined && undefined.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
     return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -11093,9 +11331,9 @@ var VuexORMGraphQL = /** @class */ (function () {
         // Register static model convenience methods
         context.components.Model.fetch = function (filter, bypassCache) {
             if (bypassCache === void 0) { bypassCache = false; }
-            return __awaiter$11(this, void 0, void 0, function () {
+            return __awaiter$12(this, void 0, void 0, function () {
                 var filterObj;
-                return __generator$11(this, function (_a) {
+                return __generator$12(this, function (_a) {
                     filterObj = filter;
                     if (typeof filterObj !== 'object')
                         filterObj = { id: filter };
@@ -11104,16 +11342,16 @@ var VuexORMGraphQL = /** @class */ (function () {
             });
         };
         context.components.Model.mutate = function (params) {
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_a) {
                     return [2 /*return*/, this.dispatch('mutate', params)];
                 });
             });
         };
         context.components.Model.customQuery = function (_a) {
             var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_b) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_b) {
                     return [2 /*return*/, this.dispatch('query', { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
                 });
             });
@@ -11122,8 +11360,8 @@ var VuexORMGraphQL = /** @class */ (function () {
         var model = context.components.Model.prototype;
         model.$mutate = function (_a) {
             var name = _a.name, args = _a.args, multiple = _a.multiple;
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_b) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_b) {
                     args = args || {};
                     if (!args['id'])
                         args['id'] = this.id;
@@ -11133,8 +11371,8 @@ var VuexORMGraphQL = /** @class */ (function () {
         };
         model.$customQuery = function (_a) {
             var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_b) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_b) {
                     filter = filter || {};
                     if (!filter['id'])
                         filter['id'] = this.id;
@@ -11143,29 +11381,29 @@ var VuexORMGraphQL = /** @class */ (function () {
             });
         };
         model.$persist = function (args) {
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('persist', { id: this.id, args: args })];
                 });
             });
         };
         model.$push = function (args) {
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('push', { data: this, args: args })];
                 });
             });
         };
         model.$destroy = function () {
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_a) {
                     return [2 /*return*/, this.$dispatch('destroy', { id: this.id })];
                 });
             });
         };
         model.$deleteAndDestroy = function () {
-            return __awaiter$11(this, void 0, void 0, function () {
-                return __generator$11(this, function (_a) {
+            return __awaiter$12(this, void 0, void 0, function () {
+                return __generator$12(this, function (_a) {
                     switch (_a.label) {
                         case 0: return [4 /*yield*/, this.$delete()];
                         case 1:
