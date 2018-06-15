@@ -6,8 +6,39 @@ import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
 import { Data, Options, Schema } from '../support/interfaces';
-import { introspectionQuery } from 'graphql';
 const inflection = require('inflection');
+
+const introspectionQuery = `
+query {
+  __schema {
+  	types {
+      name
+      description
+
+      fields(includeDeprecated: true) {
+        name
+        description
+
+        type {
+          name
+          kind
+        }
+      }
+
+
+      inputFields {
+        name
+        description
+
+        type {
+          name
+          kind
+        }
+      }
+    }
+  }
+}
+`;
 
 /**
  * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
@@ -121,7 +152,12 @@ export default class Context {
     if (!this.schema) {
       this.logger.log('Fetching GraphQL Schema initially ...');
 
-      const result = await this.apollo.simpleQuery(introspectionQuery, {}, true);
+      // We send a custom header along with the request. This is required for our test suite to mock the schema request.
+      const context = {
+        headers: { 'X-GraphQL-Introspection-Query': 'true' }
+      };
+
+      const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
       this.schema = result.data.__schema;
 
       this.logger.log('GraphQL Schema successful fetched', this.schema);

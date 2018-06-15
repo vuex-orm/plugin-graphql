@@ -4,6 +4,7 @@ import Vuex from 'vuex';
 import VuexORM, { Database, Model } from '@vuex-orm/core';
 import fetchMock from 'fetch-mock';
 import VuexORMGraphQLPlugin from "app";
+import {introspectionResult} from "./mock-data";
 
 Vue.use(Vuex);
 
@@ -37,7 +38,15 @@ export function createStore (entities) {
 
 export async function sendWithMockFetch(response, callback, dontExpectRequest = false) {
   fetchMock.config.overwriteRoutes = true;
-  fetchMock.post('/graphql', response);
+
+  fetchMock.post('/graphql', (url, opts) => {
+    if (opts.headers['X-GraphQL-Introspection-Query'] === 'true') {
+      return introspectionResult;
+    } else {
+      return response;
+    }
+  });
+
 
   try {
     await callback();
