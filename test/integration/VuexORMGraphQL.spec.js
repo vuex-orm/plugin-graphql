@@ -50,7 +50,9 @@ describe('VuexORMGraphQL', () => {
 
     const context = Context.getInstance();
     expect(!!context.schema).not.toEqual(false);
-    expect(context.schema.getType('Post').name).toEqual('Post')
+    expect(context.schema.getType('Post').name).toEqual('Post');
+    expect(context.schema.getQuery('post').name).toEqual('post');
+    expect(context.schema.getMutation('createPost').name).toEqual('createPost');
   });
 
   describe('fetch', () => {

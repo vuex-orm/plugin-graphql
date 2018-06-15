@@ -37,7 +37,7 @@ export default class Schema {
   }
 
   public getQuery (name: string): GraphQLType {
-    const query = this.types.get(name);
+    const query = this.queries.get(name);
 
     if (!query) throw new Error(`Couldn't find Query of name ${name} in the GraphQL Schema.`);
 
