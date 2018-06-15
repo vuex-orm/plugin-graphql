@@ -23,6 +23,13 @@ the following GraphQL query is generated:
 mutation DeletePost($id: ID!) {
   deletePost(id: $id) {
     id
+    title
+    content
+    
+    user {
+      id
+      email
+    }
   }
 }
 ```

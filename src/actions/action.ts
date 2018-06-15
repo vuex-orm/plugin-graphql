@@ -6,6 +6,7 @@ import Model from '../orm/model';
 import State from '@vuex-orm/core/lib/modules/State';
 import Transformer from '../graphql/transformer';
 import NameGenerator from '../graphql/name-generator';
+import Schema from '../graphql/schema';
 
 const inflection = require('inflection');
 
@@ -24,11 +25,12 @@ export default class Action {
    * @returns {Promise<any>}
    */
   protected static async mutation (name: string, variables: Data | undefined, dispatch: DispatchFunction,
-                                   model: Model, multiple: boolean = false): Promise<any> {
+                                   model: Model): Promise<any> {
     if (variables) {
-      const context = Context.getInstance();
-      await context.loadSchema();
+      const context: Context = Context.getInstance();
+      const schema: Schema = await context.loadSchema();
 
+      const multiple: boolean = schema.returnsConnection(schema.getMutation(name));
       const query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation

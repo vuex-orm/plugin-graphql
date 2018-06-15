@@ -97,7 +97,7 @@ export default class Context {
   /**
    * The graphql schema. Is null until the first request.
    */
-  private schema: Schema | undefined;
+  public schema: Schema | undefined;
 
   /**
    * Private constructor, called by the setup method
@@ -149,7 +149,7 @@ export default class Context {
     return this.instance;
   }
 
-  public async loadSchema () {
+  public async loadSchema (): Promise<Schema> {
     if (!this.schema) {
       this.logger.log('Fetching GraphQL Schema initially ...');
 
@@ -166,6 +166,8 @@ export default class Context {
       this.processSchema();
       this.logger.log('Schema procession done ...');
     }
+
+    return this.schema;
   }
 
   /**

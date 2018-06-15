@@ -38,10 +38,11 @@ await Post.dispatch('query', { name: 'example', filter: { id: post.id } });
 As you can see you have to provide the query name and any further arguments you want to pass. In this case we send
 the post id, but this could be anything else. Please also notice that `record.$customQuery` automatically adds the id
 of the record into the arguments list. The plugin automatically determines if there are multiple records or a single
-record is requests by looking in the arguments hash if there is a `id` field and respectively setups the query.
+record is returned by looking in the arguments hash if there is a `id` field and respectively setups the query.
 
 A model related custom query is always tied to the model, so the plugin expects the return value of the custom query
-is of the model type. In this example that means, that Vuex-ORM-GraphQL expects that the `example` query is of type `Post`. 
+is of the model type. In this example that means, that Vuex-ORM-GraphQL expects that the `example` query is of type
+`Post`.
 
 This generates the following query:
 
@@ -76,7 +77,6 @@ database.
 Following fields are allowed:
 
 - `name`: Required. The name of the query.
-- `multiple`: Whether the query is of a connection type (multiple records are returned) or not (single record is returned).
 - `filter`: Hash map with filters. These are passed as a filter typed variable like in fetch.
 - `bypassCache`: Whether to bypass the caching.
 
@@ -176,7 +176,6 @@ database.
 Following fields are allowed:
 
 - `name`: Required. The name of the mutation.
-- `multiple`: Whether the mutation is of a connection type (multiple records are returned) or not (single record is returned).
 - `args`: Hash map with arguments (variables).
 
 
@@ -220,14 +219,5 @@ Following fields are allowed:
 
 ## Multiple or single record
 
-Vuex-ORM-GraphQL tries to determine automatically if a  single record or a connection (multiple records) is returned by
-a query/mutation via checking if a `id` field is set in the filter/args/variables. But sometimes you have a
-query/mutation without ID but it still returns a single record or vice versa. For this case you can manually set the
-`multiple` field to tell the plugin how the result is shaped:
-
-```javascript
-await Post.customQuery({ name: 'example', multiple: true, filter: { id: post.id } });
-```
-
-In future versions of this project this might be obsolete because it could consume and analyze the schema to know
-how the queries and mutations are shaped.
+Vuex-ORM-GraphQL will determine automatically if a single record or a connection (multiple records) is returned by a
+query/mutation via checking your GraphQL Schema. How smart is this?

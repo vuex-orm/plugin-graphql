@@ -484,7 +484,27 @@ export const introspectionResult = {
             },
             {
               "__typename": "__Field",
+              "name": "example",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "Post",
+                "kind": "OBJECT"
+              }
+            },
+            {
+              "__typename": "__Field",
               "name": "posts",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "PostTypeConnection",
+                "kind": "OBJECT"
+              }
+            },
+            {
+              "__typename": "__Field",
+              "name": "unpublishedPosts",
               "description": null,
               "type": {
                 "__typename": "__Type",
@@ -2404,6 +2424,16 @@ export const introspectionResult = {
             {
               "__typename": "__Field",
               "name": "updatePost",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "OBJECT",
+                "name": "Post",
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "upvotePost",
               "description": null,
               "type": {
                 "__typename": "__Type",

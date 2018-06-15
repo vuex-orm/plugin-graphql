@@ -396,25 +396,71 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
     it('sends the correct query to the API', async () => {
       const response = {
         data: {
-          deleteUser: {
-            __typename: 'user',
-            id: 1,
-            name: 'Charlie Brown'
+          deletePost: {
+            __typename: 'post',
+            id: 42,
+            otherId: 13548,
+            published: true,
+            title: 'Example Post 5',
+            content: 'Foo',
+            comments: {
+              __typename: 'comment',
+              nodes: [{
+                __typename: 'comment',
+                id: 15,
+                content: 'Works!',
+                subjectId: 42,
+                subjectType: 'Post',
+                user: {
+                  __typename: 'user',
+                  id: 2,
+                  name: 'Charly Brown'
+                }
+              }]
+            },
+            user: {
+              __typename: 'user',
+              id: 1,
+              name: 'Johnny Imba',
+            }
           }
         }
       };
 
       const request = await sendWithMockFetch(response, async () => {
-        const user = User.find(1);
-        await user.$destroy();
+        const post = Post.find(1);
+        await post.$destroy();
       });
 
       expect(request.variables).toEqual({ id: 1 });
       expect(request.query).toEqual(`
-mutation DeleteUser($id: ID!) {
-  deleteUser(id: $id) {
+mutation DeletePost($id: ID!) {
+  deletePost(id: $id) {
     id
-    name
+    content
+    title
+    otherId
+    published
+    user {
+      id
+      name
+      __typename
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        user {
+          id
+          name
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
     __typename
   }
 }

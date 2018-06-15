@@ -36,7 +36,7 @@ export default class Schema {
     return mutation;
   }
 
-  public getQuery (name: string): GraphQLType {
+  public getQuery (name: string): GraphQLField {
     const query = this.queries.get(name);
 
     if (!query) throw new Error(`Couldn't find Query of name ${name} in the GraphQL Schema.`);

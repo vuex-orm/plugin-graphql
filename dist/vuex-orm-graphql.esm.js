@@ -9870,7 +9870,7 @@ var Schema = /** @class */ (function () {
         return mutation;
     };
     Schema.prototype.getQuery = function (name) {
-        var query = this.types.get(name);
+        var query = this.queries.get(name);
         if (!query)
             throw new Error("Couldn't find Query of name " + name + " in the GraphQL Schema.");
         return query;
@@ -9996,7 +9996,7 @@ var Context = /** @class */ (function () {
                         this.processSchema();
                         this.logger.log('Schema procession done ...');
                         _a.label = 2;
-                    case 2: return [2 /*return*/];
+                    case 2: return [2 /*return*/, this.schema];
                 }
             });
         });
@@ -10451,10 +10451,9 @@ var Action = /** @class */ (function () {
      * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    Action.mutation = function (name, variables, dispatch, model, multiple) {
-        if (multiple === void 0) { multiple = false; }
+    Action.mutation = function (name, variables, dispatch, model) {
         return __awaiter$3(this, void 0, void 0, function () {
-            var context, query, newData, insertedData, records, newRecord;
+            var context, schema, multiple, query, newData, insertedData, records, newRecord;
             return __generator$3(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -10462,7 +10461,8 @@ var Action = /** @class */ (function () {
                         context = Context.getInstance();
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
-                        _a.sent();
+                        schema = _a.sent();
+                        multiple = schema.returnsConnection(schema.getMutation(name));
                         query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
                         return [4 /*yield*/, Context.getInstance().apollo.request(model, query, variables, true)];
                     case 2:
@@ -10776,25 +10776,26 @@ var Mutate = /** @class */ (function (_super) {
      */
     Mutate.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var args = _b.args, multiple = _b.multiple, name = _b.name;
+        var args = _b.args, name = _b.name;
         return __awaiter$6(this, void 0, void 0, function () {
-            var model;
+            var context, schema, model;
             return __generator$6(this, function (_c) {
-                if (name) {
-                    model = this.getModelFromState(state);
-                    args = this.prepareArgs(args);
-                    // There could be anything in the args, but we have to be sure that all records are gone through
-                    // transformOutgoingData()
-                    this.transformArgs(args);
-                    if (multiple === undefined)
-                        multiple = !args['id'];
-                    // Send the mutation
-                    return [2 /*return*/, Action.mutation(name, args, dispatch, model, multiple)];
+                switch (_c.label) {
+                    case 0:
+                        if (!name) return [3 /*break*/, 2];
+                        context = Context.getInstance();
+                        return [4 /*yield*/, context.loadSchema()];
+                    case 1:
+                        schema = _c.sent();
+                        model = this.getModelFromState(state);
+                        args = this.prepareArgs(args);
+                        // There could be anything in the args, but we have to be sure that all records are gone through
+                        // transformOutgoingData()
+                        this.transformArgs(args);
+                        // Send the mutation
+                        return [2 /*return*/, Action.mutation(name, args, dispatch, model)];
+                    case 2: throw new Error("The mutate action requires the mutation name ('mutation') to be set");
                 }
-                else {
-                    throw new Error("The mutate action requires the mutation name ('mutation') to be set");
-                }
-                return [2 /*return*/];
             });
         });
     };
@@ -11060,9 +11061,9 @@ var Query = /** @class */ (function (_super) {
      */
     Query.call = function (_a, _b) {
         var state = _a.state, dispatch = _a.dispatch;
-        var name = _b.name, multiple = _b.multiple, filter = _b.filter, bypassCache = _b.bypassCache;
+        var name = _b.name, filter = _b.filter, bypassCache = _b.bypassCache;
         return __awaiter$9(this, void 0, void 0, function () {
-            var context, model, query, data;
+            var context, schema, model, multiple, query, data;
             return __generator$9(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -11070,12 +11071,11 @@ var Query = /** @class */ (function (_super) {
                         context = Context.getInstance();
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
-                        _c.sent();
+                        schema = _c.sent();
                         model = this.getModelFromState(state);
                         // Filter
                         filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
-                        if (multiple === undefined)
-                            multiple = !filter['id'];
+                        multiple = schema.returnsConnection(schema.getQuery(name));
                         query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 2:
