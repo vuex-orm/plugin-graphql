@@ -2,19 +2,24 @@ import QueryBuilder from 'app/graphql/query-builder';
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import {prettify} from "app/support/utils";
 import Context from "app/common/context";
+import Schema from "app/graphql/schema";
+import {introspectionResult} from "../support/mock-data";
 
 let context;
 let store;
 let vuexOrmGraphQL;
 
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-});
-
-
 describe('QueryBuilder', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+
+    // Make sure schema is filled
+    context.schema = new Schema(introspectionResult.data.__schema);
+    context.processSchema();
+  });
+
   describe('.buildArguments', () => {
     it('can generate signatures', () => {
       const model = context.getModel('post');
@@ -240,7 +245,7 @@ mutation DeleteUser($id: ID!) {
     it('throws a exception when the input is something unknown', () => {
       const model = context.getModel('post');
       expect(() => QueryBuilder.determineAttributeType(model, 'asdfsfa', undefined))
-        .toThrowError("Can't find suitable graphql type for variable asdfsfa for model post");
+        .toThrowError("Can't find suitable graphql type for field 'post.asdfsfa'");
     });
 
     it('returns String for string typed fields', () => {

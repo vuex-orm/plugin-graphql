@@ -6,12 +6,13 @@ let store;
 let vuexOrmGraphQL;
 let context;
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-});
 
 describe('Context', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+  });
+
   describe('.debugMode', () => {
     it('to be false', () => {
       expect(context.debugMode).toEqual(false)

@@ -10001,6 +10001,29 @@ var Context = /** @class */ (function () {
             });
         });
     };
+    Context.prototype.processSchema = function () {
+        var _this = this;
+        this.models.forEach(function (model) {
+            var type;
+            try {
+                type = _this.schema.getType(model.singularName);
+            }
+            catch (error) {
+                _this.logger.warn("Ignoring entity " + model.singularName + " because it's not in the schema.");
+                return;
+            }
+            model.fields.forEach(function (field, fieldName) {
+                if (!type.fields.find(function (f) { return f.name === fieldName; })) {
+                    _this.logger.warn("Ignoring field " + model.singularName + "." + fieldName + " because it's not in the schema.");
+                    // TODO: Move skipFields to the model
+                    model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+                    if (!model.baseModel.skipFields.includes(fieldName)) {
+                        model.baseModel.skipFields.push(fieldName);
+                    }
+                }
+            });
+        });
+    };
     /**
      * Returns a model from the model collection by it's name
      *
@@ -10028,29 +10051,6 @@ var Context = /** @class */ (function () {
             var model = new Model(entity.model);
             _this.models.set(model.singularName, model);
             Model.augment(model);
-        });
-    };
-    Context.prototype.processSchema = function () {
-        var _this = this;
-        this.models.forEach(function (model) {
-            var type;
-            try {
-                type = _this.schema.getType(model.singularName);
-            }
-            catch (error) {
-                _this.logger.warn("Ignoring entity " + model.singularName + " because it's not in the schema.");
-                return;
-            }
-            model.fields.forEach(function (field, fieldName) {
-                if (!type.fields.find(function (f) { return f.name === fieldName; })) {
-                    _this.logger.warn("Ignoring field " + model.singularName + "." + fieldName + " because it's not in the schema.");
-                    // TODO: Move skipFields to the model
-                    model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
-                    if (!model.baseModel.skipFields.includes(fieldName)) {
-                        model.baseModel.skipFields.push(fieldName);
-                    }
-                }
-            });
         });
     };
     return Context;
@@ -10211,26 +10211,32 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {string}
      */
     QueryBuilder.determineAttributeType = function (model, key, value) {
-        var field = model.fields.get(key);
         var context = Context.getInstance();
-        if (field && field instanceof context.components.String) {
-            return 'String';
-        }
-        else if (field && field instanceof context.components.Number) {
-            return 'Int';
-        }
-        else if (field && field instanceof context.components.Boolean) {
-            return 'Boolean';
+        var field = model.fields.get(key);
+        var schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
+        if (schemaField) {
+            return schemaField.type.name;
         }
         else {
-            if (typeof value === 'number')
-                return 'Int';
-            if (typeof value === 'string')
+            if (field instanceof context.components.String) {
                 return 'String';
-            if (typeof value === 'boolean')
+            }
+            else if (field && field instanceof context.components.Number) {
+                return 'Int';
+            }
+            else if (field && field instanceof context.components.Boolean) {
                 return 'Boolean';
+            }
+            else {
+                if (typeof value === 'number')
+                    return 'Int';
+                if (typeof value === 'string')
+                    return 'String';
+                if (typeof value === 'boolean')
+                    return 'Boolean';
+                throw new Error("Can't find suitable graphql type for field '" + model.singularName + "." + key + "'.");
+            }
         }
-        throw new Error("Can't find suitable graphql type for variable " + key + " for model " + model.singularName);
     };
     /**
      * Generates the fields for all related models.

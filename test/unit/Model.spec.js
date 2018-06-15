@@ -1,19 +1,25 @@
 import Model from 'app/orm/model';
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data';
 import Context from "app/common/context";
+import Schema from "app/graphql/schema";
+import {introspectionResult} from "../support/mock-data";
 
 let model;
 let store;
 let vuexOrmGraphQL;
 let context;
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-  model = context.getModel('user');
-});
-
 describe('Model', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+    model = context.getModel('user');
+
+    // Make sure schema is filled
+    context.schema = new Schema(introspectionResult.data.__schema);
+    context.processSchema();
+  });
+
   describe('.singularName', () => {
     it('returns the singular name of the entity', () => {
       expect(model.singularName).toEqual('user');

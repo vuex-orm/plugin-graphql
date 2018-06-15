@@ -185,22 +185,28 @@ export default class QueryBuilder {
    * @returns {string}
    */
   private static determineAttributeType (model: Model, key: string, value: any): string {
+    const context: Context = Context.getInstance();
     const field: undefined | Field = model.fields.get(key);
-    const context = Context.getInstance();
 
-    if (field && field instanceof context.components.String) {
-      return 'String';
-    } else if (field && field instanceof context.components.Number) {
-      return 'Int';
-    } else if (field && field instanceof context.components.Boolean) {
-      return 'Boolean';
+    const schemaField = context.schema!.getType(model.singularName).fields!.find(f => f.name === key);
+
+    if (schemaField) {
+      return schemaField.type.name;
     } else {
-      if (typeof value === 'number') return 'Int';
-      if (typeof value === 'string') return 'String';
-      if (typeof value === 'boolean') return 'Boolean';
-    }
+      if (field instanceof context.components.String) {
+        return 'String';
+      } else if (field && field instanceof context.components.Number) {
+        return 'Int';
+      } else if (field && field instanceof context.components.Boolean) {
+        return 'Boolean';
+      } else {
+        if (typeof value === 'number') return 'Int';
+        if (typeof value === 'string') return 'String';
+        if (typeof value === 'boolean') return 'Boolean';
 
-    throw new Error(`Can't find suitable graphql type for variable ${key} for model ${model.singularName}`);
+        throw new Error(`Can't find suitable graphql type for field '${model.singularName}.${key}'.`);
+      }
+    }
   }
 
   /**

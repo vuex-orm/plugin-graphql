@@ -170,6 +170,31 @@ export default class Context {
     return this.schema;
   }
 
+  public processSchema () {
+    this.models.forEach((model: Model) => {
+      let type: GraphQLType;
+
+      try {
+        type = this.schema!.getType(model.singularName);
+      } catch (error) {
+        this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
+        return;
+      }
+
+      model.fields.forEach((field: Field, fieldName: string) => {
+        if (!type.fields!.find(f => f.name === fieldName)) {
+          this.logger.warn(`Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`);
+
+          // TODO: Move skipFields to the model
+          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+          if (!model.baseModel.skipFields.includes(fieldName)) {
+            model.baseModel.skipFields.push(fieldName);
+          }
+        }
+      });
+    });
+  }
+
   /**
    * Returns a model from the model collection by it's name
    *
@@ -196,31 +221,6 @@ export default class Context {
       const model: Model = new Model(entity.model as ORMModel);
       this.models.set(model.singularName, model);
       Model.augment(model);
-    });
-  }
-
-  private processSchema () {
-    this.models.forEach((model: Model) => {
-      let type: GraphQLType;
-
-      try {
-        type = this.schema!.getType(model.singularName);
-      } catch (error) {
-        this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
-        return;
-      }
-
-      model.fields.forEach((field: Field, fieldName: string) => {
-        if (!type.fields!.find(f => f.name === fieldName)) {
-          this.logger.warn(`Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`);
-
-          // TODO: Move skipFields to the model
-          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
-          if (!model.baseModel.skipFields.includes(fieldName)) {
-            model.baseModel.skipFields.push(fieldName);
-          }
-        }
-      });
     });
   }
 }

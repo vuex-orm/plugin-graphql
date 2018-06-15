@@ -1,19 +1,24 @@
 import Transformer from "app/graphql/transformer";
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import Context from "app/common/context";
+import Schema from "app/graphql/schema";
+import {introspectionResult} from "../support/mock-data";
 
 let store;
 let vuexOrmGraphQL;
 let context;
 
 
-beforeEach(async () => {
-  [store, vuexOrmGraphQL] = await setupMockData();
-  context = Context.getInstance();
-});
-
-
 describe('Transformer', () => {
+  beforeEach(async () => {
+    [store, vuexOrmGraphQL] = await setupMockData();
+    context = Context.getInstance();
+
+    // Make sure schema is filled
+    context.schema = new Schema(introspectionResult.data.__schema);
+    context.processSchema();
+  });
+
   describe('.transformOutgoingData', () => {
     it('transforms models to a useful data hashmap', () => {
       const user = User.query().first();
