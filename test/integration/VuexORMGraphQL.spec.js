@@ -1,5 +1,6 @@
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import {sendWithMockFetch} from "../support/helpers";
+import Context from "app/common/context";
 
 let store;
 let vuexOrmGraphQL;
@@ -7,6 +8,49 @@ let vuexOrmGraphQL;
 describe('VuexORMGraphQL', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
+  });
+
+  it('fetches the schema on the first action', async () => {
+    const response = {
+      data: {
+        post: {
+          __typename: 'post',
+          id: 42,
+          otherId: 13548,
+          published: true,
+          title: 'Example Post 5',
+          content: 'Foo',
+          comments: {
+            __typename: 'comment',
+            nodes: [{
+              __typename: 'comment',
+              id: 15,
+              content: 'Works!',
+              subjectId: 42,
+              subjectType: 'Post',
+              user: {
+                __typename: 'user',
+                id: 2,
+                name: 'Charly Brown'
+              }
+            }]
+          },
+          user: {
+            __typename: 'user',
+            id: 1,
+            name: 'Johnny Imba',
+          }
+        }
+      }
+    };
+
+    let request = await sendWithMockFetch(response, async () => {
+      await Post.fetch(42);
+    });
+
+    const context = Context.getInstance();
+    expect(!!context.schema).not.toEqual(false);
+    expect(context.schema.types[0].name).toEqual('Boolean')
   });
 
   describe('fetch', () => {
