@@ -234,7 +234,7 @@ export default class QueryBuilder {
         context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
-      if (model.shouldEagerLoadRelation(field, relatedModel) &&
+      if (model.shouldEagerLoadRelation(name, field, relatedModel) &&
           !this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
 
         const multiple: boolean = !(field instanceof context.components.BelongsTo ||

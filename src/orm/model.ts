@@ -206,14 +206,20 @@ export default class Model {
    * @param {Model} relatedModel Related model
    * @returns {boolean}
    */
-  public shouldEagerLoadRelation (field: Field, relatedModel: Model): boolean {
+  public shouldEagerLoadRelation (fieldName: string, field: Field, relatedModel: Model): boolean {
     const context = Context.getInstance();
 
-    if (field instanceof context.components.HasOne || field instanceof context.components.BelongsTo) {
+    if (
+      field instanceof context.components.HasOne ||
+      field instanceof context.components.BelongsTo ||
+      field instanceof context.components.MorphOne
+    ) {
       return true;
     }
 
     const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
-    return eagerLoadList.find((n) => n === relatedModel.singularName || n === relatedModel.pluralName) !== undefined;
+    return eagerLoadList.find((n) => {
+      return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+    }) !== undefined;
   }
 }

@@ -136,19 +136,19 @@ describe('Model', () => {
   describe('.shouldEagerLoadRelation', () => {
     it('returns true if field is a belongsTo or hasOne relation', () => {
       const model = context.getModel('post');
-      expect(model.shouldEagerLoadRelation(model.fields.get('user'), context.getModel('user'))).toEqual(true);
+      expect(model.shouldEagerLoadRelation('user', model.fields.get('user'), context.getModel('user'))).toEqual(true);
 
       // TODO test hasOne
     });
 
     it('returns true if field is in the eagerLoad array', () => {
       const model = context.getModel('post');
-      expect(model.shouldEagerLoadRelation(model.fields.get('comments'), context.getModel('comment'))).toEqual(true);
+      expect(model.shouldEagerLoadRelation('post', model.fields.get('comments'), context.getModel('comment'))).toEqual(true);
     });
 
     it('returns false if field neither belongsTo/hasOne nor in the eagerLoad array', () => {
       const model = context.getModel('user');
-      expect(model.shouldEagerLoadRelation(model.fields.get('comments'), context.getModel('comment'))).toEqual(false);
+      expect(model.shouldEagerLoadRelation('user', model.fields.get('comments'), context.getModel('comment'))).toEqual(false);
     });
   });
 });
