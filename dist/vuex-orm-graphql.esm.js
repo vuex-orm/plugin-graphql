@@ -3767,17 +3767,22 @@ var Model = /** @class */ (function () {
      * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo or
      * hasOne related entities are always eager loaded. Others can be added to the `eagerLoad` array of the model.
      *
+     * @param {string} fieldName Name of the field
      * @param {Field} field Relation field
      * @param {Model} relatedModel Related model
      * @returns {boolean}
      */
-    Model.prototype.shouldEagerLoadRelation = function (field, relatedModel) {
+    Model.prototype.shouldEagerLoadRelation = function (fieldName, field, relatedModel) {
         var context = Context.getInstance();
-        if (field instanceof context.components.HasOne || field instanceof context.components.BelongsTo) {
+        if (field instanceof context.components.HasOne ||
+            field instanceof context.components.BelongsTo ||
+            field instanceof context.components.MorphOne) {
             return true;
         }
         var eagerLoadList = this.baseModel.eagerLoad || [];
-        return eagerLoadList.find(function (n) { return n === relatedModel.singularName || n === relatedModel.pluralName; }) !== undefined;
+        return eagerLoadList.find(function (n) {
+            return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+        }) !== undefined;
     };
     return Model;
 }());
@@ -10264,7 +10269,7 @@ var QueryBuilder = /** @class */ (function () {
                 relatedModel = context.getModel(name);
                 context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
             }
-            if (model.shouldEagerLoadRelation(field, relatedModel) &&
+            if (model.shouldEagerLoadRelation(name, field, relatedModel) &&
                 !_this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
                 var multiple = !(field instanceof context.components.BelongsTo ||
                     field instanceof context.components.HasOne);

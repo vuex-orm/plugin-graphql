@@ -202,6 +202,7 @@ export default class Model {
    * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo or
    * hasOne related entities are always eager loaded. Others can be added to the `eagerLoad` array of the model.
    *
+   * @param {string} fieldName Name of the field
    * @param {Field} field Relation field
    * @param {Model} relatedModel Related model
    * @returns {boolean}
