@@ -554,21 +554,21 @@ export const introspectionResult = {
             },
             {
               "__typename": "__Field",
-              "name": "tariffTariff",
+              "name": "tariffOption",
               "description": null,
               "type": {
                 "__typename": "__Type",
-                "name": "TariffTariff",
+                "name": "TariffOption",
                 "kind": "OBJECT"
               }
             },
             {
               "__typename": "__Field",
-              "name": "tariffTariffs",
+              "name": "tariffOptions",
               "description": null,
               "type": {
                 "__typename": "__Type",
-                "name": "TariffTariffTypeConnection",
+                "name": "TariffOptionTypeConnection",
                 "kind": "OBJECT"
               }
             },

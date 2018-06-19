@@ -19,6 +19,30 @@ export default class Schema {
     this.getType('Mutation').fields!.forEach(f => this.mutations.set(f.name, f));
   }
 
+  public determineQueryMode (): string {
+    let connection: GraphQLType | null = null;
+
+    this.queries.forEach((query) => {
+      if (query.type.name.endsWith('TypeConnection')) {
+        connection = this.getType(query.type.name);
+        return false; // break
+      }
+      return true;
+    });
+
+    if (!connection) {
+      throw new Error("Can't determine the connection mode due to the fact that here are no connection types in the schema. Please set the connecitonQueryMode via Vuex-ORM-GraphQL options!");
+    }
+
+    if (connection!.fields!.find(f => f.name === 'nodes')) {
+      return 'nodes';
+    } else if (connection!.fields!.find(f => f.name === 'edges')) {
+      return 'edges';
+    } else {
+      return 'plain';
+    }
+  }
+
   public getType (name: string): GraphQLType {
     name = upcaseFirstLetter(name);
     const type = this.types.get(name);

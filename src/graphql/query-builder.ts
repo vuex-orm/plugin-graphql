@@ -42,13 +42,33 @@ export default class QueryBuilder {
     `;
 
     if (multiple) {
-      return `
-        ${name ? name : model.pluralName}${params} {
-          nodes {
+      const header: string = `${name ? name : model.pluralName}${params}`;
+
+      if (context.connectionQueryMode === 'nodes') {
+        return `
+          ${header} {
+            nodes {
+              ${fields}
+            }
+          }
+        `;
+      } else if (context.connectionQueryMode === 'nodes') {
+        return `
+          ${header} {
+            edges {
+              node {
+                ${fields}
+              }
+            }
+          }
+        `;
+      } else {
+        return `
+          ${header} {
             ${fields}
           }
-        }
-      `;
+        `;
+      }
     } else {
       return `
         ${name ? name : model.singularName}${params} {
