@@ -52,7 +52,7 @@ export default class QueryBuilder {
             }
           }
         `;
-      } else if (context.connectionQueryMode === 'nodes') {
+      } else if (context.connectionQueryMode === 'edges') {
         return `
           ${header} {
             edges {

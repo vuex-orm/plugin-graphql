@@ -9861,6 +9861,29 @@ var Schema = /** @class */ (function () {
         this.getType('Query').fields.forEach(function (f) { return _this.queries.set(f.name, f); });
         this.getType('Mutation').fields.forEach(function (f) { return _this.mutations.set(f.name, f); });
     }
+    Schema.prototype.determineQueryMode = function () {
+        var _this = this;
+        var connection = null;
+        this.queries.forEach(function (query) {
+            if (query.type.name.endsWith('TypeConnection')) {
+                connection = _this.getType(query.type.name);
+                return false; // break
+            }
+            return true;
+        });
+        if (!connection) {
+            throw new Error("Can't determine the connection mode due to the fact that here are no connection types in the schema. Please set the connecitonQueryMode via Vuex-ORM-GraphQL options!");
+        }
+        if (connection.fields.find(function (f) { return f.name === 'nodes'; })) {
+            return 'nodes';
+        }
+        else if (connection.fields.find(function (f) { return f.name === 'edges'; })) {
+            return 'edges';
+        }
+        else {
+            return 'plain';
+        }
+    };
     Schema.prototype.getType = function (name) {
         name = upcaseFirstLetter(name);
         var type = this.types.get(name);
@@ -9947,6 +9970,10 @@ var Context = /** @class */ (function () {
          * @type {boolean}
          */
         this.debugMode = false;
+        /**
+         * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+         */
+        this.connectionQueryMode = 'auto';
         this.components = components;
         this.options = options;
         this.database = options.database;
@@ -9989,6 +10016,12 @@ var Context = /** @class */ (function () {
                     case 0:
                         if (!!this.schema) return [3 /*break*/, 2];
                         this.logger.log('Fetching GraphQL Schema initially ...');
+                        if (this.options.connectionQueryMode) {
+                            this.connectionQueryMode = this.options.connectionQueryMode;
+                        }
+                        else {
+                            this.connectionQueryMode = 'auto';
+                        }
                         context = {
                             headers: { 'X-GraphQL-Introspection-Query': 'true' }
                         };
@@ -9999,7 +10032,7 @@ var Context = /** @class */ (function () {
                         this.logger.log('GraphQL Schema successful fetched', result);
                         this.logger.log('Starting to process the schema ...');
                         this.processSchema();
-                        this.logger.log('Schema procession done ...');
+                        this.logger.log('Schema procession done!');
                         _a.label = 2;
                     case 2: return [2 /*return*/, this.schema];
                 }
@@ -10028,6 +10061,14 @@ var Context = /** @class */ (function () {
                 }
             });
         });
+        if (this.connectionQueryMode === 'auto') {
+            this.connectionQueryMode = this.schema.determineQueryMode();
+            this.logger.log("Connection Query Mode is " + this.connectionQueryMode + " by automatic detection");
+        }
+        else {
+            console.log('---> Config!');
+            this.logger.log("Connection Query Mode is " + this.connectionQueryMode + " by config");
+        }
     };
     /**
      * Returns a model from the model collection by it's name
@@ -10092,7 +10133,16 @@ var QueryBuilder = /** @class */ (function () {
         var params = this.buildArguments(model, args, false, filter, allowIdFields);
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreRelations) + "\n    ";
         if (multiple) {
-            return "\n        " + (name ? name : model.pluralName) + params + " {\n          nodes {\n            " + fields + "\n          }\n        }\n      ";
+            var header = "" + (name ? name : model.pluralName) + params;
+            if (context.connectionQueryMode === 'nodes') {
+                return "\n          " + header + " {\n            nodes {\n              " + fields + "\n            }\n          }\n        ";
+            }
+            else if (context.connectionQueryMode === 'edges') {
+                return "\n          " + header + " {\n            edges {\n              node {\n                " + fields + "\n              }\n            }\n          }\n        ";
+            }
+            else {
+                return "\n          " + header + " {\n            " + fields + "\n          }\n        ";
+            }
         }
         else {
             return "\n        " + (name ? name : model.singularName) + params + " {\n          " + fields + "\n        }\n      ";
