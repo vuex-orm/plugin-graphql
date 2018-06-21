@@ -64,7 +64,7 @@ describe('QueryBuilder', () => {
 
   describe('.buildRelationsQuery', () => {
     it('generates query fields for all relations', () => {
-      const fields = QueryBuilder.buildRelationsQuery(context.getModel('post'));
+      const fields = QueryBuilder.buildRelationsQuery(context.getModel('post'), ['post']);
       const query = prettify(`query test { ${fields} }`).trim();
 
       expect(query).toEqual(`
@@ -72,6 +72,12 @@ query test {
   user {
     id
     name
+    profile {
+      id
+      email
+      age
+      sex
+    }
   }
   comments {
     nodes {
@@ -82,6 +88,12 @@ query test {
       user {
         id
         name
+        profile {
+          id
+          email
+          age
+          sex
+        }
       }
     }
   }
@@ -102,6 +114,12 @@ query users {
     nodes {
       id
       name
+      profile {
+        id
+        email
+        age
+        sex
+      }
     }
   }
 }
@@ -121,6 +139,12 @@ query users {
     nodes {
       id
       name
+      profile {
+        id
+        email
+        age
+        sex
+      }
     }
   }
 }
@@ -140,6 +164,12 @@ query users {
       node {
         id
         name
+        profile {
+          id
+          email
+          age
+          sex
+        }
       }
     }
   }
@@ -158,6 +188,12 @@ query users {
   users(filter: {age: $age}) {
     id
     name
+    profile {
+      id
+      email
+      age
+      sex
+    }
   }
 }
       `.trim());
@@ -185,6 +221,12 @@ query Posts($title: String!) {
       user {
         id
         name
+        profile {
+          id
+          email
+          age
+          sex
+        }
       }
       comments {
         nodes {
@@ -195,6 +237,12 @@ query Posts($title: String!) {
           user {
             id
             name
+            profile {
+              id
+              email
+              age
+              sex
+            }
           }
         }
       }
@@ -222,6 +270,12 @@ mutation CreatePost($post: PostInput!) {
     user {
       id
       name
+      profile {
+        id
+        email
+        age
+        sex
+      }
     }
     comments {
       nodes {
@@ -232,6 +286,12 @@ mutation CreatePost($post: PostInput!) {
         user {
           id
           name
+          profile {
+            id
+            email
+            age
+            sex
+          }
         }
       }
     }
@@ -258,6 +318,12 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
     user {
       id
       name
+      profile {
+        id
+        email
+        age
+        sex
+      }
     }
     comments {
       nodes {
@@ -268,6 +334,12 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
         user {
           id
           name
+          profile {
+            id
+            email
+            age
+            sex
+          }
         }
       }
     }
@@ -288,6 +360,12 @@ mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
     id
     name
+    profile {
+      id
+      email
+      age
+      sex
+    }
   }
 }
       `.trim() + "\n");

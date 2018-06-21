@@ -8,8 +8,24 @@ export class User extends ORMModel {
     return {
       id: this.increment(0),
       name: this.string(''),
+      profileId: this.number(0),
       posts: this.hasMany(Post, 'userId'),
-      comments: this.hasMany(Comment, 'userId')
+      comments: this.hasMany(Comment, 'userId'),
+      profile: this.belongsTo(Profile, 'profileId')
+    };
+  }
+}
+
+export class Profile extends ORMModel {
+  static entity = 'profiles';
+
+  static fields () {
+    return {
+      id: this.increment(0),
+      email: this.string(''),
+      age: this.number(0),
+      sex: this.boolean(true),
+      user: this.hasOne(User, 'profileId')
     };
   }
 }
@@ -82,6 +98,7 @@ export class TariffTariffOption extends ORMModel {
 
 export class Tariff extends ORMModel {
   static entity = 'tariffs';
+  static eagerLoad = ['tariffOptions'];
 
   static fields () {
     return {
@@ -100,6 +117,7 @@ export class Tariff extends ORMModel {
 
 export class TariffOption extends ORMModel {
   static entity = 'tariffOptions';
+  static eagerLoad = ['tariffs'];
 
   static fields () {
     return {
@@ -118,6 +136,7 @@ export async function setupMockData() {
 
   [store, vuexOrmGraphQL] = createStore([
     { model: User },
+    { model: Profile },
     { model: Post },
     { model: Video },
     { model: Comment },
@@ -126,8 +145,12 @@ export async function setupMockData() {
     { model: TariffTariffOption }
   ]);
 
-  await User.insert({ data: { id: 1, name: 'Charlie Brown' }});
-  await User.insert({ data: { id: 2, name: 'Peppermint Patty' }});
+  await Profile.insert({ data: { id: 1, age: 8, sex: true, email: 'charly@peanuts.com' }});
+  await Profile.insert({ data: { id: 2, age: 9, sex: false, email: 'pepper@peanuts.com' }});
+
+  await User.insert({ data: { id: 1, name: 'Charlie Brown', profileId: 1 }});
+  await User.insert({ data: { id: 2, name: 'Peppermint Patty', profileId: 2 }});
+
   await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
   await Post.insert({ data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
   await Video.insert({ data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
@@ -454,6 +477,26 @@ export const introspectionResult = {
             },
             {
               "__typename": "__Field",
+              "name": "profile",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "Profile",
+                "kind": "OBJECT"
+              }
+            },
+            {
+              "__typename": "__Field",
+              "name": "profiles",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "ProfileTypeConnection",
+                "kind": "OBJECT"
+              }
+            },
+            {
+              "__typename": "__Field",
               "name": "video",
               "description": null,
               "type": {
@@ -620,6 +663,30 @@ export const introspectionResult = {
                 "__typename": "__Type",
                 "kind": "SCALAR",
                 "name": "String",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "profile",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Profile",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "profileId",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Int",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -824,6 +891,74 @@ export const introspectionResult = {
                 "__typename": "__Type",
                 "kind": "OBJECT",
                 "name": "CommentTypeConnection",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+          ],
+          "inputFields": null,
+        },
+        {
+          "__typename": "__Type",
+          "name": "Profile",
+          "description": null,
+          "fields": [
+            {
+              "__typename": "__Field",
+              "name": "id",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "ID",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "email",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "String",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "age",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Int",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "sex",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Boolean",
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "__typename": "__Field",
+              "name": "user",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "User",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1796,6 +1931,103 @@ export const introspectionResult = {
         },
         {
           "__typename": "__Type",
+          "name": "ProfileTypeConnection",
+          "description": "The connection type for Profile.",
+          "fields": [
+            {
+              "__typename": "__Field",
+              "name": "count",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Int",
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "edges",
+              "description": "A list of edges.",
+              "type": {
+                "__typename": "__Type",
+                "kind": "LIST",
+                "name": null,
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "nodes",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "LIST",
+                "name": null,
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "pageInfo",
+              "description": "Information to aid in pagination.",
+              "type": {
+                "__typename": "__Type",
+                "kind": "NON_NULL",
+                "name": null,
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "totalCount",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "SCALAR",
+                "name": "Int",
+              },
+            }
+          ],
+          "inputFields": null,
+        },
+        {
+          "__typename": "__Type",
+          "name": "ProfileEdge",
+          "description": "An edge in a connection.",
+          "fields": [
+            {
+              "__typename": "__Field",
+              "name": "cursor",
+              "description": "A cursor for use in pagination.",
+              "type": {
+                "__typename": "__Type",
+                "kind": "NON_NULL",
+                "name": null,
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "node",
+              "description": "The item at the end of the edge.",
+              "type": {
+                "__typename": "__Type",
+                "kind": "OBJECT",
+                "name": "Profile",
+              },
+            }
+          ],
+          "inputFields": null,
+        },
+        {
+          "__typename": "__Type",
+          "kind": "INPUT_OBJECT",
+          "name": "ProfileFilter",
+          "description": null,
+          "fields": null,
+          "inputFields": [],
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "__typename": "__Type",
           "name": "VideoTypeConnection",
           "description": "The connection type for Video.",
           "fields": [
@@ -2403,6 +2635,26 @@ export const introspectionResult = {
             },
             {
               "__typename": "__Field",
+              "name": "createProfile",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "OBJECT",
+                "name": "Profile",
+              },
+            },
+            {
+              "__typename": "__Field",
+              "name": "updateProfile",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "kind": "OBJECT",
+                "name": "Profile",
+              },
+            },
+            {
+              "__typename": "__Field",
               "name": "createPost",
               "description": null,
               "type": {
@@ -2597,6 +2849,34 @@ export const introspectionResult = {
         {
           "__typename": "__Type",
           "name": "UserInput",
+          "description": null,
+          "fields": null,
+          "inputFields": [
+            {
+              "__typename": "__InputValue",
+              "name": "id",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "ID",
+                "kind": "SCALAR"
+              },
+            },
+            {
+              "__typename": "__InputValue",
+              "name": "name",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "String",
+                "kind": "SCALAR"
+              },
+            },
+          ],
+        },
+        {
+          "__typename": "__Type",
+          "name": "ProfileInput",
           "description": null,
           "fields": null,
           "inputFields": [

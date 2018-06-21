@@ -3,6 +3,7 @@ import { Arguments, Field } from '../support/interfaces';
 import { upcaseFirstLetter } from '../support/utils';
 import gql from 'graphql-tag';
 import Context from '../common/context';
+const inflection = require('inflection');
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -14,9 +15,10 @@ export default class QueryBuilder {
    * @param {Model|string} model The model to use
    * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
    * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-   * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
+   * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
    *                                    Mainly for recursion
    * @param {string} name Optional name of the field. If not provided, this will be the model name
+   * @param filter
    * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
    *                                See buildArguments
    * @returns {string}
@@ -26,7 +28,7 @@ export default class QueryBuilder {
   public static buildField (model: Model | string,
                      multiple: boolean = true,
                      args?: Arguments,
-                     ignoreRelations: Array<string> = [],
+                     path: Array<string> = [],
                      name?: string,
                      filter: boolean = false,
                      allowIdFields: boolean = false): string {
@@ -35,10 +37,11 @@ export default class QueryBuilder {
     model = context.getModel(model);
 
     let params: string = this.buildArguments(model, args, false, filter, allowIdFields);
+    path = path.length === 0 ? [model.singularName] : path;
 
     const fields = `
       ${model.getQueryFields().join(' ')}
-      ${this.buildRelationsQuery(model, ignoreRelations)}
+      ${this.buildRelationsQuery(model, path)}
     `;
 
     if (multiple) {
@@ -233,10 +236,10 @@ export default class QueryBuilder {
    * Generates the fields for all related models.
    *
    * @param {Model} model
-   * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
+   * @param {Array<Model>} path
    * @returns {string}
    */
-  private static buildRelationsQuery (model: (null | Model), ignoreRelations: Array<string> = []): string {
+  private static buildRelationsQuery (model: (null | Model), path: Array<string> = []): string {
     if (model === null) return '';
 
     const context = Context.getInstance();
@@ -254,31 +257,22 @@ export default class QueryBuilder {
         context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
-      if (model.shouldEagerLoadRelation(name, field, relatedModel) &&
-          !this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
+      const singularizedFieldName = inflection.singularize(name);
+      const ignore = path.includes(singularizedFieldName);
 
+      // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
+
+      if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
         const multiple: boolean = !(field instanceof context.components.BelongsTo ||
           field instanceof context.components.HasOne);
 
-        ignoreRelations.push(`${model.singularName}.${relatedModel.singularName}`);
-        relationQueries.push(this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
+        const newPath = path.slice(0);
+        newPath.push(singularizedFieldName);
+
+        relationQueries.push(this.buildField(relatedModel, multiple, undefined, newPath, name, false));
       }
     });
 
     return relationQueries.join('\n');
-  }
-
-  /**
-   * Tells if a relation should be ignored because it's included in the ignoreRelations array.
-   * @param {Model} model
-   * @param {Model} relatedModel
-   * @param {Array<string>} ignoreRelations
-   * @returns {boolean}
-   */
-  private static shouldRelationBeIgnored (model: Model, relatedModel: Model, ignoreRelations: Array<string>): boolean {
-    const relevantRelation = `${model.singularName}.${relatedModel.singularName}`;
-    return ignoreRelations.find((r) => {
-      return r === relevantRelation;
-    }) !== undefined;
   }
 }

@@ -10102,6 +10102,7 @@ var Context = /** @class */ (function () {
     return Context;
 }());
 
+var inflection$3 = require('inflection');
 /**
  * Contains all logic to build GraphQL queries/mutations.
  */
@@ -10114,24 +10115,26 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Model|string} model The model to use
      * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
      * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
-     * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
+     * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
      *                                    Mainly for recursion
      * @param {string} name Optional name of the field. If not provided, this will be the model name
+     * @param filter
      * @param {boolean} allowIdFields Optional. Determines if id fields will be ignored for the argument generation.
      *                                See buildArguments
      * @returns {string}
      *
      * @todo Do we need the allowIdFields param?
      */
-    QueryBuilder.buildField = function (model, multiple, args, ignoreRelations, name, filter, allowIdFields) {
+    QueryBuilder.buildField = function (model, multiple, args, path, name, filter, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
-        if (ignoreRelations === void 0) { ignoreRelations = []; }
+        if (path === void 0) { path = []; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = false; }
         var context = Context.getInstance();
         model = context.getModel(model);
         var params = this.buildArguments(model, args, false, filter, allowIdFields);
-        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, ignoreRelations) + "\n    ";
+        path = path.length === 0 ? [model.singularName] : path;
+        var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, path) + "\n    ";
         if (multiple) {
             var header = "" + (name ? name : model.pluralName) + params;
             if (context.connectionQueryMode === 'nodes') {
@@ -10297,12 +10300,12 @@ var QueryBuilder = /** @class */ (function () {
      * Generates the fields for all related models.
      *
      * @param {Model} model
-     * @param {Array<Model>} ignoreRelations The models in this list are ignored (while traversing relations).
+     * @param {Array<Model>} path
      * @returns {string}
      */
-    QueryBuilder.buildRelationsQuery = function (model, ignoreRelations) {
+    QueryBuilder.buildRelationsQuery = function (model, path) {
         var _this = this;
-        if (ignoreRelations === void 0) { ignoreRelations = []; }
+        if (path === void 0) { path = []; }
         if (model === null)
             return '';
         var context = Context.getInstance();
@@ -10319,28 +10322,18 @@ var QueryBuilder = /** @class */ (function () {
                 relatedModel = context.getModel(name);
                 context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
             }
-            if (model.shouldEagerLoadRelation(name, field, relatedModel) &&
-                !_this.shouldRelationBeIgnored(model, relatedModel, ignoreRelations)) {
+            var singularizedFieldName = inflection$3.singularize(name);
+            var ignore = path.includes(singularizedFieldName);
+            // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
+            if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 var multiple = !(field instanceof context.components.BelongsTo ||
                     field instanceof context.components.HasOne);
-                ignoreRelations.push(model.singularName + "." + relatedModel.singularName);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, ignoreRelations, name, false));
+                var newPath = path.slice(0);
+                newPath.push(singularizedFieldName);
+                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, newPath, name, false));
             }
         });
         return relationQueries.join('\n');
-    };
-    /**
-     * Tells if a relation should be ignored because it's included in the ignoreRelations array.
-     * @param {Model} model
-     * @param {Model} relatedModel
-     * @param {Array<string>} ignoreRelations
-     * @returns {boolean}
-     */
-    QueryBuilder.shouldRelationBeIgnored = function (model, relatedModel, ignoreRelations) {
-        var relevantRelation = model.singularName + "." + relatedModel.singularName;
-        return ignoreRelations.find(function (r) {
-            return r === relevantRelation;
-        }) !== undefined;
     };
     return QueryBuilder;
 }());
@@ -10495,7 +10488,7 @@ var __generator$3 = (undefined && undefined.__generator) || function (thisArg, b
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var inflection$3 = require('inflection');
+var inflection$4 = require('inflection');
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
  */
@@ -10592,7 +10585,7 @@ var Action = /** @class */ (function () {
         Object.keys(args).forEach(function (key) {
             var value = args[key];
             if (value instanceof context.components.Model) {
-                var model = context.getModel(inflection$3.singularize(value.$self().entity));
+                var model = context.getModel(inflection$4.singularize(value.$self().entity));
                 var transformedValue = Transformer.transformOutgoingData(model, value);
                 context.logger.log('A', key, 'model was found within the variables and will be transformed from', value, 'to', transformedValue);
                 args[key] = transformedValue;
