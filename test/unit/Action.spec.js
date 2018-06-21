@@ -43,7 +43,17 @@ describe('Action', () => {
           otherId: 9,
           published: true,
           title: 'Example post 1',
-          user: { id: 1, name: 'Charlie Brown'},
+          user: {
+            id: 1,
+            name: 'Charlie Brown',
+            "profile": {
+              "age": 8,
+              "email": "charly@peanuts.com",
+              "id": 1,
+              "sex": true,
+            },
+            "profileId": 1,
+          },
           userId: 1
         },
 

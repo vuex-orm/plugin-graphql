@@ -23,7 +23,7 @@ describe('Transformer', () => {
     it('transforms models to a useful data hashmap', () => {
       const user = User.query().first();
       const transformedData = Transformer.transformOutgoingData(context.getModel('user'), user);
-      expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown' });
+      expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown', profileId: 1 });
     });
   });
 
