@@ -210,7 +210,7 @@ export default class QueryBuilder {
 
     const schemaField = context.schema!.getType(model.singularName).fields!.find(f => f.name === key);
 
-    if (schemaField) {
+    if (schemaField && schemaField.type.name) {
       return schemaField.type.name;
     } else {
       if (field instanceof context.components.String) {

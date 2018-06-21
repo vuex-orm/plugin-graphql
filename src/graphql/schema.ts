@@ -23,7 +23,7 @@ export default class Schema {
     let connection: GraphQLType | null = null;
 
     this.queries.forEach((query) => {
-      if (query.type.name.endsWith('TypeConnection')) {
+      if (query.type.name && query.type.name.endsWith('TypeConnection')) {
         connection = this.getType(query.type.name);
         return false; // break
       }
@@ -68,7 +68,7 @@ export default class Schema {
     return query;
   }
 
-  public returnsConnection (field: GraphQLField) {
-    return field.type.name.endsWith('TypeConnection');
+  public returnsConnection (field: GraphQLField): boolean {
+    return (field.type.name && field.type.name.endsWith('TypeConnection')) as boolean;
   }
 }

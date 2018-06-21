@@ -59,7 +59,7 @@ export interface GraphQLField {
 
 export interface GraphQLTypeDefinition {
   kind: string;
-  name: string;
+  name?: string;
 }
 
 export interface GraphQLSchema {

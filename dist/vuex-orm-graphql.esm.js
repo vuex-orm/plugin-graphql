@@ -9865,7 +9865,7 @@ var Schema = /** @class */ (function () {
         var _this = this;
         var connection = null;
         this.queries.forEach(function (query) {
-            if (query.type.name.endsWith('TypeConnection')) {
+            if (query.type.name && query.type.name.endsWith('TypeConnection')) {
                 connection = _this.getType(query.type.name);
                 return false; // break
             }
@@ -9904,7 +9904,7 @@ var Schema = /** @class */ (function () {
         return query;
     };
     Schema.prototype.returnsConnection = function (field) {
-        return field.type.name.endsWith('TypeConnection');
+        return (field.type.name && field.type.name.endsWith('TypeConnection'));
     };
     return Schema;
 }());
@@ -10269,7 +10269,7 @@ var QueryBuilder = /** @class */ (function () {
         var context = Context.getInstance();
         var field = model.fields.get(key);
         var schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
-        if (schemaField) {
+        if (schemaField && schemaField.type.name) {
             return schemaField.type.name;
         }
         else {
