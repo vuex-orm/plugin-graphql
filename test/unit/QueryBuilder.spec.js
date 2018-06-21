@@ -106,7 +106,62 @@ query users {
   }
 }
       `.trim());
+    });
 
+    describe('connection querys', () => {
+      it('contains a nodes field when connection mode is nodes', () => {
+        context.connectionQueryMode = 'nodes';
+
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        query = prettify(`query users { ${query} }`).trim();
+
+        expect(query).toEqual(`
+query users {
+  users(filter: {age: $age}) {
+    nodes {
+      id
+      name
+    }
+  }
+}
+      `.trim());
+      });
+
+      it('contains a edges field when connection mode is edges', () => {
+        context.connectionQueryMode = 'edges';
+
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        query = prettify(`query users { ${query} }`).trim();
+
+        expect(query).toEqual(`
+query users {
+  users(filter: {age: $age}) {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+      `.trim());
+      });
+
+      it('contains no meta field when connection mode is plain', () => {
+        context.connectionQueryMode = 'plain';
+
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        query = prettify(`query users { ${query} }`).trim();
+
+        expect(query).toEqual(`
+query users {
+  users(filter: {age: $age}) {
+    id
+    name
+  }
+}
+      `.trim());
+      });
     });
   });
 

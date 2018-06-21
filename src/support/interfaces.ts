@@ -11,6 +11,7 @@ export interface Options {
   credentials?: string;
   useGETForQueries?: boolean;
   debug?: boolean;
+  connectionQueryMode?: string;
 }
 
 export interface ActionParams {
@@ -58,7 +59,7 @@ export interface GraphQLField {
 
 export interface GraphQLTypeDefinition {
   kind: string;
-  name: string;
+  name?: string;
 }
 
 export interface GraphQLSchema {

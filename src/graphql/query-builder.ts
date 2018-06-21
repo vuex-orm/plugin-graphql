@@ -42,13 +42,33 @@ export default class QueryBuilder {
     `;
 
     if (multiple) {
-      return `
-        ${name ? name : model.pluralName}${params} {
-          nodes {
+      const header: string = `${name ? name : model.pluralName}${params}`;
+
+      if (context.connectionQueryMode === 'nodes') {
+        return `
+          ${header} {
+            nodes {
+              ${fields}
+            }
+          }
+        `;
+      } else if (context.connectionQueryMode === 'edges') {
+        return `
+          ${header} {
+            edges {
+              node {
+                ${fields}
+              }
+            }
+          }
+        `;
+      } else {
+        return `
+          ${header} {
             ${fields}
           }
-        }
-      `;
+        `;
+      }
     } else {
       return `
         ${name ? name : model.singularName}${params} {
@@ -190,7 +210,7 @@ export default class QueryBuilder {
 
     const schemaField = context.schema!.getType(model.singularName).fields!.find(f => f.name === key);
 
-    if (schemaField) {
+    if (schemaField && schemaField.type.name) {
       return schemaField.type.name;
     } else {
       if (field instanceof context.components.String) {

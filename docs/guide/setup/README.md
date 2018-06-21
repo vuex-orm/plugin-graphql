@@ -35,6 +35,7 @@ These are the possible options to pass when calling `VuexORM.use()`:
 - `headers` (optional, default: `{}`) HTTP Headers. See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
 - `credentials` (optional, default: `same-origin`) Credentials Policy. See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
 - `useGETForQueries` (optional, default: `false`) Use GET for queries (not for mutations). See [apollo-link-http])(https://github.com/apollographql/apollo-link/tree/master/packages/apollo-link-http#options)
+- `connectionQueryMode` (optional, default: `auto`). One of `auto | nodes | edges | plain`. See [Connection Mode](/guide/connection-mode)
 
 More options will come in future releases.
 

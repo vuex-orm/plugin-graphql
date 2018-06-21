@@ -100,6 +100,11 @@ export default class Context {
   public schema: Schema | undefined;
 
   /**
+   * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+   */
+  public connectionQueryMode: string = 'auto';
+
+  /**
    * Private constructor, called by the setup method
    *
    * @constructor
@@ -153,6 +158,12 @@ export default class Context {
     if (!this.schema) {
       this.logger.log('Fetching GraphQL Schema initially ...');
 
+      if (this.options.connectionQueryMode) {
+        this.connectionQueryMode = this.options.connectionQueryMode;
+      } else {
+        this.connectionQueryMode = 'auto';
+      }
+
       // We send a custom header along with the request. This is required for our test suite to mock the schema request.
       const context = {
         headers: { 'X-GraphQL-Introspection-Query': 'true' }
@@ -162,9 +173,10 @@ export default class Context {
       this.schema = new Schema(result.data.__schema);
 
       this.logger.log('GraphQL Schema successful fetched', result);
+
       this.logger.log('Starting to process the schema ...');
       this.processSchema();
-      this.logger.log('Schema procession done ...');
+      this.logger.log('Schema procession done!');
     }
 
     return this.schema;
@@ -193,6 +205,14 @@ export default class Context {
         }
       });
     });
+
+    if (this.connectionQueryMode === 'auto') {
+      this.connectionQueryMode = this.schema!.determineQueryMode();
+      this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by automatic detection`);
+    } else {
+      console.log('---> Config!');
+      this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by config`);
+    }
   }
 
   /**
