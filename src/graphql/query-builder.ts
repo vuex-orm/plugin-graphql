@@ -168,9 +168,15 @@ export default class QueryBuilder {
           let typeOrValue: any = '';
 
           if (signature) {
+            const schemaField = Context.getInstance().schema!.getType(model.singularName).fields!
+              .find(f => f.name === key);
+
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
+            } else if (schemaField && schemaField.type.name) {
+              // Case 1, 3 and 4
+              typeOrValue = schemaField.type.name + '!';
             } else if (key === 'id' || isForeignKey) {
               // Case 1 (ID!)
               typeOrValue = 'ID!';
