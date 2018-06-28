@@ -974,13 +974,13 @@ query status {
         result = await store.dispatch('entities/simpleQuery', { query, variables: {} });
       });
 
-      const idSymbol = Object.getOwnPropertySymbols(result)[0];
+      // Remove the ID Symbol
+      delete Object.getOwnPropertySymbols(result)[0];
 
       expect(result).toEqual({
         backend: true,
         smsGateway: false,
-        paypalIntegration: true,
-        [idSymbol]: "ROOT_QUERY"
+        paypalIntegration: true
       });
       expect(request.query).toEqual(`
 query status {

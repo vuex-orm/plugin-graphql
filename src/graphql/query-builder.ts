@@ -270,13 +270,10 @@ export default class QueryBuilder {
       // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
 
       if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
-        const multiple: boolean = !(field instanceof context.components.BelongsTo ||
-          field instanceof context.components.HasOne);
-
         const newPath = path.slice(0);
         newPath.push(singularizedFieldName);
 
-        relationQueries.push(this.buildField(relatedModel, multiple, undefined, newPath, name, false));
+        relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
       }
     });
 

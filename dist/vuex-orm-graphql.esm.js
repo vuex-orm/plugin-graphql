@@ -3662,6 +3662,18 @@ var Model = /** @class */ (function () {
             field instanceof context.components.Boolean;
     };
     /**
+     * Tells if a field which represents a relation is a connection (multiple).
+     * @param {Field} field
+     * @returns {boolean}
+     */
+    Model.isConnection = function (field) {
+        var context = Context.getInstance();
+        return !(field instanceof context.components.BelongsTo ||
+            field instanceof context.components.HasOne ||
+            field instanceof context.components.MorphTo ||
+            field instanceof context.components.MorphOne);
+    };
+    /**
      * Adds $isPersisted and other meta fields to the model by overwriting the fields() method.
      * @todo is this a good way to add fields?
      * @param {Model} model
@@ -3914,7 +3926,9 @@ function valueToObjectRepresentation(argObj, name, value, variables) {
         argObj[name.value] = null;
     }
     else {
-        throw new Error("The inline argument \"" + name.value + "\" of kind \"" + value.kind + "\" is not supported.\n                    Use variables instead of inline arguments to overcome this limitation.");
+        throw new Error("The inline argument \"" + name.value + "\" of kind \"" + value.kind + "\"" +
+            'is not supported. Use variables instead of inline arguments to ' +
+            'overcome this limitation.');
     }
 }
 function storeKeyNameFromField(field, variables) {
@@ -6766,7 +6780,7 @@ var QueryManager = /** @class */ (function () {
                         // clear out the latest new data, since we're now using it
                         _this.setQuery(queryId, function () { return ({ newData: null }); });
                         data = newData.result;
-                        isMissing = !newData.complete ? !newData.complete : false;
+                        isMissing = !newData.complete || false;
                     }
                     else {
                         if (lastResult && lastResult.data && !errorStatusChanged) {
@@ -10333,11 +10347,9 @@ var QueryBuilder = /** @class */ (function () {
             var ignore = path.includes(singularizedFieldName);
             // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
-                var multiple = !(field instanceof context.components.BelongsTo ||
-                    field instanceof context.components.HasOne);
                 var newPath = path.slice(0);
                 newPath.push(singularizedFieldName);
-                relationQueries.push(_this.buildField(relatedModel, multiple, undefined, newPath, name, false));
+                relationQueries.push(_this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
             }
         });
         return relationQueries.join('\n');

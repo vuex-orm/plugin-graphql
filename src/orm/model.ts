@@ -77,6 +77,22 @@ export default class Model {
   }
 
   /**
+   * Tells if a field which represents a relation is a connection (multiple).
+   * @param {Field} field
+   * @returns {boolean}
+   */
+  public static isConnection (field: Field): boolean {
+    const context = Context.getInstance();
+
+    return !(
+      field instanceof context.components.BelongsTo ||
+      field instanceof context.components.HasOne ||
+      field instanceof context.components.MorphTo ||
+      field instanceof context.components.MorphOne
+    );
+  }
+
+  /**
    * Adds $isPersisted and other meta fields to the model by overwriting the fields() method.
    * @todo is this a good way to add fields?
    * @param {Model} model
