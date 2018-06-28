@@ -118,7 +118,7 @@ export default class QueryBuilder {
 
     // build query
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, false)} {\n` +
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter)} {\n` +
       `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
       `}`;
 
@@ -168,9 +168,16 @@ export default class QueryBuilder {
           let typeOrValue: any = '';
 
           if (signature) {
+            const schema = Context.getInstance().schema!;
+            const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
+            const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
+
             if (typeof value === 'object' && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
+            } else if (schemaField && schemaField.type.name) {
+              // Case 1, 3 and 4
+              typeOrValue = schemaField.type.name + '!';
             } else if (key === 'id' || isForeignKey) {
               // Case 1 (ID!)
               typeOrValue = 'ID!';
@@ -191,7 +198,7 @@ export default class QueryBuilder {
       });
 
       if (!first) {
-        if (filter) returnValue = `filter: { ${returnValue} }`;
+        if (!signature && filter) returnValue = `filter: { ${returnValue} }`;
         returnValue = `(${returnValue})`;
       }
     }

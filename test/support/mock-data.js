@@ -686,7 +686,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1014,7 +1014,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1196,7 +1196,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1378,7 +1378,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1390,7 +1390,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1762,7 +1762,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
               "isDeprecated": false,
               "deprecationReason": null
@@ -1924,7 +1924,18 @@ export const introspectionResult = {
           "name": "UserFilter",
           "description": null,
           "fields": null,
-          "inputFields": [],
+          "inputFields": [
+            {
+              "__typename": "__InputValue",
+              "name": "specialId",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "ID",
+                "kind": "SCALAR"
+              }
+            }
+          ],
           "interfaces": null,
           "enumValues": null,
           "possibleTypes": null
@@ -2944,7 +2955,7 @@ export const introspectionResult = {
               "description": null,
               "type": {
                 "__typename": "__Type",
-                "name": "Int",
+                "name": "ID",
                 "kind": "SCALAR"
               },
             },
@@ -3012,7 +3023,7 @@ export const introspectionResult = {
               "description": null,
               "type": {
                 "__typename": "__Type",
-                "name": "Int",
+                "name": "ID",
                 "kind": "SCALAR"
               },
             },
@@ -3119,7 +3130,7 @@ export const introspectionResult = {
               "type": {
                 "__typename": "__Type",
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "ID",
               },
             },
           ],

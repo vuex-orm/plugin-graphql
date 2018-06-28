@@ -388,7 +388,7 @@ mutation DeleteUser($id: ID!) {
 
     it('returns Int for number typed fields', () => {
       const model = context.getModel('post');
-      expect(QueryBuilder.determineAttributeType(model, 'userId', 15)).toEqual('Int');
+      expect(QueryBuilder.determineAttributeType(model, 'userId', 15)).toEqual('ID');
     });
 
     it('returns Boolean for boolean typed fields', () => {
