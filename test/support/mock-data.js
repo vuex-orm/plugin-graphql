@@ -1924,7 +1924,18 @@ export const introspectionResult = {
           "name": "UserFilter",
           "description": null,
           "fields": null,
-          "inputFields": [],
+          "inputFields": [
+            {
+              "__typename": "__InputValue",
+              "name": "specialId",
+              "description": null,
+              "type": {
+                "__typename": "__Type",
+                "name": "ID",
+                "kind": "SCALAR"
+              }
+            }
+          ],
           "interfaces": null,
           "enumValues": null,
           "possibleTypes": null

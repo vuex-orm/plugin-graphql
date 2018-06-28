@@ -10183,7 +10183,7 @@ var QueryBuilder = /** @class */ (function () {
         if (!name)
             name = (multiple ? model.pluralName : model.singularName);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, false) + " {\n" +
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter) + " {\n" +
             ("  " + this.buildField(model, multiple, args, [], name, filter, true) + "\n") +
             "}";
         return src(query);
@@ -10230,9 +10230,16 @@ var QueryBuilder = /** @class */ (function () {
                 if (value && !(value instanceof Array || skipFieldDueId)) {
                     var typeOrValue = '';
                     if (signature) {
+                        var schema = Context.getInstance().schema;
+                        var type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
+                        var schemaField = (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; });
                         if (typeof value === 'object' && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
+                        }
+                        else if (schemaField && schemaField.type.name) {
+                            // Case 1, 3 and 4
+                            typeOrValue = schemaField.type.name + '!';
                         }
                         else if (key === 'id' || isForeignKey) {
                             // Case 1 (ID!)
@@ -10253,7 +10260,7 @@ var QueryBuilder = /** @class */ (function () {
                 }
             });
             if (!first) {
-                if (filter)
+                if (!signature && filter)
                     returnValue = "filter: { " + returnValue + " }";
                 returnValue = "(" + returnValue + ")";
             }

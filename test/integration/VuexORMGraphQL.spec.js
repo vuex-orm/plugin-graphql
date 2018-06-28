@@ -279,13 +279,13 @@ query User($id: ID!) {
         };
 
         const request = await sendWithMockFetch(response, async () => {
-          await User.fetch({ active: true });
+          await User.fetch({ specialId: 15 });
         });
 
-        expect(request.variables).toEqual({ active: true });
+        expect(request.variables).toEqual({ specialId: 15 });
         expect(request.query).toEqual(`
-query Users($active: Boolean!) {
-  users(filter: {active: $active}) {
+query Users($specialId: ID!) {
+  users(filter: {specialId: $specialId}) {
     nodes {
       id
       name
