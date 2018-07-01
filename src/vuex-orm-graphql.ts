@@ -5,6 +5,7 @@ import { Destroy, Fetch, Mutate, Persist, Push } from './actions';
 import Query from './actions/query';
 import SimpleQuery from './actions/simple-query';
 import SimpleMutation from './actions/simple-mutation';
+import { isObject } from './support/utils';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -48,7 +49,7 @@ export default class VuexORMGraphQL {
     // Register static model convenience methods
     (context.components.Model as (typeof PatchedModel)).fetch = async function (filter: any, bypassCache = false) {
       let filterObj = filter;
-      if (typeof filterObj !== 'object') filterObj = { id: filter };
+      if (!isObject(filterObj)) filterObj = { id: filter };
       return this.dispatch('fetch', { filter: filterObj, bypassCache });
     };
 

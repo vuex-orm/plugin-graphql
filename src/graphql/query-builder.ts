@@ -1,6 +1,6 @@
 import Model from '../orm/model';
 import { Arguments, Field } from '../support/interfaces';
-import { upcaseFirstLetter } from '../support/utils';
+import { isObject, upcaseFirstLetter } from '../support/utils';
 import gql from 'graphql-tag';
 import Context from '../common/context';
 const inflection = require('inflection');
@@ -105,7 +105,7 @@ export default class QueryBuilder {
     if (!args) throw new Error('args is undefined');
 
     Object.keys(args).forEach((key: string) => {
-      if (args && args[key] && typeof args[key] === 'object') {
+      if (args && args[key] && isObject(args[key])) {
         args[key] = { __type: upcaseFirstLetter(key) };
       }
     });
@@ -172,7 +172,7 @@ export default class QueryBuilder {
             const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
             const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
 
-            if (typeof value === 'object' && value.__type) {
+            if (isObject(value) && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
             } else if (schemaField && schemaField.type.name) {

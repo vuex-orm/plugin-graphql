@@ -29,3 +29,12 @@ export function downcaseFirstLetter (input: string) {
 export function prettify (query: string): string {
   return print(parse(query));
 }
+
+/**
+ * Tells if a value is a object (returns false for arrays)
+ * @param {any} a
+ * @returns {boolean}
+ */
+export function isObject (a: any): boolean {
+  return (!!a) && (a.constructor === Object);
+}
