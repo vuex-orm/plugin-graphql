@@ -38,7 +38,10 @@ export default class QueryBuilder {
     const context = Context.getInstance();
     model = context.getModel(model);
 
-    let params: string = this.buildArguments(model, args, false, filter, allowIdFields);
+    name = name ? name : model.pluralName;
+    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
+
+    let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field);
     path = path.length === 0 ? [model.singularName] : path;
 
     const fields = `
@@ -47,7 +50,7 @@ export default class QueryBuilder {
     `;
 
     if (multiple) {
-      const header: string = `${name ? name : model.pluralName}${params}`;
+      const header: string = `${name}${params}`;
 
       if (context.connectionQueryMode === 'nodes') {
         return `
@@ -118,9 +121,12 @@ export default class QueryBuilder {
     // name
     if (!name) name = (multiple ? model.pluralName : model.singularName);
 
+    // field
+    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
+
     // build query
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter)} {\n` +
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter, true, field)} {\n` +
       `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
       `}`;
 
@@ -149,10 +155,11 @@ export default class QueryBuilder {
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
    * @param filter
    * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
+   * @param {GraphQLField} field Optional. The GraphQL mutation or query field
    * @returns {String}
    */
   private static buildArguments (model: Model, args?: Arguments, signature: boolean = false, filter: boolean = false,
-                          allowIdFields: boolean = true): string {
+                          allowIdFields: boolean = true, field: GraphQLField | null = null): string {
     if (args === undefined) return '';
 
     let returnValue: string = '';
@@ -165,18 +172,23 @@ export default class QueryBuilder {
         const isForeignKey = model.skipField(key);
         const skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
 
+        const schema = Context.getInstance().schema!;
+        const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
+        const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
+        const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
+
         // Ignore null fields, ids and connections
-        if (value && !(value instanceof Array || skipFieldDueId)) {
+        if (value && !skipFieldDueId && !isConnectionField) {
           let typeOrValue: any = '';
 
           if (signature) {
-            const schema = Context.getInstance().schema!;
-            const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-            const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
-
             if (_.isObject(value) && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
+            } else if (_.isArray(value) && field) {
+              const arg = field.args.find(f => f.name === key);
+              if (!arg) throw new Error("A argument is of type array but it's not possible to determine the type");
+              typeOrValue = Schema.getTypeNameOfField(arg) + '!';
             } else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
               // Case 1, 3 and 4
               typeOrValue = Schema.getTypeNameOfField(schemaField) + '!';

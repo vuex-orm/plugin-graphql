@@ -23,10 +23,16 @@ describe('QueryBuilder', () => {
         title: 'Example',
         otherId: 18,
         userId: 5,
-        user: { __type: 'User' }
+        user: { __type: 'User' },
+        veryCustomIDList: [1, 2, 4, 9, 68],
+        comments: [{
+          id: 1,
+          content: 'test'
+        }]
       }, true, false, false);
 
-      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!)');
+      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!, ' +
+        'veryCustomIDList: [Int])');
     });
 
     it('can generate fields with variables', () => {
@@ -36,10 +42,16 @@ describe('QueryBuilder', () => {
         title: 'Example',
         otherId: 18,
         userId: 5,
-        user: { __type: 'User' }
+        user: { __type: 'User' },
+        veryCustomIDList: [1, 2, 4, 9, 68],
+        comments: [{
+          id: 1,
+          content: 'test'
+        }]
       }, false, false, false);
 
-      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, user: $user)');
+      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, user: $user, ' +
+        'veryCustomIDList: $veryCustomIDList)');
     });
 
     it('can generate filter field with variables', () => {
