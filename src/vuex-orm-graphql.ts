@@ -28,15 +28,15 @@ export default class VuexORMGraphQL {
   private static setupActions () {
     const context = Context.getInstance();
 
-    context.components.rootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
-    context.components.rootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
+    context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+    context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
 
-    context.components.subActions.fetch = Fetch.call.bind(Fetch);
-    context.components.subActions.persist = Persist.call.bind(Persist);
-    context.components.subActions.push = Push.call.bind(Push);
-    context.components.subActions.destroy = Destroy.call.bind(Destroy);
-    context.components.subActions.mutate = Mutate.call.bind(Mutate);
-    context.components.subActions.query = Query.call.bind(Query);
+    context.components.Actions.fetch = Fetch.call.bind(Fetch);
+    context.components.Actions.persist = Persist.call.bind(Persist);
+    context.components.Actions.push = Push.call.bind(Push);
+    context.components.Actions.destroy = Destroy.call.bind(Destroy);
+    context.components.Actions.mutate = Mutate.call.bind(Mutate);
+    context.components.Actions.query = Query.call.bind(Query);
   }
 
   /**
