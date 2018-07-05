@@ -17,7 +17,9 @@ export default class SimpleMutation extends Action {
     if (query) {
       variables = this.prepareArgs(variables);
       const result = await Context.getInstance().apollo.simpleMutation(query, variables);
-      return result.data;
+
+      // remove the symbols
+      return JSON.parse(JSON.stringify(result.data));
     } else {
       throw new Error("The simpleMutation action requires the 'query' to be set");
     }

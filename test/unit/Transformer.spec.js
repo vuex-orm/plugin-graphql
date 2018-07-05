@@ -13,14 +13,12 @@ describe('Transformer', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
     context = Context.getInstance();
-
-    // Make sure schema is filled
-    context.schema = new Schema(introspectionResult.data.__schema);
-    context.processSchema();
+    await context.loadSchema();
   });
 
   describe('.transformOutgoingData', () => {
-    it('transforms models to a useful data hashmap', () => {
+    it('transforms models to a useful data hashmap', async () => {
+      await User.fetch(1);
       const user = User.query().first();
       const transformedData = Transformer.transformOutgoingData(context.getModel('user'), user);
       expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown', profileId: 1 });

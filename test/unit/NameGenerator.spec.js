@@ -15,11 +15,8 @@ describe('NameGenerator', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
     context = Context.getInstance();
+    await context.loadSchema();
     model = context.getModel('post');
-
-    // Make sure schema is filled
-    context.schema = new Schema(introspectionResult.data.__schema);
-    context.processSchema();
   });
 
   describe('.getNameForPersist', () => {

@@ -2,8 +2,6 @@ import QueryBuilder from 'app/graphql/query-builder';
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import {prettify} from "app/support/utils";
 import Context from "app/common/context";
-import Schema from "app/graphql/schema";
-import {introspectionResult} from "../support/mock-data";
 
 let context;
 let store;
@@ -14,10 +12,7 @@ describe('QueryBuilder', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
     context = Context.getInstance();
-
-    // Make sure schema is filled
-    context.schema = new Schema(introspectionResult.data.__schema);
-    context.processSchema();
+    await context.loadSchema();
   });
 
   describe('.buildArguments', () => {
@@ -31,7 +26,7 @@ describe('QueryBuilder', () => {
         user: { __type: 'User' }
       }, true, false, false);
 
-      expect(args).toEqual('($content: String!, $title: String!, $otherId: Int!, $user: UserInput!)');
+      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!)');
     });
 
     it('can generate fields with variables', () => {
@@ -387,6 +382,11 @@ mutation DeleteUser($id: ID!) {
     });
 
     it('returns Int for number typed fields', () => {
+      const model = context.getModel('profile');
+      expect(QueryBuilder.determineAttributeType(model, 'age', 24)).toEqual('Int');
+    });
+
+    it('returns ID for id typed fields', () => {
       const model = context.getModel('post');
       expect(QueryBuilder.determineAttributeType(model, 'userId', 15)).toEqual('ID');
     });

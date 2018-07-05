@@ -1,7 +1,8 @@
 import { DocumentNode } from 'graphql';
 import { Arguments } from '../support/interfaces';
 import { FetchPolicy } from 'apollo-client';
-import { isObject, prettify } from '../support/utils';
+import { prettify } from '../support/utils';
+import * as _ from 'lodash';
 
 /**
  * Vuex-ORM-Apollo Debug Logger.
@@ -87,7 +88,7 @@ export default class Logger {
     if (this.enabled) {
       try {
         let prettified = '';
-        if (isObject(query) && (query as DocumentNode).loc) {
+        if (_.isObject(query) && (query as DocumentNode).loc) {
           prettified = prettify((query as DocumentNode).loc!.source.body);
         } else {
           prettified = prettify(query as string);

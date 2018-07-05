@@ -1,8 +1,10 @@
 import Model from '../orm/model';
-import { Arguments, Field } from '../support/interfaces';
-import { isObject, upcaseFirstLetter } from '../support/utils';
+import { Arguments, Field, GraphQLField } from '../support/interfaces';
+import { upcaseFirstLetter } from '../support/utils';
 import gql from 'graphql-tag';
 import Context from '../common/context';
+import Schema from './schema';
+import * as _ from 'lodash';
 const inflection = require('inflection');
 
 /**
@@ -105,7 +107,7 @@ export default class QueryBuilder {
     if (!args) throw new Error('args is undefined');
 
     Object.keys(args).forEach((key: string) => {
-      if (args && args[key] && isObject(args[key])) {
+      if (args && args[key] && _.isObject(args[key])) {
         args[key] = { __type: upcaseFirstLetter(key) };
       }
     });
@@ -172,12 +174,12 @@ export default class QueryBuilder {
             const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
             const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
 
-            if (isObject(value) && value.__type) {
+            if (_.isObject(value) && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
-            } else if (schemaField && schemaField.type.name) {
+            } else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
               // Case 1, 3 and 4
-              typeOrValue = schemaField.type.name + '!';
+              typeOrValue = Schema.getTypeNameOfField(schemaField) + '!';
             } else if (key === 'id' || isForeignKey) {
               // Case 1 (ID!)
               typeOrValue = 'ID!';
@@ -214,14 +216,14 @@ export default class QueryBuilder {
    * @param {string} value
    * @returns {string}
    */
-  private static determineAttributeType (model: Model, key: string, value: any): string {
+  public static determineAttributeType (model: Model, key: string, value: any): string {
     const context: Context = Context.getInstance();
     const field: undefined | Field = model.fields.get(key);
 
     const schemaField = context.schema!.getType(model.singularName).fields!.find(f => f.name === key);
 
-    if (schemaField && schemaField.type.name) {
-      return schemaField.type.name;
+    if (schemaField && Schema.getTypeNameOfField(schemaField)) {
+      return Schema.getTypeNameOfField(schemaField);
     } else {
       if (field instanceof context.components.String) {
         return 'String';

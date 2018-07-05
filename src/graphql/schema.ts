@@ -23,8 +23,9 @@ export default class Schema {
     let connection: GraphQLType | null = null;
 
     this.queries.forEach((query) => {
-      if (query.type.name && query.type.name.endsWith('TypeConnection')) {
-        connection = this.getType(query.type.name);
+      const typeName = Schema.getTypeNameOfField(query);
+      if (typeName.endsWith('TypeConnection')) {
+        connection = this.getType(typeName);
         return false; // break
       }
       return true;
@@ -52,23 +53,34 @@ export default class Schema {
     return type;
   }
 
-  public getMutation (name: string): GraphQLField {
+  public getMutation (name: string, allowNull: boolean = false): GraphQLField | null {
     const mutation = this.mutations.get(name);
 
-    if (!mutation) throw new Error(`Couldn't find Mutation of name ${name} in the GraphQL Schema.`);
+    if (!allowNull && !mutation) throw new Error(`Couldn't find Mutation of name ${name} in the GraphQL Schema.`);
 
-    return mutation;
+    return mutation || null;
   }
 
-  public getQuery (name: string): GraphQLField {
+  public getQuery (name: string, allowNull: boolean = false): GraphQLField | null {
     const query = this.queries.get(name);
 
-    if (!query) throw new Error(`Couldn't find Query of name ${name} in the GraphQL Schema.`);
+    if (!allowNull && !query) throw new Error(`Couldn't find Query of name ${name} in the GraphQL Schema.`);
 
-    return query;
+    return query || null;
   }
 
-  public returnsConnection (field: GraphQLField): boolean {
-    return (field.type.name && field.type.name.endsWith('TypeConnection')) as boolean;
+  static returnsConnection (field: GraphQLField): boolean {
+    return (Schema.getTypeNameOfField(field).endsWith('TypeConnection'));
+  }
+
+  static getTypeNameOfField (field: GraphQLField): string {
+    const name = field.type.name ||
+      field.type.ofType.name ||
+      field.type.ofType.ofType.name ||
+      field.type.ofType.ofType.name;
+
+    if (!name) throw new Error(`Can't find type name for field ${field.name}`);
+
+    return name;
   }
 }

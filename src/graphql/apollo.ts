@@ -1,6 +1,7 @@
 import { ApolloClient, FetchPolicy } from 'apollo-client';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { HttpLink } from 'apollo-link-http';
+import { ApolloLink } from 'apollo-link';
 import Context from '../common/context';
 import { Arguments, Data } from '../support/interfaces';
 import Transformer from './transformer';
@@ -15,7 +16,7 @@ export default class Apollo {
    * The http link instance to use.
    * @type {HttpLink}
    */
-  private readonly httpLink: HttpLink;
+  private readonly httpLink: ApolloLink;
 
   /**
    * The ApolloClient instance
@@ -29,12 +30,17 @@ export default class Apollo {
   public constructor () {
     const context = Context.getInstance();
 
-    this.httpLink = new HttpLink({
-      uri: context.options.url ? context.options.url : '/graphql',
-      credentials: context.options.credentials ? context.options.credentials : 'same-origin',
-      headers: context.options.headers ? context.options.headers : {},
-      useGETForQueries: Boolean(context.options.useGETForQueries)
-    });
+    // This allows the test suite to pass a custom link
+    if (context.options.link) {
+      this.httpLink = context.options.link;
+    } else {
+      this.httpLink = new HttpLink({
+        uri: context.options.url ? context.options.url : '/graphql',
+        credentials: context.options.credentials ? context.options.credentials : 'same-origin',
+        headers: context.options.headers ? context.options.headers : {},
+        useGETForQueries: Boolean(context.options.useGETForQueries)
+      });
+    }
 
     this.apolloClient = new ApolloClient({
       link: this.httpLink,

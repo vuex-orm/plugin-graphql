@@ -9797,12 +9797,18 @@ var Apollo = /** @class */ (function () {
      */
     function Apollo() {
         var context = Context.getInstance();
-        this.httpLink = new HttpLink({
-            uri: context.options.url ? context.options.url : '/graphql',
-            credentials: context.options.credentials ? context.options.credentials : 'same-origin',
-            headers: context.options.headers ? context.options.headers : {},
-            useGETForQueries: Boolean(context.options.useGETForQueries)
-        });
+        // This allows the test suite to pass a custom link
+        if (context.options.link) {
+            this.httpLink = context.options.link;
+        }
+        else {
+            this.httpLink = new HttpLink({
+                uri: context.options.url ? context.options.url : '/graphql',
+                credentials: context.options.credentials ? context.options.credentials : 'same-origin',
+                headers: context.options.headers ? context.options.headers : {},
+                useGETForQueries: Boolean(context.options.useGETForQueries)
+            });
+        }
         this.apolloClient = new ApolloClient({
             link: this.httpLink,
             cache: new InMemoryCache(),
@@ -9879,6 +9885,7 @@ var Schema = /** @class */ (function () {
         var _this = this;
         var connection = null;
         this.queries.forEach(function (query) {
+            console.log('----> ' + JSON.stringify(query, null, 2));
             if (query.type.name && query.type.name.endsWith('TypeConnection')) {
                 connection = _this.getType(query.type.name);
                 return false; // break

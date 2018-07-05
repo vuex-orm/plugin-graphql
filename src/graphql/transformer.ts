@@ -2,6 +2,7 @@ import { Data, Field } from '../support/interfaces';
 import Model from '../orm/model';
 import Context from '../common/context';
 import { downcaseFirstLetter } from '../support/utils';
+import * as _ from 'lodash';
 const inflection = require('inflection');
 
 /**
@@ -67,12 +68,12 @@ export default class Transformer {
       context.logger.log('Raw data:', data);
     }
 
-    if (data instanceof Array) {
-      result = data.map(d => this.transformIncomingData(d, model, mutation, true));
+    if (_.isArray(data)) {
+      result = (data).map(d => this.transformIncomingData(d, model, mutation, true));
     } else {
       Object.keys(data).forEach((key) => {
         if (data[key] !== undefined && data[key] !== null) {
-          if (data[key] instanceof Object) {
+          if (_.isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 
             if (data[key].nodes) {
@@ -106,7 +107,7 @@ export default class Transformer {
       result['$isPersisted'] = true;
     }
 
-    // MAke sure this is really a plain JS object. We had some issues in testing here.
+    // Make sure this is really a plain JS object. We had some issues in testing here.
     return JSON.parse(JSON.stringify(result));
   }
 }

@@ -30,15 +30,20 @@ export default class Action {
       const context: Context = Context.getInstance();
       const schema: Schema = await context.loadSchema();
 
-      const multiple: boolean = schema.returnsConnection(schema.getMutation(name));
+      const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!);
       const query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple);
 
       // Send GraphQL Mutation
-      const newData = await Context.getInstance().apollo.request(model, query, variables, true);
+      let newData = await Context.getInstance().apollo.request(model, query, variables, true);
 
       // When this was not a destroy action, we get new data, which we should insert in the store
       if (name !== NameGenerator.getNameForDestroy(model)) {
-        const insertedData: Data = await Store.insertData(newData, dispatch);
+        newData = newData[Object.keys(newData)[0]];
+
+        // IDs as String cause terrible issues, so we convert them to integers.
+        newData.id = parseInt(newData.id, 10);
+
+        const insertedData: Data = await Store.insertData({ [model.pluralName]: newData }, dispatch);
 
         // Try to find the record to return
         const records = insertedData[model.pluralName];
