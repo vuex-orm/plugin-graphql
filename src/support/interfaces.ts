@@ -1,6 +1,7 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
 import Database from '@vuex-orm/core/lib/database/Database';
 import State from '@vuex-orm/core/lib/modules/State';
+import { ApolloLink } from 'apollo-link';
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
 
@@ -12,6 +13,7 @@ export interface Options {
   useGETForQueries?: boolean;
   debug?: boolean;
   connectionQueryMode?: string;
+  link?: ApolloLink;
 }
 
 export interface ActionParams {
@@ -54,12 +56,14 @@ export interface GraphQLType {
 export interface GraphQLField {
   description: string;
   name: string;
+  args: Array<GraphQLField>;
   type: GraphQLTypeDefinition;
 }
 
 export interface GraphQLTypeDefinition {
   kind: string;
   name?: string;
+  ofType: GraphQLTypeDefinition;
 }
 
 export interface GraphQLSchema {

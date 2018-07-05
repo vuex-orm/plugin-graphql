@@ -31,7 +31,7 @@ export default class Query extends Action {
       filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
 
       // Multiple?
-      const multiple: boolean = schema.returnsConnection(schema.getQuery(name));
+      const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
 
       // Build query
       const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);

@@ -10,22 +10,59 @@ import Schema from '../graphql/schema';
 const inflection = require('inflection');
 
 const introspectionQuery = `
-query {
+query Introspection {
   __schema {
-  	types {
+    types {
       name
       description
 
       fields(includeDeprecated: true) {
         name
         description
+        args {
+          name
+          description
+          type {
+            name
+            kind
+
+            ofType {
+              kind
+
+              name
+              ofType {
+                kind
+                name
+
+                ofType {
+                  kind
+                  name
+                }
+              }
+            }
+          }
+        }
 
         type {
           name
           kind
+
+          ofType {
+            kind
+
+            name
+            ofType {
+              kind
+              name
+
+              ofType {
+                kind
+                name
+              }
+            }
+          }
         }
       }
-
 
       inputFields {
         name
@@ -34,6 +71,21 @@ query {
         type {
           name
           kind
+
+          ofType {
+            kind
+
+            name
+            ofType {
+              kind
+              name
+
+              ofType {
+                kind
+                name
+              }
+            }
+          }
         }
       }
     }
@@ -210,7 +262,6 @@ export default class Context {
       this.connectionQueryMode = this.schema!.determineQueryMode();
       this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by automatic detection`);
     } else {
-      console.log('---> Config!');
       this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by config`);
     }
   }

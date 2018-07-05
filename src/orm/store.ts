@@ -18,7 +18,7 @@ export class Store {
     await Promise.all(Object.keys(data).map(async (key) => {
       const value = data[key];
       Context.getInstance().logger.log('Inserting records', value);
-      const newData = await dispatch('insertOrUpdate', { data:  value });
+      const newData = await dispatch('insertOrUpdate', { data: value });
 
       Object.keys(newData).forEach((dataKey) => {
         if (!insertedData[dataKey]) insertedData[dataKey] = [];

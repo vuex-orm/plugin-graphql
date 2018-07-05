@@ -13,11 +13,8 @@ describe('Model', () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
     context = Context.getInstance();
+    await context.loadSchema();
     model = context.getModel('user');
-
-    // Make sure schema is filled
-    context.schema = new Schema(introspectionResult.data.__schema);
-    context.processSchema();
   });
 
   describe('.singularName', () => {

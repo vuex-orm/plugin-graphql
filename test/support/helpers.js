@@ -1,14 +1,18 @@
 import _ from 'lodash';
 import Vue from 'vue';
 import Vuex from 'vuex';
-import VuexORM, { Database, Model } from '@vuex-orm/core';
-import fetchMock from 'fetch-mock';
+import VuexORM, { Database } from '@vuex-orm/core';
 import VuexORMGraphQLPlugin from "app";
-import {introspectionResult} from "./mock-data";
+import { SchemaLink } from 'apollo-link-schema';
+import { makeExecutableSchema } from 'graphql-tools';
+import {upcaseFirstLetter, prettify} from "app/support/utils";
+import { typeDefs, resolvers } from 'test/support/mock-schema.js';
+import sinon from 'sinon';
 
 Vue.use(Vuex);
 
-let fetchMockSetupDone = false;
+export let link;
+
 
 /**
  * Create a new Vuex Store.
@@ -16,16 +20,21 @@ let fetchMockSetupDone = false;
 export function createStore (entities) {
   const database = new Database();
 
-  if (!fetchMockSetupDone) {
-    fetchMock.get('*', {});
-    fetchMockSetupDone = true;
-  }
-
   _.forEach(entities, (entity) => {
     database.register(entity.model, entity.module || {})
   });
 
-  VuexORM.use(VuexORMGraphQLPlugin, { database: database });
+  const executableSchema = makeExecutableSchema({
+    typeDefs,
+    resolvers,
+  });
+
+  link = new SchemaLink({ schema: executableSchema });
+
+  VuexORM.use(VuexORMGraphQLPlugin, {
+    database: database,
+    link
+  });
 
   const store = new Vuex.Store({
     plugins: [VuexORM.install(database)]
@@ -35,45 +44,35 @@ export function createStore (entities) {
 }
 
 
-
-export async function sendWithMockFetch(response, callback, dontExpectRequest = false) {
-  fetchMock.config.overwriteRoutes = true;
-
-  fetchMock.post('/graphql', (url, opts) => {
-    if (opts.headers['X-GraphQL-Introspection-Query'] === 'true') {
-      return introspectionResult;
-    } else {
-      return response;
-    }
-  });
-
+export async function recordGraphQLRequest(callback, allowToFail = false) {
+  const spy = sinon.spy(link, 'request');
 
   try {
     await callback();
-  } catch (error) {
-    console.error("An error occured:");
-    console.error(error);
-    throw new Error("Request failed!");
+  } catch(e) {
+    console.log(JSON.stringify(e, null, 2));
+    throw e;
   }
 
-  const request = fetchMock.lastCall();
+  spy.restore();
 
-  if (!dontExpectRequest && !request) throw new Error("No request was made!");
-
-  fetchMock.restore();
-
-  /*
-    Generates
-
-    {
-      operationName: "Users",
-      query: "query Users {\n  users {\n    nodes {\n      id\n      name\n      posts {\n        nodes {\n          id\n          title\n          content\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
-      variables: {}
+  if (spy.notCalled) {
+    if (allowToFail) {
+      return null;
+    } else {
+      throw new Error('No GraphQL request was made.');
     }
-   */
-  if (dontExpectRequest && !request) {
-    return null;
   }
 
-  return JSON.parse(request[1].body);
+  const relevantCall = spy.getCalls().find((c) => {
+    if (c.args[0].operationName !== 'Introspection') {
+      return true;
+    }
+  });
+
+  return {
+    operationName: relevantCall.args[0].operationName,
+    variables: relevantCall.args[0].variables,
+    query: prettify(relevantCall.args[0].query.loc.source.body)
+  };
 }

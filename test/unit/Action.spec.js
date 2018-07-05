@@ -32,27 +32,28 @@ describe('Action', () => {
   });
 
   describe('.addRecordToArgs', () => {
-    it('returns a args object with the record', () => {
+    it('returns a args object with the record', async () => {
       const model = context.getModel('post');
+      await Post.fetch(1);
       const record = model.getRecordWithId(1);
 
       expect(Action.addRecordToArgs({test: 2}, model, record)).toEqual({
         post: {
           id: 1,
-          content: 'Foo',
-          otherId: 9,
+          content: 'GraphQL is so nice!',
+          otherId: 123,
           published: true,
-          title: 'Example post 1',
+          title: 'GraphQL',
           user: {
             id: 1,
             name: 'Charlie Brown',
-            "profile": {
-              "age": 8,
-              "email": "charly@peanuts.com",
-              "id": 1,
-              "sex": true,
+            profile: {
+              age: 8,
+              email: "charlie@peanuts.com",
+              id: 1,
+              sex: true,
             },
-            "profileId": 1,
+            profileId: 1,
           },
           userId: 1
         },

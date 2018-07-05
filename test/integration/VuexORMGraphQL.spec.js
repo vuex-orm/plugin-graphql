@@ -1,6 +1,6 @@
 import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
-import {sendWithMockFetch} from "../support/helpers";
 import Context from "app/common/context";
+import {recordGraphQLRequest} from "../support/helpers";
 
 let store;
 let vuexOrmGraphQL;
@@ -11,56 +11,14 @@ describe('VuexORMGraphQL', () => {
   });
 
   it('fetches the schema on the first action', async () => {
-    const response = {
-      data: {
-        post: {
-          __typename: 'post',
-          id: 42,
-          otherId: 13548,
-          published: true,
-          title: 'Example Post 5',
-          content: 'Foo',
-          comments: {
-            __typename: 'comment',
-            nodes: [{
-              __typename: 'comment',
-              id: 15,
-              content: 'Works!',
-              subjectId: 42,
-              subjectType: 'Post',
-              user: {
-                __typename: 'user',
-                id: 2,
-                name: 'Charly Brown',
-                profile: {
-                  __typename: 'profile',
-                  id: 2,
-                  sex: true,
-                  age: 8,
-                  email: 'charly@peanuts.com'
-                }
-              }
-            }]
-          },
-          user: {
-            __typename: 'user',
-            id: 1,
-            name: 'Johnny Imba',
-            profile: {
-              __typename: 'profile',
-              id: 1,
-              sex: true,
-              age: 36,
-              email: 'johnny@rocks.com'
-            }
-          }
-        }
-      }
-    };
+    let result;
 
-    let request = await sendWithMockFetch(response, async () => {
-      await Post.fetch(42);
+    const request = await recordGraphQLRequest(async () => {
+      result = await Post.fetch(2);
     });
+
+    expect(request).not.toEqual(null);
+    expect(result).not.toEqual(null);
 
     const context = Context.getInstance();
     expect(!!context.schema).not.toEqual(false);
@@ -71,57 +29,9 @@ describe('VuexORMGraphQL', () => {
 
   describe('fetch', () => {
     it('also requests the otherId field', async () => {
-      const response = {
-        data: {
-          post: {
-            __typename: 'post',
-            id: 42,
-            otherId: 13548,
-            published: true,
-            title: 'Example Post 5',
-            content: 'Foo',
-            comments: {
-              __typename: 'comment',
-              nodes: [{
-                __typename: 'comment',
-                id: 15,
-                content: 'Works!',
-                subjectId: 42,
-                subjectType: 'Post',
-                user: {
-                  __typename: 'user',
-                  id: 2,
-                  name: 'Charly Brown',
-                  profile: {
-                    __typename: 'profile',
-                    id: 1,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              }]
-            },
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        }
-      };
-
-      let request = await sendWithMockFetch(response, async () => {
-        await Post.fetch(42);
+      const request = await recordGraphQLRequest(async () => {
+        await Post.fetch(1);
       });
-      expect(request).not.toEqual(null);
 
       expect(request.query).toEqual(`
 query Post($id: ID!) {
@@ -139,9 +49,7 @@ query Post($id: ID!) {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
     comments {
       nodes {
@@ -157,82 +65,37 @@ query Post($id: ID!) {
             email
             age
             sex
-            __typename
           }
-          __typename
         }
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
         `.trim() + "\n");
 
-      const post = Post.query().withAll().where('id', 42).first();
-      expect(post.title).toEqual('Example Post 5');
+      const post = Post.query().withAll().where('id', 1).first();
+
+      expect(post.title).toEqual('GraphQL');
+      expect(post.content).toEqual('GraphQL is so nice!');
       expect(post.comments.length).toEqual(1);
-      expect(post.comments[0].content).toEqual('Works!');
+      expect(post.comments[0].content).toEqual('Yes!!!!');
     });
 
 
     describe('with ID', () => {
       it("doesn't cache when bypassCache = true", async () => {
-        const response = {
-          data: {
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 1,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        };
+        let request1 = await recordGraphQLRequest(async () => { await User.fetch(1); }, true);
+        expect(request1).not.toEqual(null);
 
-        let request = await sendWithMockFetch(response, async () => {
-          await User.fetch(1);
-        });
-        expect(request).not.toEqual(null);
+        let request2 = await recordGraphQLRequest(async () => { await User.fetch(1); }, true);
+        expect(request2).toEqual(null);
 
-        request = await sendWithMockFetch(response, async () => {
-          await User.fetch(1);
-        }, true);
-        expect(request).toEqual(null);
-
-        request = await sendWithMockFetch(response, async () => {
-          await User.fetch(1, true);
-        });
-        expect(request).not.toEqual(null);
+        let request3 = await recordGraphQLRequest(async () => { await User.fetch(1, true); }, true);
+        expect(request3).not.toEqual(null);
       });
 
       it('sends the correct query to the API', async () => {
-        const response = {
-          data: {
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        };
-
-        const request = await sendWithMockFetch(response, async () => {
-          await User.fetch(1);
-        });
+        const request = await recordGraphQLRequest(async () => { await User.fetch(1); });
 
         expect(request.variables).toEqual({ id: 1 });
         expect(request.query).toEqual(`
@@ -245,9 +108,7 @@ query User($id: ID!) {
       email
       age
       sex
-      __typename
     }
-    __typename
   }
 }
         `.trim() + "\n");
@@ -256,36 +117,14 @@ query User($id: ID!) {
 
     describe('without ID but with filter', () => {
       it('sends the correct query to the API', async () => {
-        const response = {
-          data: {
-            users: {
-              __typename: 'user',
-              nodes: [
-                {
-                  __typename: 'user',
-                  id: 1,
-                  name: 'Charlie Brown',
-                  profile: {
-                    __typename: 'profile',
-                    id: 2,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              ]
-            }
-          }
-        };
-
-        const request = await sendWithMockFetch(response, async () => {
-          await User.fetch({ specialId: 15 });
+        const request = await recordGraphQLRequest(async () => {
+          await User.fetch({ profileId: 2 });
         });
 
-        expect(request.variables).toEqual({ specialId: 15 });
+        expect(request.variables).toEqual({ profileId: 2 });
         expect(request.query).toEqual(`
-query Users($specialId: ID!) {
-  users(filter: {specialId: $specialId}) {
+query Users($profileId: ID!) {
+  users(filter: {profileId: $profileId}) {
     nodes {
       id
       name
@@ -294,11 +133,8 @@ query Users($specialId: ID!) {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
           `.trim() + "\n");
@@ -307,31 +143,7 @@ query Users($specialId: ID!) {
 
     describe('without ID or filter', () => {
       it('sends the correct query to the API', async () => {
-        const response = {
-          data: {
-            users: {
-              __typename: 'user',
-              nodes: [
-                {
-                  __typename: 'user',
-                  id: 1,
-                  name: 'Charlie Brown',
-                  profile: {
-                    __typename: 'profile',
-                    id: 2,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              ]
-            }
-          }
-        };
-
-        const request = await sendWithMockFetch(response, async () => {
-          await User.fetch();
-        });
+        const request = await recordGraphQLRequest(async () => { await User.fetch(); });
 
         expect(request.variables).toEqual({});
         expect(request.query).toEqual(`
@@ -345,11 +157,8 @@ query Users {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
           `.trim() + "\n");
@@ -360,65 +169,32 @@ query Users {
 
   describe('persist', () => {
     it('sends the correct query to the API', async () => {
-      const response = {
-        data: {
-          createPost: {
-            __typename: 'post',
-            id: 42,
-            otherId: 13548,
-            published: true,
-            title: 'Example post 1',
-            content: 'Foo',
-            comments: {
-              __typename: 'comment',
-              nodes: [{
-                __typename: 'comment',
-                id: 15,
-                content: 'Works!',
-                subjectId: 42,
-                subjectType: 'Post',
-                user: {
-                  __typename: 'user',
-                  id: 2,
-                  name: 'Charly Brown',
-                  profile: {
-                    __typename: 'profile',
-                    id: 2,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              }]
-            },
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Charlie Brown',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 8,
-                email: 'charly@peanuts.com'
-              }
-            }
-          }
-        }
-      };
+      await User.fetch(1);
 
-      const request = await sendWithMockFetch(response, async () => {
-        const post = Post.find(1);
-        await post.$persist();
+      const insertedData = await Post.insert({
+        data: {
+          title: 'It works!',
+          content: "This is a test!",
+          published: false,
+          otherId: 15,
+          user: User.find(1)
+      }});
+
+      let post = insertedData.posts[0];
+
+      const request = await recordGraphQLRequest(async () => {
+        post = await post.$persist();
       });
+
+      expect(post.id).toEqual(4); // was set from the server
 
       expect(request.variables).toEqual({
         post: {
-          content: "Foo",
+          content: "This is a test!",
           id: 1,
-          otherId: 9,
-          published: true,
-          title: "Example post 1",
+          otherId: 15,
+          published: false,
+          title: "It works!",
           userId: 1,
           user: {
             id: 1,
@@ -428,7 +204,7 @@ query Users {
               id: 1,
               sex: true,
               age: 8,
-              email: 'charly@peanuts.com'
+              email: 'charlie@peanuts.com'
             }
           }
         }
@@ -451,9 +227,7 @@ mutation CreatePost($post: PostInput!) {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
     comments {
       nodes {
@@ -469,15 +243,10 @@ mutation CreatePost($post: PostInput!) {
             email
             age
             sex
-            __typename
           }
-          __typename
         }
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
       `.trim() + "\n");
@@ -487,27 +256,11 @@ mutation CreatePost($post: PostInput!) {
 
   describe('push', () => {
     it('sends the correct query to the API', async () => {
-      const response = {
-        data: {
-          updateUser: {
-            __typename: 'user',
-            id: 1,
-            name: 'Snoopy',
-            profile: {
-              __typename: 'profile',
-              id: 2,
-              sex: true,
-              age: 11,
-              email: 'snoopy@peanuts.com'
-            }
-          }
-        }
-      };
+      await User.fetch(1);
+      const user = User.find(1);
+      user.name = 'Snoopy';
 
-      const request = await sendWithMockFetch(response, async () => {
-        const user = User.find(1);
-        user.name = 'Snoopy';
-
+      const request = await recordGraphQLRequest(async () => {
         await user.$push();
       });
 
@@ -522,9 +275,7 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
       email
       age
       sex
-      __typename
     }
-    __typename
   }
 }
       `.trim() + "\n");
@@ -534,55 +285,10 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
 
   describe('destroy', () => {
     it('sends the correct query to the API', async () => {
-      const response = {
-        data: {
-          deletePost: {
-            __typename: 'post',
-            id: 42,
-            otherId: 13548,
-            published: true,
-            title: 'Example Post 5',
-            content: 'Foo',
-            comments: {
-              __typename: 'comment',
-              nodes: [{
-                __typename: 'comment',
-                id: 15,
-                content: 'Works!',
-                subjectId: 42,
-                subjectType: 'Post',
-                user: {
-                  __typename: 'user',
-                  id: 2,
-                  name: 'Charly Brown',
-                  profile: {
-                    __typename: 'profile',
-                    id: 2,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              }]
-            },
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 1,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        }
-      };
+      await Post.fetch(1);
+      const post = Post.find(1);
 
-      const request = await sendWithMockFetch(response, async () => {
-        const post = Post.find(1);
+      const request = await recordGraphQLRequest(async () => {
         await post.$destroy();
       });
 
@@ -603,9 +309,7 @@ mutation DeletePost($id: ID!) {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
     comments {
       nodes {
@@ -621,15 +325,10 @@ mutation DeletePost($id: ID!) {
             email
             age
             sex
-            __typename
           }
-          __typename
         }
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
       `.trim() + "\n");
@@ -639,45 +338,11 @@ mutation DeletePost($id: ID!) {
 
   describe('custom query', () => {
     it('via Model method sends the correct query to the API', async () => {
-      const response = {
-        data: {
-          unpublishedPosts: {
-            nodes: [
-              {
-                __typename: 'post',
-                id: 1,
-                otherId: 13548,
-                published: false,
-                title: 'Example Post 1',
-                content: 'Foo',
-                comments: {
-                  __typename: 'comment',
-                  nodes: []
-                },
-                user: {
-                  __typename: 'user',
-                  id: 2,
-                  name: 'Johnny Imba',
-                  profile: {
-                    __typename: 'profile',
-                    id: 2,
-                    sex: true,
-                    age: 8,
-                    email: 'charly@peanuts.com'
-                  }
-                }
-              }
-            ],
-            __typename: 'post'
-          }
-        }
-      };
-
-      const request = await sendWithMockFetch(response, async () => {
-        await Post.customQuery({ name: 'unpublishedPosts', filter: { userId: 2 }});
+      const request = await recordGraphQLRequest(async () => {
+        await Post.customQuery({name: 'unpublishedPosts', filter: {userId: 3}});
       });
 
-      expect(request.variables.userId).toEqual(2);
+      expect(request.variables.userId).toEqual(3);
       expect(request.query).toEqual(`
 query UnpublishedPosts($userId: ID!) {
   unpublishedPosts(userId: $userId) {
@@ -695,9 +360,7 @@ query UnpublishedPosts($userId: ID!) {
           email
           age
           sex
-          __typename
         }
-        __typename
       }
       comments {
         nodes {
@@ -713,102 +376,64 @@ query UnpublishedPosts($userId: ID!) {
               email
               age
               sex
-              __typename
             }
-            __typename
           }
-          __typename
         }
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
       `.trim() + "\n");
     });
 
     it('via record method sends the correct query to the API', async () => {
+      await Post.fetch(1);
       const post = Post.find(1);
-      const response = {
-        data: {
-          example: {
-            __typename: 'post',
-            id: 1,
-            otherId: 13548,
-            published: false,
-            title: 'Example Post 1',
-            content: 'Foo',
-            comments: {
-              __typename: 'comment',
-              nodes: []
-            },
-            user: {
-              __typename: 'user',
-              id: 2,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        }
-      };
 
-      const request = await sendWithMockFetch(response, async () => {
-        await post.$customQuery({ name: 'example', filter: { userId: 2 } });
+      const request = await recordGraphQLRequest(async () => {
+        await post.$customQuery({name: 'unpublishedPosts', filter: {userId: 2}});
       });
 
       expect(request.variables.userId).toEqual(2);
       expect(request.variables.id).toEqual(1);
       expect(request.query).toEqual(`
-query Example($userId: ID!, $id: ID!) {
-  example(userId: $userId, id: $id) {
-    id
-    content
-    title
-    otherId
-    published
-    user {
+query UnpublishedPosts($userId: ID!, $id: ID!) {
+  unpublishedPosts(userId: $userId, id: $id) {
+    nodes {
       id
-      name
-      profile {
+      content
+      title
+      otherId
+      published
+      user {
         id
-        email
-        age
-        sex
-        __typename
-      }
-      __typename
-    }
-    comments {
-      nodes {
-        id
-        content
-        subjectId
-        subjectType
-        user {
+        name
+        profile {
           id
-          name
-          profile {
-            id
-            email
-            age
-            sex
-            __typename
-          }
-          __typename
+          email
+          age
+          sex
         }
-        __typename
       }
-      __typename
+      comments {
+        nodes {
+          id
+          content
+          subjectId
+          subjectType
+          user {
+            id
+            name
+            profile {
+              id
+              email
+              age
+              sex
+            }
+          }
+        }
+      }
     }
-    __typename
   }
 }
       `.trim() + "\n");
@@ -818,38 +443,11 @@ query Example($userId: ID!, $id: ID!) {
 
   describe('custom mutation', () => {
     it('sends the correct query to the API', async () => {
+      await Post.fetch(1);
       const post = Post.find(1);
-      const response = {
-        data: {
-          upvotePost: {
-            __typename: 'post',
-            id: 1,
-            otherId: 13548,
-            published: true,
-            title: 'Example Post 1',
-            content: 'Foo',
-            comments: {
-              __typename: 'comment',
-              nodes: []
-            },
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        }
-      };
 
-      const request = await sendWithMockFetch(response, async () => {
-        await post.$mutate({ name: 'upvotePost', args: { captchaToken: '15' } });
+      const request = await recordGraphQLRequest(async () => {
+        await post.$mutate({name: 'upvotePost', args: { captchaToken: '15' }});
       });
 
       expect(request.variables.captchaToken).toEqual('15');
@@ -870,9 +468,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
         email
         age
         sex
-        __typename
       }
-      __typename
     }
     comments {
       nodes {
@@ -888,15 +484,10 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
             email
             age
             sex
-            __typename
           }
-          __typename
         }
-        __typename
       }
-      __typename
     }
-    __typename
   }
 }
       `.trim() + "\n");
@@ -908,41 +499,31 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     it('sends my query to the api', async () => {
       let result;
 
-      const response = {
-        data: {
-          sendSms: {
-            __typename: 'smsStatus',
-            delivered: true
-          }
-        }
-      };
-
       const query = `
-mutation SendSms($to: string!, $text: string!) {
+mutation SendSms($to: String!, $text: String!) {
   sendSms(to: $to, text: $text) {
     delivered
   }
 }`;
 
-      const request = await sendWithMockFetch(response, async () => {
+      const request = await recordGraphQLRequest(async () => {
         result = await store.dispatch('entities/simpleMutation', {
           query,
-          variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+          variables: {to: '+4912345678', text: 'GraphQL is awesome!'}
         });
       });
 
       expect(request.variables).toEqual({ to: '+4912345678', text: 'GraphQL is awesome!' });
       expect(result).toEqual({
         sendSms: {
-          __typename: 'smsStatus',
+          __typename: "SmsStatus", // TODO: this could removed by Vuex-ORM-GraphQL IMHO
           delivered: true,
         }
       });
       expect(request.query).toEqual(`
-mutation SendSms($to: string!, $text: string!) {
+mutation SendSms($to: String!, $text: String!) {
   sendSms(to: $to, text: $text) {
     delivered
-    __typename
   }
 }
       `.trim() + "\n");
@@ -954,39 +535,35 @@ mutation SendSms($to: string!, $text: string!) {
     it('sends my query to the api', async () => {
       let result;
 
-      const response = {
-        data: {
-          __typename: 'status',
-          backend: true,
-          smsGateway: false,
-          paypalIntegration: true
-        }
-      };
-
       const query = `
-query status {
-  backend
-  smsGateway
-  paypalIntegration
+query Status {
+  status {
+    backend
+    smsGateway
+    paypalIntegration
+  }
 }`;
 
-      const request = await sendWithMockFetch(response, async () => {
-        result = await store.dispatch('entities/simpleQuery', { query, variables: {} });
+      const request = await recordGraphQLRequest(async () => {
+        result = await store.dispatch('entities/simpleQuery', {query, variables: {}});
       });
-
-      // Remove the ID Symbol
-      delete Object.getOwnPropertySymbols(result)[0];
 
       expect(result).toEqual({
-        backend: true,
-        smsGateway: false,
-        paypalIntegration: true
+        status: {
+          __typename: 'Status',
+          backend: true,
+          paypalIntegration: true,
+          smsGateway: false,
+        },
       });
+
       expect(request.query).toEqual(`
-query status {
-  backend
-  smsGateway
-  paypalIntegration
+query Status {
+  status {
+    backend
+    smsGateway
+    paypalIntegration
+  }
 }
       `.trim() + "\n");
     });
@@ -1006,76 +583,18 @@ query status {
     it('is true for persisted records', async () => {
       const insertedData = await User.insert({ data: { name: 'Snoopy' }} );
       let user = insertedData.users[0];
-      const response = {
-        data: {
-          createUser: {
-            __typename: 'user',
-            id: 15,
-            name: 'Snoopy',
-            profile: {
-              __typename: 'profile',
-              id: 2,
-              sex: true,
-              age: 11,
-              email: 'snoopy@peanuts.com'
-            },
-            posts: {
-              __typename: 'post',
-              nodes: []
-            }
-          }
-        }
-      };
 
       expect(user.$isPersisted).toBeFalsy();
 
-      await sendWithMockFetch(response, async () => {
-        user = await user.$persist();
-      });
+      const result = await user.$persist();
+      user = User.find(4);
+
 
       expect(user.$isPersisted).toBeTruthy();
     });
 
     it('is true for fetched records', async () => {
-      const response = {
-        data: {
-          user: {
-            __typename: 'user',
-            id: 1,
-            name: 'Johnny Imba',
-            profile: {
-              __typename: 'profile',
-              id: 2,
-              sex: true,
-              age: 36,
-              email: 'johnny@rocks.com'
-            },
-            posts: {
-              __typename: 'post',
-              nodes: [
-                {
-                  __typename: 'post',
-                  id: 1,
-                  userId: 1,
-                  title: 'Example Post 1',
-                  content: 'Foo'
-                },
-                {
-                  __typename: 'post',
-                  id: 2,
-                  userId: 1,
-                  title: 'Example Post 2',
-                  content: 'Bar'
-                }
-              ]
-            }
-          }
-        }
-      };
-
-      await sendWithMockFetch(response, async () => {
-        await User.fetch(1);
-      });
+      await User.fetch(1);
 
       const user = User.find(1);
       expect(user.$isPersisted).toBeTruthy();
@@ -1086,32 +605,13 @@ query status {
   describe('Relations', () => {
     describe('One To One', async () => {
       it('works', async () => {
-        const response = {
-          data: {
-            user: {
-              __typename: 'user',
-              id: 1,
-              name: 'Johnny Imba',
-              profile: {
-                __typename: 'profile',
-                id: 2,
-                sex: true,
-                age: 36,
-                email: 'johnny@rocks.com'
-              }
-            }
-          }
-        };
-
-        const request = await sendWithMockFetch(response, async () => {
-          await User.fetch(1);
-        });
+        await User.fetch(1, true);
 
         const user = User.query().withAllRecursive().find(1);
-        expect(user.name).toEqual('Johnny Imba');
+        expect(user.name).toEqual('Charlie Brown');
         expect(user.profile).not.toEqual(null);
         expect(user.profile.sex).toEqual(true);
-        expect(user.profile.email).toEqual('johnny@rocks.com');
+        expect(user.profile.email).toEqual('charlie@peanuts.com');
       });
     });
 
@@ -1123,45 +623,15 @@ query status {
 
     describe('Has Many Through', async () => {
       it('works', async () => {
-        const response = {
-          data: {
-            tariffs: {
-              __typename: 'tariff',
-              nodes: [{
-                __typename: 'tariff',
-                id: 1,
-                tariffType: 'dsl',
-                name: 'Tariff S',
-                displayName: 'Tariff S',
-                slug: 'tariff-s',
-                checked: false,
-                tariffOptions: {
-                  __typename: 'tariffOption',
-                  nodes: [
-                    {
-                      __typename: 'tariffOption',
-                      id: 1,
-                      name: 'Foo Bar 1',
-                      description: 'Very foo, much more bar'
-                    }
-                  ]
-                }
-              }]
-            }
-          }
-        };
-
-        const request = await sendWithMockFetch(response, async () => {
-          await Tariff.fetch();
-        });
+        await Tariff.fetch();
 
         const tariff = Tariff.query().withAllRecursive().find(1);
-        expect(tariff.name).toEqual('Tariff S');
+        expect(tariff.name).toEqual('Super DSL S');
         expect(tariff.tariffOptions).not.toEqual(null);
         expect(tariff.tariffOptions.length).not.toEqual(0);
-        expect(tariff.tariffOptions[0].name).toEqual('Foo Bar 1');
+        expect(tariff.tariffOptions[0].name).toEqual('Installation');
         expect(tariff.tariffOptions[0].tariffs).not.toEqual(null);
-        expect(tariff.tariffOptions[0].tariffs[0].name).toEqual('Tariff S');
+        expect(tariff.tariffOptions[0].tariffs[0].name).toEqual('Super DSL S');
       });
     });
 
@@ -1173,63 +643,14 @@ query status {
 
     describe('Polymorphic One To Many', async () => {
       it('works', async () => {
-        const response = {
-          data: {
-            post: {
-              __typename: 'post',
-              id: 42,
-              otherId: 13548,
-              published: true,
-              title: 'Example Post 5',
-              content: 'Foo',
-              comments: {
-                __typename: 'comment',
-                nodes: [{
-                  __typename: 'comment',
-                  id: 15,
-                  content: 'Works!',
-                  subjectId: 42,
-                  subjectType: 'Post',
-                  user: {
-                    __typename: 'user',
-                    id: 2,
-                    name: 'Charly Brown',
-                    profile: {
-                      __typename: 'profile',
-                      id: 2,
-                      sex: true,
-                      age: 8,
-                      email: 'charly@peanuts.com'
-                    }
-                  }
-                }]
-              },
-              user: {
-                __typename: 'user',
-                id: 1,
-                name: 'Johnny Imba',
-                profile: {
-                  __typename: 'profile',
-                  id: 1,
-                  sex: true,
-                  age: 36,
-                  email: 'johnny@rocks.com'
-                }
-              }
-            }
-          }
-        };
+        const result = await Post.fetch(1, true);
 
-        let request = await sendWithMockFetch(response, async () => {
-          await Post.fetch(42);
-        });
-
-        const post = Post.query().withAllRecursive().find(42);
+        const post = Post.query().withAllRecursive().find(1);
         expect(post.user).not.toEqual(null);
         expect(post.comments).not.toEqual(null);
         expect(post.comments.length).not.toEqual(0);
-        expect(post.user.name).toEqual('Johnny Imba');
-        expect(post.comments[0].content).toEqual('Works!');
+        expect(post.user.name).toEqual('Charlie Brown');
+        expect(post.comments[0].content).toEqual('Yes!!!!');
       });
     });
 

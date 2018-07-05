@@ -18,7 +18,9 @@ export default class SimpleQuery extends Action {
     if (query) {
       variables = this.prepareArgs(variables);
       const result = await Context.getInstance().apollo.simpleQuery(query, variables, bypassCache);
-      return result.data;
+
+      // remove the symbols
+      return JSON.parse(JSON.stringify(result.data));
     } else {
       throw new Error("The simpleQuery action requires the 'query' to be set");
     }
