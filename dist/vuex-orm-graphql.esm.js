@@ -3505,11 +3505,6 @@ function downcaseFirstLetter(input) {
 function prettify(query) {
     return printer_1(parser_1(query));
 }
-/**
- * Tells if a value is a object (returns false for arrays)
- * @param {any} a
- * @returns {boolean}
- */
 
 var lodash = createCommonjsModule(function (module, exports) {
 /**
