@@ -24,7 +24,7 @@ describe('QueryBuilder', () => {
         otherId: 18,
         userId: 5,
         user: { __type: 'User' },
-        veryCustomIDList: [1, 2, 4, 9, 68],
+        crazyIDList: [1, 2, 4, 9, 68],
         comments: [{
           id: 1,
           content: 'test'
@@ -32,7 +32,7 @@ describe('QueryBuilder', () => {
       }, true, false, false);
 
       expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!, ' +
-        'veryCustomIDList: [Int])');
+        '$crazyIDList: [ID]!)');
     });
 
     it('can generate fields with variables', () => {
@@ -43,7 +43,7 @@ describe('QueryBuilder', () => {
         otherId: 18,
         userId: 5,
         user: { __type: 'User' },
-        veryCustomIDList: [1, 2, 4, 9, 68],
+        crazyIDList: [1, 2, 4, 9, 68],
         comments: [{
           id: 1,
           content: 'test'
@@ -51,7 +51,7 @@ describe('QueryBuilder', () => {
       }, false, false, false);
 
       expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, user: $user, ' +
-        'veryCustomIDList: $veryCustomIDList)');
+        'crazyIDList: $crazyIDList)');
     });
 
     it('can generate filter field with variables', () => {
