@@ -27810,12 +27810,13 @@ var Schema = /** @class */ (function () {
             return 'plain';
         }
     };
-    Schema.prototype.getType = function (name) {
+    Schema.prototype.getType = function (name, allowNull) {
+        if (allowNull === void 0) { allowNull = false; }
         name = upcaseFirstLetter(name);
         var type = this.types.get(name);
-        if (!type)
+        if (!allowNull && !type)
             throw new Error("Couldn't find Type of name " + name + " in the GraphQL Schema.");
-        return type;
+        return type || null;
     };
     Schema.prototype.getMutation = function (name, allowNull) {
         if (allowNull === void 0) { allowNull = false; }
@@ -28179,7 +28180,7 @@ var QueryBuilder = /** @class */ (function () {
                 var skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
                 var schema = Context.getInstance().schema;
                 var type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-                var schemaField = (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; });
+                var schemaField = type ? (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; }) : null;
                 var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
                 // Ignore null fields, ids and connections
                 if (value && !skipFieldDueId && !isConnectionField) {

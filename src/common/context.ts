@@ -237,7 +237,7 @@ export default class Context {
       let type: GraphQLType;
 
       try {
-        type = this.schema!.getType(model.singularName);
+        type = this.schema!.getType(model.singularName)!;
       } catch (error) {
         this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
         return;
