@@ -4,7 +4,7 @@ import { upcaseFirstLetter } from '../support/utils';
 import gql from 'graphql-tag';
 import Context from '../common/context';
 import Schema from './schema';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 const inflection = require('inflection');
 
 /**
@@ -106,7 +106,7 @@ export default class QueryBuilder {
     if (!model) throw new Error('No model provided to build the query!');
 
     // args
-    args = args ? JSON.parse(JSON.stringify(args)) : {};
+    args = args ? _.clone(args) : {};
     if (!args) throw new Error('args is undefined');
 
     Object.keys(args).forEach((key: string) => {

@@ -5,7 +5,7 @@ import { Destroy, Fetch, Mutate, Persist, Push } from './actions';
 import Query from './actions/query';
 import SimpleQuery from './actions/simple-query';
 import SimpleMutation from './actions/simple-mutation';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods

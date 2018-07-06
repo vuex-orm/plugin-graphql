@@ -1,6 +1,6 @@
 import { User, Profile, Video, Post, Comment, Tariff, TariffOption } from 'test/support/mock-data'
 import inflection from 'inflection';
-import _ from 'lodash-es';
+import * as _ from 'lodash';
 
 
 export const typeDefs = `

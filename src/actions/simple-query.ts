@@ -2,6 +2,7 @@ import { ActionParams } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
 import Context from '../common/context';
+import * as _ from 'lodash-es';
 
 /**
  * SimpleQuery action for sending a model unrelated simple query.
@@ -20,7 +21,7 @@ export default class SimpleQuery extends Action {
       const result = await Context.getInstance().apollo.simpleQuery(query, variables, bypassCache);
 
       // remove the symbols
-      return JSON.parse(JSON.stringify(result.data));
+      return _.clone(result.data);
     } else {
       throw new Error("The simpleQuery action requires the 'query' to be set");
     }

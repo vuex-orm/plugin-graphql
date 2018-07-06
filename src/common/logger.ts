@@ -2,7 +2,7 @@ import { DocumentNode } from 'graphql';
 import { Arguments } from '../support/interfaces';
 import { FetchPolicy } from 'apollo-client';
 import { prettify } from '../support/utils';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 
 /**
  * Vuex-ORM-Apollo Debug Logger.

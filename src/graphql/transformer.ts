@@ -2,7 +2,7 @@ import { Data, Field } from '../support/interfaces';
 import Model from '../orm/model';
 import Context from '../common/context';
 import { downcaseFirstLetter } from '../support/utils';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 const inflection = require('inflection');
 
 /**
@@ -108,6 +108,6 @@ export default class Transformer {
     }
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
-    return JSON.parse(JSON.stringify(result));
+    return _.clone(result);
   }
 }

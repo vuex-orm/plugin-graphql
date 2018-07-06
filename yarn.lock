@@ -152,8 +152,8 @@
     "@types/lodash" "*"
 
 "@types/lodash@*":
-  version "4.14.101"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.101.tgz#512f6c9e1749890f4d024e98cb995a63f562d458"
+  version "4.14.110"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.110.tgz#fb07498f84152947f30ea09d89207ca07123461e"
 
 "@types/node@*":
   version "9.4.0"
@@ -185,7 +185,7 @@
     source-map "^0.5.6"
     vue-template-es2015-compiler "^1.6.0"
 
-"@vuex-orm/core@^0.25.1":
+"@vuex-orm/core@^0.25.4":
   version "0.25.4"
   resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.25.4.tgz#0609e0df8a2ab2b614d53b8ce25e2c2bd562d0d3"
 
@@ -4234,7 +4234,7 @@ locate-path@^2.0.0:
     p-locate "^2.0.0"
     path-exists "^3.0.0"
 
-lodash-es@^4.17.5:
+lodash-es@^4.17.10:
   version "4.17.10"
   resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.10.tgz#62cd7104cdf5dd87f235a837f0ede0e8e5117e05"
 
