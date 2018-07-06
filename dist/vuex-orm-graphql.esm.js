@@ -27042,6 +27042,9 @@ var Schema = /** @class */ (function () {
         return (Schema.getTypeNameOfField(field).endsWith('TypeConnection'));
     };
     Schema.getTypeNameOfField = function (field) {
+        if (field.type.kind === 'LIST') {
+            return "[" + field.type.ofType.name + "]";
+        }
         var name = field.type.name ||
             field.type.ofType.name ||
             field.type.ofType.ofType.name ||
@@ -27089,7 +27092,7 @@ var __generator$1 = (undefined && undefined.__generator) || function (thisArg, b
     }
 };
 var inflection$2 = require('inflection');
-var introspectionQuery = "\nquery Introspection {\n  __schema {\n    types {\n      name\n      description\n\n      fields(includeDeprecated: true) {\n        name\n        description\n        args {\n          name\n          description\n          type {\n            name\n            kind\n\n            ofType {\n              kind\n\n              name\n              ofType {\n                kind\n                name\n\n                ofType {\n                  kind\n                  name\n                }\n              }\n            }\n          }\n        }\n\n        type {\n          name\n          kind\n\n          ofType {\n            kind\n\n            name\n            ofType {\n              kind\n              name\n\n              ofType {\n                kind\n                name\n              }\n            }\n          }\n        }\n      }\n\n      inputFields {\n        name\n        description\n\n        type {\n          name\n          kind\n\n          ofType {\n            kind\n\n            name\n            ofType {\n              kind\n              name\n\n              ofType {\n                kind\n                name\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
+var introspectionQuery = "\nquery Introspection {\n  __schema {\n    types {\n      name\n      description\n      fields(includeDeprecated: true) {\n        name\n        description\n        args {\n          name\n          description\n          type {\n            name\n            kind\n\n            ofType {\n              kind\n\n              name\n              ofType {\n                kind\n                name\n\n                ofType {\n                  kind\n                  name\n                }\n              }\n            }\n          }\n        }\n\n        type {\n          name\n          kind\n\n          ofType {\n            kind\n\n            name\n            ofType {\n              kind\n              name\n\n              ofType {\n                kind\n                name\n              }\n            }\n          }\n        }\n      }\n\n      inputFields {\n        name\n        description\n        type {\n          name\n          kind\n\n          ofType {\n            kind\n\n            name\n            ofType {\n              kind\n              name\n\n              ofType {\n                kind\n                name\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 /**
  * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
  *
@@ -27275,11 +27278,13 @@ var QueryBuilder = /** @class */ (function () {
         if (allowIdFields === void 0) { allowIdFields = false; }
         var context = Context.getInstance();
         model = context.getModel(model);
-        var params = this.buildArguments(model, args, false, filter, allowIdFields);
+        name = name ? name : model.pluralName;
+        var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
+        var params = this.buildArguments(model, args, false, filter, allowIdFields, field);
         path = path.length === 0 ? [model.singularName] : path;
         var fields = "\n      " + model.getQueryFields().join(' ') + "\n      " + this.buildRelationsQuery(model, path) + "\n    ";
         if (multiple) {
-            var header = "" + (name ? name : model.pluralName) + params;
+            var header = "" + name + params;
             if (context.connectionQueryMode === 'nodes') {
                 return "\n          " + header + " {\n            nodes {\n              " + fields + "\n            }\n          }\n        ";
             }
@@ -27325,8 +27330,10 @@ var QueryBuilder = /** @class */ (function () {
         // name
         if (!name)
             name = (multiple ? model.pluralName : model.singularName);
+        // field
+        var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter) + " {\n" +
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter, true, field) + " {\n" +
             ("  " + this.buildField(model, multiple, args, [], name, filter, true) + "\n") +
             "}";
         return src(query);
@@ -27353,13 +27360,15 @@ var QueryBuilder = /** @class */ (function () {
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
      * @param filter
      * @param {boolean} allowIdFields If true, ID fields will be included in the arguments list
+     * @param {GraphQLField} field Optional. The GraphQL mutation or query field
      * @returns {String}
      */
-    QueryBuilder.buildArguments = function (model, args, signature, filter, allowIdFields) {
+    QueryBuilder.buildArguments = function (model, args, signature, filter, allowIdFields, field) {
         var _this = this;
         if (signature === void 0) { signature = false; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = true; }
+        if (field === void 0) { field = null; }
         if (args === undefined)
             return '';
         var returnValue = '';
@@ -27369,16 +27378,23 @@ var QueryBuilder = /** @class */ (function () {
                 var value = args[key];
                 var isForeignKey = model.skipField(key);
                 var skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
+                var schema = Context.getInstance().schema;
+                var type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
+                var schemaField = (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; });
+                var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
                 // Ignore null fields, ids and connections
-                if (value && !(value instanceof Array || skipFieldDueId)) {
+                if (value && !skipFieldDueId && !isConnectionField) {
                     var typeOrValue = '';
                     if (signature) {
-                        var schema = Context.getInstance().schema;
-                        var type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-                        var schemaField = (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; });
                         if (undefined(value) && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
+                        }
+                        else if (undefined(value) && field) {
+                            var arg = field.args.find(function (f) { return f.name === key; });
+                            if (!arg)
+                                throw new Error("A argument is of type array but it's not possible to determine the type");
+                            typeOrValue = Schema.getTypeNameOfField(arg) + '!';
                         }
                         else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
                             // Case 1, 3 and 4

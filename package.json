@@ -1,6 +1,6 @@
 {
   "name": "@vuex-orm/plugin-graphql",
-  "version": "1.0.0-rc.9",
+  "version": "1.0.0-rc.10",
   "description": "Vuex-ORM Plugin to sync the data against a GraphQL API.",
   "main": "dist/vuex-orm-graphql.common.js",
   "module": "dist/vuex-orm-graphql.esm.js",
@@ -62,7 +62,6 @@
   "devDependencies": {
     "@types/sinon": "^5.0.1",
     "apollo-link-schema": "^1.1.0",
-    "graphql-tools": "^3.0.4",
     "babel-core": "^6.26.0",
     "babel-loader": "^7.1.2",
     "babel-plugin-transform-runtime": "^6.23.0",
@@ -71,6 +70,7 @@
     "codecov.io": "^0.1.6",
     "expect": "^23.1.0",
     "fork-ts-checker-webpack-plugin": "^0.4.2",
+    "graphql-tools": "^3.0.4",
     "istanbul-instrumenter-loader": "^3.0.0",
     "mocha": "^5.2.0",
     "mocha-webpack": "^2.0.0-beta.0",
