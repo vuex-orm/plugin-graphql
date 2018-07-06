@@ -24,15 +24,22 @@ describe('QueryBuilder', () => {
         otherId: 18,
         userId: 5,
         user: { __type: 'User' },
-        crazyIDList: [1, 2, 4, 9, 68],
         comments: [{
           id: 1,
           content: 'test'
         }]
       }, true, false, false);
 
-      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!, ' +
-        '$crazyIDList: [ID]!)');
+      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!)');
+
+
+
+      args = QueryBuilder.buildArguments(model, {
+        id: 5,
+        itemIds: [1, 2, 4, 9, 68]
+      }, true, false, true, context.schema.getMutation('reorderItems'));
+
+      expect(args).toEqual('($id: ID!, $itemIds: [ID]!)');
     });
 
     it('can generate fields with variables', () => {

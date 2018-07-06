@@ -21493,7 +21493,7 @@ var Logger = /** @class */ (function () {
         if (this.enabled) {
             try {
                 var prettified = '';
-                if (isObject(query) && query.loc) {
+                if (isPlainObject(query) && query.loc) {
                     prettified = prettify(query.loc.source.body);
                 }
                 else {
@@ -27834,14 +27834,20 @@ var Schema = /** @class */ (function () {
     Schema.returnsConnection = function (field) {
         return (Schema.getTypeNameOfField(field).endsWith('TypeConnection'));
     };
-    Schema.getTypeNameOfField = function (field) {
-        if (field.type.kind === 'LIST') {
-            return "[" + field.type.ofType.name + "]";
+    Schema.getRealType = function (type) {
+        if (type.kind === 'NON_NULL') {
+            return this.getRealType(type.ofType);
         }
-        var name = field.type.name ||
-            field.type.ofType.name ||
-            field.type.ofType.ofType.name ||
-            field.type.ofType.ofType.name;
+        else {
+            return type;
+        }
+    };
+    Schema.getTypeNameOfField = function (field) {
+        var type = this.getRealType(field.type);
+        if (type.kind === 'LIST') {
+            return "[" + type.ofType.name + "]";
+        }
+        var name = type.name || type.ofType.name || type.ofType.ofType.name;
         if (!name)
             throw new Error("Can't find type name for field " + field.name);
         return name;
@@ -28114,7 +28120,7 @@ var QueryBuilder = /** @class */ (function () {
         if (!args)
             throw new Error('args is undefined');
         Object.keys(args).forEach(function (key) {
-            if (args && args[key] && isObject(args[key])) {
+            if (args && args[key] && isPlainObject(args[key])) {
                 args[key] = { __type: upcaseFirstLetter(key) };
             }
         });
@@ -28179,7 +28185,7 @@ var QueryBuilder = /** @class */ (function () {
                 if (value && !skipFieldDueId && !isConnectionField) {
                     var typeOrValue = '';
                     if (signature) {
-                        if (isObject(value) && value.__type) {
+                        if (isPlainObject(value) && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + 'Input!';
                         }
@@ -29345,7 +29351,7 @@ var VuexORMGraphQL = /** @class */ (function () {
                 var filterObj;
                 return __generator$12(this, function (_a) {
                     filterObj = filter;
-                    if (!isObject(filterObj))
+                    if (!isPlainObject(filterObj))
                         filterObj = { id: filter };
                     return [2 /*return*/, this.dispatch('fetch', { filter: filterObj, bypassCache: bypassCache })];
                 });

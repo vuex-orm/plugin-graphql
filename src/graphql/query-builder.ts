@@ -110,7 +110,7 @@ export default class QueryBuilder {
     if (!args) throw new Error('args is undefined');
 
     Object.keys(args).forEach((key: string) => {
-      if (args && args[key] && _.isObject(args[key])) {
+      if (args && args[key] && _.isPlainObject(args[key])) {
         args[key] = { __type: upcaseFirstLetter(key) };
       }
     });
@@ -182,7 +182,7 @@ export default class QueryBuilder {
           let typeOrValue: any = '';
 
           if (signature) {
-            if (_.isObject(value) && value.__type) {
+            if (_.isPlainObject(value) && value.__type) {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
             } else if (_.isArray(value) && field) {

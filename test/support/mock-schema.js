@@ -53,6 +53,7 @@ export const typeDefs = `
     
     upvotePost(captchaToken: String!, id: ID!): Post!
     sendSms(to: String!, text: String!): SmsStatus!
+    reorderItems(id: ID!, itemIds: [ID]!): PostTypeConnection
   }
 
   type Status {
@@ -134,7 +135,6 @@ export const typeDefs = `
     title: String
     userId: ID
     otherId: ID
-    crazyIDList: [ID]
     published: Boolean
     user: User
     comments: CommentTypeConnection
@@ -145,7 +145,6 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    crazyIDList: [ID]
     userId: ID
     otherId: ID
     published: Boolean
@@ -157,7 +156,6 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    crazyIDList: [ID]
     userId: ID
     otherId: ID
     published: Boolean
@@ -400,7 +398,6 @@ const posts = [
     content: 'GraphQL is so nice!',
     title: 'GraphQL',
     otherId: 123,
-    crazyIDList: [1, 2, 3],
     published: true,
     userId: 1
   },
@@ -410,7 +407,6 @@ const posts = [
     content: 'Vue is so awesome!',
     title: 'Vue.js',
     otherId: 435,
-    crazyIDList: [4, 5],
     published: true,
     userId: 3
   },
@@ -420,7 +416,6 @@ const posts = [
     content: 'Vuex-ORM is so crisp',
     title: 'Vuex-ORM',
     otherId: 987,
-    crazyIDList: [6],
     published: false,
     userId: 3
   }

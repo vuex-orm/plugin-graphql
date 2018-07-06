@@ -88,7 +88,7 @@ export default class Logger {
     if (this.enabled) {
       try {
         let prettified = '';
-        if (_.isObject(query) && (query as DocumentNode).loc) {
+        if (_.isPlainObject(query) && (query as DocumentNode).loc) {
           prettified = prettify((query as DocumentNode).loc!.source.body);
         } else {
           prettified = prettify(query as string);

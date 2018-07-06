@@ -1,4 +1,4 @@
-import { GraphQLField, GraphQLSchema, GraphQLType } from '../support/interfaces';
+import { GraphQLField, GraphQLSchema, GraphQLType, GraphQLTypeDefinition } from '../support/interfaces';
 import { upcaseFirstLetter } from '../support/utils';
 
 export default class Schema {
@@ -73,15 +73,22 @@ export default class Schema {
     return (Schema.getTypeNameOfField(field).endsWith('TypeConnection'));
   }
 
+  static getRealType (type: GraphQLTypeDefinition): GraphQLTypeDefinition {
+    if (type.kind === 'NON_NULL') {
+      return this.getRealType(type.ofType);
+    } else {
+      return type;
+    }
+  }
+
   static getTypeNameOfField (field: GraphQLField): string {
-    if (field.type.kind === 'LIST') {
-      return `[${field.type.ofType.name}]`;
+    const type = this.getRealType(field.type);
+
+    if (type.kind === 'LIST') {
+      return `[${type.ofType.name}]`;
     }
 
-    const name = field.type.name ||
-      field.type.ofType.name ||
-      field.type.ofType.ofType.name ||
-      field.type.ofType.ofType.name;
+    const name = type.name || type.ofType.name || type.ofType.ofType.name;
 
     if (!name) throw new Error(`Can't find type name for field ${field.name}`);
 
