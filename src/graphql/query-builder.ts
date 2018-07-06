@@ -174,7 +174,7 @@ export default class QueryBuilder {
 
         const schema = Context.getInstance().schema!;
         const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-        const schemaField = (filter ? type.inputFields! : type.fields!).find(f => f.name === key);
+        const schemaField = type ? (filter ? type.inputFields! : type.fields!).find(f => f.name === key) : null;
         const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
 
         // Ignore null fields, ids and connections
@@ -232,7 +232,7 @@ export default class QueryBuilder {
     const context: Context = Context.getInstance();
     const field: undefined | Field = model.fields.get(key);
 
-    const schemaField = context.schema!.getType(model.singularName).fields!.find(f => f.name === key);
+    const schemaField = context.schema!.getType(model.singularName)!.fields!.find(f => f.name === key);
 
     if (schemaField && Schema.getTypeNameOfField(schemaField)) {
       return Schema.getTypeNameOfField(schemaField);

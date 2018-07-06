@@ -15,8 +15,8 @@ export default class Schema {
 
     this.schema.types.forEach((t: GraphQLType) => this.types.set(t.name, t));
 
-    this.getType('Query').fields!.forEach(f => this.queries.set(f.name, f));
-    this.getType('Mutation').fields!.forEach(f => this.mutations.set(f.name, f));
+    this.getType('Query')!.fields!.forEach(f => this.queries.set(f.name, f));
+    this.getType('Mutation')!.fields!.forEach(f => this.mutations.set(f.name, f));
   }
 
   public determineQueryMode (): string {
@@ -44,13 +44,13 @@ export default class Schema {
     }
   }
 
-  public getType (name: string): GraphQLType {
+  public getType (name: string, allowNull: boolean = false): GraphQLType | null {
     name = upcaseFirstLetter(name);
     const type = this.types.get(name);
 
-    if (!type) throw new Error(`Couldn't find Type of name ${name} in the GraphQL Schema.`);
+    if (!allowNull && !type) throw new Error(`Couldn't find Type of name ${name} in the GraphQL Schema.`);
 
-    return type;
+    return type || null;
   }
 
   public getMutation (name: string, allowNull: boolean = false): GraphQLField | null {
