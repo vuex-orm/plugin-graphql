@@ -74,6 +74,10 @@ export default class Schema {
   }
 
   static getTypeNameOfField (field: GraphQLField): string {
+    if (field.type.kind === 'LIST') {
+      return `[${field.type.ofType.name}]`;
+    }
+
     const name = field.type.name ||
       field.type.ofType.name ||
       field.type.ofType.ofType.name ||

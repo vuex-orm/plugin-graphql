@@ -15,7 +15,6 @@ query Introspection {
     types {
       name
       description
-
       fields(includeDeprecated: true) {
         name
         description
@@ -67,7 +66,6 @@ query Introspection {
       inputFields {
         name
         description
-
         type {
           name
           kind
