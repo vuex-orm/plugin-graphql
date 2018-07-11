@@ -1,6 +1,6 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
 import Database from '@vuex-orm/core/lib/database/Database';
-import State from '@vuex-orm/core/lib/modules/State';
+import RootState from '@vuex-orm/core/lib/modules/contracts/RootState';
 import { ApolloLink } from 'apollo-link';
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
@@ -22,7 +22,7 @@ export interface ActionParams {
   getters: any;
   rootGetters: any;
   rootState: any;
-  state: State;
+  state: RootState;
   filter?: Filter;
   id?: number;
   data?: Data;
