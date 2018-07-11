@@ -3,7 +3,7 @@ import Context from '../common/context';
 import { Store } from '../orm/store';
 import { Arguments, Data, DispatchFunction } from '../support/interfaces';
 import Model from '../orm/model';
-import State from '@vuex-orm/core/lib/modules/State';
+import RootState from '@vuex-orm/core/lib/modules/contracts/RootState';
 import Transformer from '../graphql/transformer';
 import NameGenerator from '../graphql/name-generator';
 import Schema from '../graphql/schema';
@@ -63,10 +63,10 @@ export default class Action {
 
   /**
    * Convenience method to get the model from the state.
-   * @param {State} state Vuex state
+   * @param {RootState} state Vuex state
    * @returns {Model}
    */
-  protected static getModelFromState (state: State): Model {
+  protected static getModelFromState (state: RootState): Model {
     return Context.getInstance().getModel(state.$name);
   }
 
