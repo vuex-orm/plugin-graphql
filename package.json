@@ -1,6 +1,6 @@
 {
   "name": "@vuex-orm/plugin-graphql",
-  "version": "1.0.0-rc.10",
+  "version": "1.0.0-rc.11",
   "description": "Vuex-ORM Plugin to sync the data against a GraphQL API.",
   "main": "dist/vuex-orm-graphql.common.js",
   "module": "dist/vuex-orm-graphql.esm.js",
@@ -47,7 +47,7 @@
     "@types/graphql": "^0.12.3",
     "@types/inflection": "^1.5.28",
     "@types/lodash-es": "^4.17.0",
-    "@vuex-orm/core": "^0.25.5",
+    "@vuex-orm/core": "^0.25.6",
     "apollo-cache-inmemory": "^1.1.7",
     "apollo-client": "^2.2.2",
     "apollo-link": "^1.2.0",

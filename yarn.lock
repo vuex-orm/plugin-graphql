@@ -185,9 +185,9 @@
     source-map "^0.5.6"
     vue-template-es2015-compiler "^1.6.0"
 
-"@vuex-orm/core@^0.25.5":
-  version "0.25.5"
-  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.25.5.tgz#ebdcfbbdb19195fff76309c1a8d4c1a708a23b38"
+"@vuex-orm/core@^0.25.6":
+  version "0.25.6"
+  resolved "https://registry.yarnpkg.com/@vuex-orm/core/-/core-0.25.6.tgz#d98e05811798d0ddbedd7d289d771d74270bf305"
 
 "@webassemblyjs/ast@1.4.3":
   version "1.4.3"
