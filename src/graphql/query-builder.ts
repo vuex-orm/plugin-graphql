@@ -172,9 +172,8 @@ export default class QueryBuilder {
         const isForeignKey = model.skipField(key);
         const skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
 
-        const schema = Context.getInstance().schema!;
-        const type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-        const schemaField = type ? (filter ? type.inputFields! : type.fields!).find(f => f.name === key) : null;
+        let schemaField: GraphQLField | undefined = this.findSchemaFieldForArgument(key, field, model, filter);
+
         const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
 
         // Ignore null fields, ids and connections
@@ -251,6 +250,30 @@ export default class QueryBuilder {
         throw new Error(`Can't find suitable graphql type for field '${model.singularName}.${key}'.`);
       }
     }
+  }
+
+  private static findSchemaFieldForArgument (
+    name: String, field: GraphQLField | null, model: Model, isFilter: boolean
+  ): GraphQLField | undefined {
+
+    const schema = Context.getInstance().schema!;
+    let schemaField: GraphQLField | undefined;
+
+    if (field) {
+      schemaField = field.args.find(f => f.name === name);
+
+      if (!schemaField) {
+        Context.getInstance().logger.warn(`Could find the argument with name ${name} for the mutation/query ${field.name}`);
+      }
+    } else {
+      // We try to find the FilterType or at least the Type this query belongs to.
+      const type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+
+      // Next we try to find the field from the type
+      schemaField = type ? (isFilter ? type.inputFields! : type.fields!).find(f => f.name === name) : undefined;
+    }
+
+    return schemaField;
   }
 
   /**

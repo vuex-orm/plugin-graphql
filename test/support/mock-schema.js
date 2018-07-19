@@ -51,7 +51,7 @@ export const typeDefs = `
     updateTariffOption(id: ID!, tariffOption: TariffOptionInput!): TariffOption!
     updateTariff(id: ID!, tariff: TariffInput!): Tariff!
     
-    upvotePost(captchaToken: String!, id: ID!): Post!
+    upvotePost(captchaToken: String!, postId: ID!): Post!
     sendSms(to: String!, text: String!): SmsStatus!
     reorderItems(id: ID!, itemIds: [ID]!): PostTypeConnection
   }
@@ -612,7 +612,7 @@ export const resolvers = {
   Mutation: {
     // Customs
 
-    upvotePost: (parent, { captchaToken, id }) => findOne(Post, posts, id),
+    upvotePost: (parent, { captchaToken, postId }) => findOne(Post, posts, postId),
     sendSms: (parent, { to, text }) => ({ delivered: true }),
 
 

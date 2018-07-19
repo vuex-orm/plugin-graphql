@@ -447,14 +447,14 @@ query UnpublishedPosts($userId: ID!, $id: ID!) {
       const post = Post.find(1);
 
       const request = await recordGraphQLRequest(async () => {
-        await post.$mutate({name: 'upvotePost', args: { captchaToken: '15' }});
+        await Post.mutate({name: 'upvotePost', args: { captchaToken: '15', postId: post.id }});
       });
 
       expect(request.variables.captchaToken).toEqual('15');
-      expect(request.variables.id).toEqual(post.id);
+      expect(request.variables.postId).toEqual(post.id);
       expect(request.query).toEqual(`
-mutation UpvotePost($captchaToken: String!, $id: ID!) {
-  upvotePost(captchaToken: $captchaToken, id: $id) {
+mutation UpvotePost($captchaToken: String!, $postId: ID!) {
+  upvotePost(captchaToken: $captchaToken, postId: $postId) {
     id
     content
     title
