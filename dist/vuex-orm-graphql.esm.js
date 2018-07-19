@@ -28178,9 +28178,7 @@ var QueryBuilder = /** @class */ (function () {
                 var value = args[key];
                 var isForeignKey = model.skipField(key);
                 var skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields;
-                var schema = Context.getInstance().schema;
-                var type = schema.getType(model.singularName + (filter ? 'Filter' : ''));
-                var schemaField = type ? (filter ? type.inputFields : type.fields).find(function (f) { return f.name === key; }) : null;
+                var schemaField = _this.findSchemaFieldForArgument(key, field, model, filter);
                 var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection');
                 // Ignore null fields, ids and connections
                 if (value && !skipFieldDueId && !isConnectionField) {
@@ -28261,6 +28259,23 @@ var QueryBuilder = /** @class */ (function () {
                 throw new Error("Can't find suitable graphql type for field '" + model.singularName + "." + key + "'.");
             }
         }
+    };
+    QueryBuilder.findSchemaFieldForArgument = function (name, field, model, isFilter) {
+        var schema = Context.getInstance().schema;
+        var schemaField;
+        if (field) {
+            schemaField = field.args.find(function (f) { return f.name === name; });
+            if (!schemaField) {
+                Context.getInstance().logger.warn("Could find the argument with name " + name + " for the mutation/query " + field.name);
+            }
+        }
+        else {
+            // We try to find the FilterType or at least the Type this query belongs to.
+            var type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+            // Next we try to find the field from the type
+            schemaField = type ? (isFilter ? type.inputFields : type.fields).find(function (f) { return f.name === name; }) : undefined;
+        }
+        return schemaField;
     };
     /**
      * Generates the fields for all related models.
