@@ -1,4 +1,4 @@
-import { setupMockData, User, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
+import { setupMockData, User, Profile, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
 import Context from "app/common/context";
 import {recordGraphQLRequest} from "../support/helpers";
 
@@ -115,7 +115,7 @@ query User($id: ID!) {
       });
     });
 
-    describe('without ID but with filter', () => {
+    describe('without ID but with filter with ID', () => {
       it('sends the correct query to the API', async () => {
         const request = await recordGraphQLRequest(async () => {
           await User.fetch({ profileId: 2 });
@@ -125,6 +125,43 @@ query User($id: ID!) {
         expect(request.query).toEqual(`
 query Users($profileId: ID!) {
   users(filter: {profileId: $profileId}) {
+    nodes {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+  }
+}
+          `.trim() + "\n");
+      });
+    });
+
+    describe('without ID but with filter with object', () => {
+      it('sends the correct query to the API', async () => {
+        await Profile.fetch(2);
+        const profile = Context.getInstance().getModel('profile').getRecordWithId(2);
+
+        const request = await recordGraphQLRequest(async () => {
+          await User.fetch({ profile });
+        });
+
+        expect(request.variables).toEqual({
+          profile: {
+            id: profile.id,
+            email: profile.email,
+            age: profile.age,
+            sex: profile.sex,
+          }
+        });
+
+        expect(request.query).toEqual(`
+query Users($profile: ProfileInput!) {
+  users(filter: {profile: $profile}) {
     nodes {
       id
       name
