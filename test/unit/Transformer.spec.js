@@ -18,10 +18,29 @@ describe('Transformer', () => {
 
   describe('.transformOutgoingData', () => {
     it('transforms models to a useful data hashmap', async () => {
-      await User.fetch(1);
-      const user = User.query().first();
-      const transformedData = Transformer.transformOutgoingData(context.getModel('user'), user);
-      expect(transformedData).toEqual({ id: 1, name: 'Charlie Brown', profileId: 1 });
+      await Video.fetch(1);
+      const video = context.getModel('video').getRecordWithId(1);
+      const transformedData = Transformer.transformOutgoingData(context.getModel('video'), video);
+      expect(transformedData).toEqual({
+        id: 1,
+        ignoreMe: '',
+        content: 'Foo',
+        title: 'Example Video 1',
+        otherId: 42,
+        userId: 1,
+
+        user: {
+          id: 1,
+          name: 'Charlie Brown',
+          profileId: 1,
+          profile: {
+            id: 1,
+            email: 'charlie@peanuts.com',
+            age: 8,
+            sex: true
+          }
+        }
+      });
     });
   });
 
