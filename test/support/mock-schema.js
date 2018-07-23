@@ -22,7 +22,7 @@ export const typeDefs = `
     tariffTariffOption(id: ID!): TariffTariffOption!
     tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
     
-    unpublishedPosts(userId: ID!): PostTypeConnection
+    unpublishedPosts(authorId: ID!): PostTypeConnection
     status: Status
   }
 
@@ -133,10 +133,10 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
     published: Boolean
-    user: User
+    author: User
     comments: CommentTypeConnection
   }
 
@@ -145,10 +145,10 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
     published: Boolean
-    user: UserInput
+    author: UserInput
   }
 
 
@@ -156,10 +156,10 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
     published: Boolean
-    user: UserInput
+    author: UserInput
   }
 
 
@@ -172,9 +172,9 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
-    user: User
+    author: User
     comments: CommentTypeConnection
   }
 
@@ -183,9 +183,9 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
-    user: UserInput
+    author: UserInput
   }
 
 
@@ -193,9 +193,9 @@ export const typeDefs = `
     id: ID
     content: String
     title: String
-    userId: ID
+    authorId: ID
     otherId: ID
-    user: UserInput
+    author: UserInput
   }
 
 
@@ -207,8 +207,8 @@ export const typeDefs = `
   type Comment {
     id: ID
     content: String
-    userId: ID
-    user: User
+    authorId: ID
+    author: User
     subjectId: ID
     subjectType: String
   }
@@ -217,8 +217,8 @@ export const typeDefs = `
   input CommentFilter {
     id: ID
     content: String
-    userId: ID
-    user: UserInput
+    authorId: ID
+    author: UserInput
     subjectId: ID
     subjectType: String
   }
@@ -227,8 +227,8 @@ export const typeDefs = `
    input CommentInput {
     id: ID
     content: String
-    userId: ID
-    user: UserInput
+    authorId: ID
+    author: UserInput
     subjectId: ID
     subjectType: String
   }
@@ -372,7 +372,7 @@ const videos = [
     content: 'Foo',
     title: 'Example Video 1',
     otherId: 42,
-    userId: 1
+    authorId: 1
   },
 
   {
@@ -380,7 +380,7 @@ const videos = [
     content: 'Bar',
     title: 'Example Video 2',
     otherId: 67,
-    userId: 2
+    authorId: 2
   },
 
   {
@@ -388,7 +388,7 @@ const videos = [
     content: 'FooBar',
     title: 'Example Video 3',
     otherId: 491,
-    userId: 2
+    authorId: 2
   }
 ];
 
@@ -399,7 +399,7 @@ const posts = [
     title: 'GraphQL',
     otherId: 123,
     published: true,
-    userId: 1
+    authorId: 1
   },
 
   {
@@ -408,7 +408,7 @@ const posts = [
     title: 'Vue.js',
     otherId: 435,
     published: true,
-    userId: 3
+    authorId: 3
   },
 
   {
@@ -417,7 +417,7 @@ const posts = [
     title: 'Vuex-ORM',
     otherId: 987,
     published: false,
-    userId: 3
+    authorId: 3
   }
 ];
 
@@ -425,7 +425,7 @@ const comments = [
   {
     id: 1,
     content: 'Yes!!!!',
-    userId: 2,
+    authorId: 2,
     subjectId: 1,
     subjectType: 'post'
   },
@@ -433,7 +433,7 @@ const comments = [
   {
     id: 2,
     content: 'So crazy :O',
-    userId: 1,
+    authorId: 1,
     subjectId: 2,
     subjectType: 'video'
   },
@@ -441,7 +441,7 @@ const comments = [
   {
     id: 3,
     content: 'Hell no!',
-    userId: 3,
+    authorId: 3,
     subjectId: 3,
     subjectType: 'post'
   }
@@ -500,8 +500,8 @@ function addRelations(model, record, path = []) {
   switch (model) {
     case User:
       if (!ignoreRelation(Profile, path)) record.profile = findOne(Profile, profiles, record.profileId, path);
-      if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.userId) === parseInt(record.id), path);
-      if (!ignoreRelation(Post, path)) record.posts = findMany(Post, posts, (r) => parseInt(r.userId) === parseInt(record.id), path);
+      if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.authorId) === parseInt(record.id), path);
+      if (!ignoreRelation(Post, path)) record.posts = findMany(Post, posts, (r) => parseInt(r.authorId) === parseInt(record.id), path);
       break;
 
     case Profile:
@@ -509,17 +509,17 @@ function addRelations(model, record, path = []) {
       break;
 
     case Video:
-      if (!ignoreRelation(User, path)) record.user = findOne(User, users, record.userId, path);
+      if (!ignoreRelation(User, path)) record.author = findOne(User, users, record.authorId, path);
       if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.subjectId) === parseInt(record.id) && r.subjectType === 'video', path);
       break;
 
     case Post:
-      if (!ignoreRelation(User, path)) record.user = findOne(User, users, record.userId);
+      if (!ignoreRelation(User, path)) record.author = findOne(User, users, record.authorId);
       if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.subjectId) === parseInt(record.id) && r.subjectType === 'post', path);
       break;
 
     case Comment:
-      if (!ignoreRelation(User, path)) record.user = findOne(User, users, record.userId, path);
+      if (!ignoreRelation(User, path)) record.author = findOne(User, users, record.authorId, path);
       break;
 
     case Tariff:
@@ -601,7 +601,7 @@ export const resolvers = {
     tariffOption: (parent, { id }) => findOne(TariffOption, tariffOptions, id),
     tariffOptions: (parent, { filter }) => findMany(TariffOption, tariffOptions, filter),
 
-    unpublishedPosts: (parent, { userId }) => findMany(Post, posts, { userId }),
+    unpublishedPosts: (parent, { authorId }) => findMany(Post, posts, { authorId }),
     status: (parent, args) => ({
         backend: true,
         smsGateway: false,

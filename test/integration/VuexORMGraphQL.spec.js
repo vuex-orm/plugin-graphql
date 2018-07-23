@@ -41,7 +41,7 @@ query Post($id: ID!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -57,7 +57,7 @@ query Post($id: ID!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -177,7 +177,7 @@ query Users {
           content: "This is a test!",
           published: false,
           otherId: 15,
-          user: User.find(1)
+          author: User.find(1)
       }});
 
       let post = insertedData.posts[0];
@@ -195,8 +195,8 @@ query Users {
           otherId: 15,
           published: false,
           title: "It works!",
-          userId: 1,
-          user: {
+          authorId: 1,
+          author: {
             id: 1,
             name: 'Charlie Brown',
             profileId: 1,
@@ -219,7 +219,7 @@ mutation CreatePost($post: PostInput!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -235,7 +235,7 @@ mutation CreatePost($post: PostInput!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -301,7 +301,7 @@ mutation DeletePost($id: ID!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -317,7 +317,7 @@ mutation DeletePost($id: ID!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -339,20 +339,20 @@ mutation DeletePost($id: ID!) {
   describe('custom query', () => {
     it('via Model method sends the correct query to the API', async () => {
       const request = await recordGraphQLRequest(async () => {
-        await Post.customQuery({name: 'unpublishedPosts', filter: {userId: 3}});
+        await Post.customQuery({name: 'unpublishedPosts', filter: {authorId: 3}});
       });
 
-      expect(request.variables.userId).toEqual(3);
+      expect(request.variables.authorId).toEqual(3);
       expect(request.query).toEqual(`
-query UnpublishedPosts($userId: ID!) {
-  unpublishedPosts(userId: $userId) {
+query UnpublishedPosts($authorId: ID!) {
+  unpublishedPosts(authorId: $authorId) {
     nodes {
       id
       content
       title
       otherId
       published
-      user {
+      author {
         id
         name
         profile {
@@ -368,7 +368,7 @@ query UnpublishedPosts($userId: ID!) {
           content
           subjectId
           subjectType
-          user {
+          author {
             id
             name
             profile {
@@ -391,21 +391,21 @@ query UnpublishedPosts($userId: ID!) {
       const post = Post.find(1);
 
       const request = await recordGraphQLRequest(async () => {
-        await post.$customQuery({name: 'unpublishedPosts', filter: {userId: 2}});
+        await post.$customQuery({name: 'unpublishedPosts', filter: {authorId: 2}});
       });
 
-      expect(request.variables.userId).toEqual(2);
+      expect(request.variables.authorId).toEqual(2);
       expect(request.variables.id).toEqual(1);
       expect(request.query).toEqual(`
-query UnpublishedPosts($userId: ID!, $id: ID!) {
-  unpublishedPosts(userId: $userId, id: $id) {
+query UnpublishedPosts($authorId: ID!, $id: ID!) {
+  unpublishedPosts(authorId: $authorId, id: $id) {
     nodes {
       id
       content
       title
       otherId
       published
-      user {
+      author {
         id
         name
         profile {
@@ -421,7 +421,7 @@ query UnpublishedPosts($userId: ID!, $id: ID!) {
           content
           subjectId
           subjectType
-          user {
+          author {
             id
             name
             profile {
@@ -460,7 +460,7 @@ mutation UpvotePost($captchaToken: String!, $postId: ID!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -476,7 +476,7 @@ mutation UpvotePost($captchaToken: String!, $postId: ID!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -646,10 +646,10 @@ query Status {
         const result = await Post.fetch(1, true);
 
         const post = Post.query().withAllRecursive().find(1);
-        expect(post.user).not.toEqual(null);
+        expect(post.author).not.toEqual(null);
         expect(post.comments).not.toEqual(null);
         expect(post.comments.length).not.toEqual(0);
-        expect(post.user.name).toEqual('Charlie Brown');
+        expect(post.author.name).toEqual('Charlie Brown');
         expect(post.comments[0].content).toEqual('Yes!!!!');
       });
     });

@@ -31,13 +31,16 @@ export default class Transformer {
       if ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
         !key.startsWith('$') && value !== null) {
 
+        let relatedModel = relations.get(key)
+          ? context.getModel(inflection.singularize(relations.get(key)!.parent!.entity), true)
+          : null;
+
         if (value instanceof Array) {
           // Iterate over all fields and transform them if value is an array
           const arrayModel = context.getModel(inflection.singularize(key));
           returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
-        } else if (typeof value === 'object' && context.getModel(inflection.singularize(key), true)) {
+        } else if (typeof value === 'object' && relatedModel) {
           // Value is a record, transform that too
-          const relatedModel = context.getModel(inflection.singularize(key));
           returnValue[key] = this.transformOutgoingData(relatedModel || model, value);
         } else {
           // In any other case just let the value be what ever it is

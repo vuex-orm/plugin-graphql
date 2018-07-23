@@ -48,7 +48,7 @@ describe('Model', () => {
       expect(relations.has('posts')).toEqual(true);
       expect(relations.has('comments')).toEqual(true);
       expect(relations.get('posts')).toEqual({
-        foreignKey: "userId", localKey: "id", model: User, "related": Post
+        foreignKey: "authorId", localKey: "id", model: User, "related": Post
       });
     });
   });
@@ -63,7 +63,7 @@ describe('Model', () => {
     it('returns false when the field is not numeric', () => {
       model = context.getModel('post');
       expect(Model.isFieldNumber(model.fields.get('title'))).toEqual(false);
-      expect(Model.isFieldNumber(model.fields.get('user'))).toEqual(false);
+      expect(Model.isFieldNumber(model.fields.get('author'))).toEqual(false);
     });
   });
 
@@ -72,12 +72,12 @@ describe('Model', () => {
       model = context.getModel('post');
       expect(Model.isFieldAttribute(model.fields.get('title'))).toEqual(true);
       expect(Model.isFieldAttribute(model.fields.get('id'))).toEqual(true);
-      expect(Model.isFieldAttribute(model.fields.get('userId'))).toEqual(true);
+      expect(Model.isFieldAttribute(model.fields.get('authorId'))).toEqual(true);
     });
 
     it('returns false when the field is a relation', () => {
       model = context.getModel('post');
-      expect(Model.isFieldAttribute(model.fields.get('user'))).toEqual(false);
+      expect(Model.isFieldAttribute(model.fields.get('author'))).toEqual(false);
     });
   });
 
@@ -100,7 +100,7 @@ describe('Model', () => {
 
     it('returns true for a field which is the foreignKey of a belongsTo or hasOne relation', () => {
       const model = context.getModel('post');
-      expect(model.skipField('userId')).toEqual(true);
+      expect(model.skipField('authorId')).toEqual(true);
     });
 
     it('returns false for normal fields', () => {
@@ -133,7 +133,7 @@ describe('Model', () => {
   describe('.shouldEagerLoadRelation', () => {
     it('returns true if field is a belongsTo or hasOne relation', () => {
       const model = context.getModel('post');
-      expect(model.shouldEagerLoadRelation('user', model.fields.get('user'), context.getModel('user'))).toEqual(true);
+      expect(model.shouldEagerLoadRelation('author', model.fields.get('author'), context.getModel('user'))).toEqual(true);
 
       // TODO test hasOne
     });

@@ -27,9 +27,9 @@ describe('Transformer', () => {
         content: 'Foo',
         title: 'Example Video 1',
         otherId: 42,
-        userId: 1,
+        authorId: 1,
 
-        user: {
+        author: {
           id: 1,
           name: 'Charlie Brown',
           profileId: 1,
@@ -161,7 +161,7 @@ describe('Transformer', () => {
               "id": "1",
               "content": "example content",
               "title": "example title",
-              "user": {
+              "author": {
                 "id": "15",
                 "name": "Charly Brown"
               },
@@ -171,7 +171,7 @@ describe('Transformer', () => {
                   {
                     "id": "42",
                     "content": "Works!",
-                    "user": {
+                    "author": {
                       "id": "14",
                       "name": "Peppermint Patty"
                     },
@@ -191,7 +191,7 @@ describe('Transformer', () => {
             "id": 1,
             "content": "example content",
             "title": "example title",
-            "user": {
+            "author": {
               "$isPersisted": true,
               "id": 15,
               "name": "Charly Brown"
@@ -202,7 +202,7 @@ describe('Transformer', () => {
                 "$isPersisted": true,
                 "id": 42,
                 "content": "Works!",
-                "user": {
+                "author": {
                   "$isPersisted": true,
                   "id": 14,
                   "name": "Peppermint Patty"

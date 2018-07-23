@@ -22,15 +22,15 @@ describe('QueryBuilder', () => {
         content: 'Foo Bar',
         title: 'Example',
         otherId: 18,
-        userId: 5,
-        user: { __type: 'User' },
+        authorId: 5,
+        author: { __type: 'User' },
         comments: [{
           id: 1,
           content: 'test'
         }]
       }, true, false, false);
 
-      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $user: UserInput!)');
+      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $author: UserInput!)');
 
 
 
@@ -48,8 +48,8 @@ describe('QueryBuilder', () => {
         content: 'Foo Bar',
         title: 'Example',
         otherId: 18,
-        userId: 5,
-        user: { __type: 'User' },
+        authorId: 5,
+        author: { __type: 'User' },
         crazyIDList: [1, 2, 4, 9, 68],
         comments: [{
           id: 1,
@@ -57,7 +57,7 @@ describe('QueryBuilder', () => {
         }]
       }, false, false, false);
 
-      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, user: $user, ' +
+      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, author: $author, ' +
         'crazyIDList: $crazyIDList)');
     });
 
@@ -67,11 +67,11 @@ describe('QueryBuilder', () => {
         content: 'Foo Bar',
         title: 'Example',
         otherId: 18,
-        userId: 5,
-        user: { __type: 'User' }
+        authorId: 5,
+        author: { __type: 'User' }
       }, false, true, false);
 
-      expect(args).toEqual('(filter: { content: $content, title: $title, otherId: $otherId, user: $user })');
+      expect(args).toEqual('(filter: { content: $content, title: $title, otherId: $otherId, author: $author })');
     });
   });
 
@@ -83,7 +83,7 @@ describe('QueryBuilder', () => {
 
       expect(query).toEqual(`
 query test {
-  user {
+  author {
     id
     name
     profile {
@@ -99,7 +99,7 @@ query test {
       content
       subjectId
       subjectType
-      user {
+      author {
         id
         name
         profile {
@@ -232,7 +232,7 @@ query Posts($title: String!) {
       title
       otherId
       published
-      user {
+      author {
         id
         name
         profile {
@@ -248,7 +248,7 @@ query Posts($title: String!) {
           content
           subjectId
           subjectType
-          user {
+          author {
             id
             name
             profile {
@@ -268,7 +268,7 @@ query Posts($title: String!) {
     });
 
     it('generates a complete create mutation query for a model', () => {
-      const variables = { post: { id: 15, userId: 2, title: 'test', content: 'even more test' } };
+      const variables = { post: { id: 15, authorId: 2, title: 'test', content: 'even more test' } };
       let post = context.getModel('post');
       let query = QueryBuilder.buildQuery('mutation', post, 'createPost', variables, false);
       query = prettify(query.loc.source.body);
@@ -281,7 +281,7 @@ mutation CreatePost($post: PostInput!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -297,7 +297,7 @@ mutation CreatePost($post: PostInput!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -316,7 +316,7 @@ mutation CreatePost($post: PostInput!) {
     });
 
     it('generates a complete update mutation query for a model', () => {
-      const variables = { id: 2, post: { id: 2, userId: 1, title: 'test', content: 'Even more test' } };
+      const variables = { id: 2, post: { id: 2, authorId: 1, title: 'test', content: 'Even more test' } };
       let post = context.getModel('post');
       let query = QueryBuilder.buildQuery('mutation', post, 'updatePost', variables, false);
       query = prettify(query.loc.source.body);
@@ -329,7 +329,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
     title
     otherId
     published
-    user {
+    author {
       id
       name
       profile {
@@ -345,7 +345,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
         content
         subjectId
         subjectType
-        user {
+        author {
           id
           name
           profile {
@@ -407,7 +407,7 @@ mutation DeleteUser($id: ID!) {
 
     it('returns ID for id typed fields', () => {
       const model = context.getModel('post');
-      expect(QueryBuilder.determineAttributeType(model, 'userId', 15)).toEqual('ID');
+      expect(QueryBuilder.determineAttributeType(model, 'authorId', 15)).toEqual('ID');
     });
 
     it('returns Boolean for boolean typed fields', () => {
@@ -418,6 +418,18 @@ mutation DeleteUser($id: ID!) {
     it('returns String for string typed values in generic fields', () => {
       const model = context.getModel('post');
       expect(QueryBuilder.determineAttributeType(model, 'generic', 'test')).toEqual('String');
+    });
+
+    it('returns the correct type for a argument in a query or mutation', () => {
+      const model = context.getModel('post');
+      const field = context.schema.getMutation('updatePost');
+      expect(QueryBuilder.determineAttributeType(model, 'post', null, field)).toEqual('PostInput');
+    });
+
+    it('returns the correct type for a argument within a query', () => {
+      const model = context.getModel('post');
+      const field = context.schema.getQuery('posts');
+      expect(QueryBuilder.determineAttributeType(model, 'author', null, field)).toEqual('UserInput');
     });
   });
 });

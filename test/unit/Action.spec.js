@@ -44,7 +44,7 @@ describe('Action', () => {
           otherId: 123,
           published: true,
           title: 'GraphQL',
-          user: {
+          author: {
             id: 1,
             name: 'Charlie Brown',
             profile: {
@@ -55,7 +55,7 @@ describe('Action', () => {
             },
             profileId: 1,
           },
-          userId: 1
+          authorId: 1
         },
 
         test: 2

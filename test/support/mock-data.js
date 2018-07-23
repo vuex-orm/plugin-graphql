@@ -11,8 +11,8 @@ export class User extends ORMModel {
       id: this.increment(0),
       name: this.string(''),
       profileId: this.number(0),
-      posts: this.hasMany(Post, 'userId'),
-      comments: this.hasMany(Comment, 'userId'),
+      posts: this.hasMany(Post, 'authorId'),
+      comments: this.hasMany(Comment, 'authorId'),
       profile: this.belongsTo(Profile, 'profileId')
     };
   }
@@ -41,10 +41,10 @@ export class Video extends ORMModel {
       id: this.increment(null),
       content: this.string(''),
       title: this.string(''),
-      userId: this.number(0),
+      authorId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       ignoreMe: this.string(''),
-      user: this.belongsTo(User, 'userId'),
+      author: this.belongsTo(User, 'authorId'),
       comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
   }
@@ -59,10 +59,10 @@ export class Post extends ORMModel {
       id: this.increment(null),
       content: this.string(''),
       title: this.string(''),
-      userId: this.number(0),
+      authorId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       published: this.boolean(true),
-      user: this.belongsTo(User, 'userId'),
+      author: this.belongsTo(User, 'authorId'),
       comments: this.morphMany(Comment, 'subjectId', 'subjectType')
     };
   }
@@ -76,8 +76,8 @@ export class Comment extends ORMModel {
     return {
       id: this.increment(0),
       content: this.string(''),
-      userId: this.number(0),
-      user: this.belongsTo(User, 'userId'),
+      authorId: this.number(0),
+      author: this.belongsTo(User, 'authorId'),
 
       subjectId: this.number(0),
       subjectType: this.string('')
@@ -146,19 +146,6 @@ export async function setupMockData() {
     { model: Tariff },
     { model: TariffTariffOption }
   ]);
-
-  /*await Profile.insert({ data: { id: 1, age: 8, sex: true, email: 'charly@peanuts.com' }});
-  await Profile.insert({ data: { id: 2, age: 9, sex: false, email: 'pepper@peanuts.com' }});
-
-  await User.insert({ data: { id: 1, name: 'Charlie Brown', profileId: 1 }});
-  await User.insert({ data: { id: 2, name: 'Peppermint Patty', profileId: 2 }});
-
-  await Post.insert({ data: { id: 1, otherId: 9, userId: 1, title: 'Example post 1', content: 'Foo' }});
-  await Post.insert({ data: { id: 2, otherId: 10, userId: 1, title: 'Example post 2', content: 'Bar' }});
-  await Video.insert({ data: { id: 1, otherId: 11, userId: 1, title: 'Example video', content: 'Video' }});
-  await Comment.insert({ data: { id: 1, userId: 1, subjectId: 1, subjectType: 'videos', content: 'Example comment 1' }});
-  await Comment.insert({ data: { id: 2, userId: 2, subjectId: 1, subjectType: 'posts', content: 'Example comment 2' }});
-  await Comment.insert({ data: { id: 3, userId: 2, subjectId: 2, subjectType: 'posts', content: 'Example comment 3' }});*/
 
   return [store, vuexOrmGraphQL];
 }

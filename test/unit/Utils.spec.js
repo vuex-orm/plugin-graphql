@@ -18,14 +18,14 @@ describe('downcaseFirstLetter', () => {
 
 describe('prettify', () => {
   it('formats a graphql query', () => {
-    const query = 'query Posts($deleted:Boolean!){posts(deleted: $deleted){id, name user{id, email, firstname}}}';
+    const query = 'query Posts($deleted:Boolean!){posts(deleted: $deleted){id, name author{id, email, firstname}}}';
 
     const formattedQuery = `
 query Posts($deleted: Boolean!) {
   posts(deleted: $deleted) {
     id
     name
-    user {
+    author {
       id
       email
       firstname

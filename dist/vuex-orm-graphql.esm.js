@@ -27397,14 +27397,16 @@ var Transformer = /** @class */ (function () {
             // Ignore hasMany/One connections, empty fields and internal fields ($)
             if ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
                 !key.startsWith('$') && value !== null) {
+                var relatedModel = relations.get(key)
+                    ? context.getModel(inflection$1.singularize(relations.get(key).parent.entity), true)
+                    : null;
                 if (value instanceof Array) {
                     // Iterate over all fields and transform them if value is an array
                     var arrayModel_1 = context.getModel(inflection$1.singularize(key));
                     returnValue[key] = value.map(function (v) { return _this.transformOutgoingData(arrayModel_1 || model, v); });
                 }
-                else if (typeof value === 'object' && context.getModel(inflection$1.singularize(key), true)) {
+                else if (typeof value === 'object' && relatedModel) {
                     // Value is a record, transform that too
-                    var relatedModel = context.getModel(inflection$1.singularize(key));
                     returnValue[key] = _this.transformOutgoingData(relatedModel || model, value);
                 }
                 else {
@@ -28204,7 +28206,7 @@ var QueryBuilder = /** @class */ (function () {
                         }
                         else {
                             // Case 1 (String!)
-                            typeOrValue = _this.determineAttributeType(model, key, value);
+                            typeOrValue = _this.determineAttributeType(model, key, value, field || undefined);
                             typeOrValue = typeOrValue + '!';
                         }
                     }
@@ -28230,12 +28232,25 @@ var QueryBuilder = /** @class */ (function () {
      * @param {Model} model
      * @param {string} key
      * @param {string} value
+     * @param {GraphQLField} query Pass when we have to detect the type of an argument
      * @returns {string}
      */
-    QueryBuilder.determineAttributeType = function (model, key, value) {
+    QueryBuilder.determineAttributeType = function (model, key, value, query) {
         var context = Context.getInstance();
         var field = model.fields.get(key);
-        var schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
+        var schemaField;
+        if (query) {
+            schemaField = query.args.find(function (f) { return f.name === key; });
+            if (!schemaField) {
+                var filterField = query.args.find(function (f) { return f.name === 'filter'; });
+                if (filterField) {
+                    schemaField = this.findSchemaFieldForArgument(key, null, model, true);
+                }
+            }
+        }
+        else {
+            schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
+        }
         if (schemaField && Schema.getTypeNameOfField(schemaField)) {
             return Schema.getTypeNameOfField(schemaField);
         }
@@ -28303,12 +28318,11 @@ var QueryBuilder = /** @class */ (function () {
                 relatedModel = context.getModel(name);
                 context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
             }
-            var singularizedFieldName = inflection$3.singularize(name);
-            var ignore = path.includes(singularizedFieldName);
+            var ignore = path.includes(relatedModel.singularName);
             // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 var newPath = path.slice(0);
-                newPath.push(singularizedFieldName);
+                newPath.push(relatedModel.singularName);
                 relationQueries.push(_this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
             }
         });

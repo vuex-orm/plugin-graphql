@@ -196,7 +196,7 @@ export default class QueryBuilder {
               typeOrValue = 'ID!';
             } else {
               // Case 1 (String!)
-              typeOrValue = this.determineAttributeType(model, key, value);
+              typeOrValue = this.determineAttributeType(model, key, value, field || undefined);
               typeOrValue = typeOrValue + '!';
             }
           } else {
@@ -225,13 +225,27 @@ export default class QueryBuilder {
    * @param {Model} model
    * @param {string} key
    * @param {string} value
+   * @param {GraphQLField} query Pass when we have to detect the type of an argument
    * @returns {string}
    */
-  public static determineAttributeType (model: Model, key: string, value: any): string {
+  public static determineAttributeType (model: Model, key: string, value: any, query?: GraphQLField): string {
     const context: Context = Context.getInstance();
     const field: undefined | Field = model.fields.get(key);
+    let schemaField: undefined | GraphQLField;
 
-    const schemaField = context.schema!.getType(model.singularName)!.fields!.find(f => f.name === key);
+    if (query) {
+      schemaField = query.args.find(f => f.name === key);
+
+      if (!schemaField) {
+        const filterField = query.args.find(f => f.name === 'filter');
+
+        if (filterField) {
+          schemaField = this.findSchemaFieldForArgument(key, null, model, true);
+        }
+      }
+    } else {
+      schemaField = context.schema!.getType(model.singularName)!.fields!.find(f => f.name === key);
+    }
 
     if (schemaField && Schema.getTypeNameOfField(schemaField)) {
       return Schema.getTypeNameOfField(schemaField);
@@ -301,14 +315,13 @@ export default class QueryBuilder {
         context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
-      const singularizedFieldName = inflection.singularize(name);
-      const ignore = path.includes(singularizedFieldName);
+      const ignore = path.includes(relatedModel.singularName);
 
       // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
 
       if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
         const newPath = path.slice(0);
-        newPath.push(singularizedFieldName);
+        newPath.push(relatedModel.singularName);
 
         relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
       }
