@@ -1,5 +1,6 @@
 import { Data, Field } from '../support/interfaces';
 import Model from '../orm/model';
+import { Model as ORMModel } from '@vuex-orm/core';
 import Context from '../common/context';
 import { downcaseFirstLetter } from '../support/utils';
 import * as _ from 'lodash-es';
@@ -39,9 +40,13 @@ export default class Transformer {
           // Iterate over all fields and transform them if value is an array
           const arrayModel = context.getModel(inflection.singularize(key));
           returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
-        } else if (typeof value === 'object' && relatedModel) {
+        } else if (typeof value === 'object' && value.$id !== undefined) {
+          if (!relatedModel) {
+            relatedModel = context.getModel((value as ORMModel).$self().entity);
+          }
+
           // Value is a record, transform that too
-          returnValue[key] = this.transformOutgoingData(relatedModel || model, value);
+          returnValue[key] = this.transformOutgoingData(relatedModel, value);
         } else {
           // In any other case just let the value be what ever it is
           returnValue[key] = value;

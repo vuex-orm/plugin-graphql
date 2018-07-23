@@ -27405,9 +27405,12 @@ var Transformer = /** @class */ (function () {
                     var arrayModel_1 = context.getModel(inflection$1.singularize(key));
                     returnValue[key] = value.map(function (v) { return _this.transformOutgoingData(arrayModel_1 || model, v); });
                 }
-                else if (typeof value === 'object' && relatedModel) {
+                else if (typeof value === 'object' && value.$id !== undefined) {
+                    if (!relatedModel) {
+                        relatedModel = context.getModel(value.$self().entity);
+                    }
                     // Value is a record, transform that too
-                    returnValue[key] = _this.transformOutgoingData(relatedModel || model, value);
+                    returnValue[key] = _this.transformOutgoingData(relatedModel, value);
                 }
                 else {
                     // In any other case just let the value be what ever it is
