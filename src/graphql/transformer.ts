@@ -18,9 +18,10 @@ export default class Transformer {
    *
    * @param model
    * @param {Data} data
+   * @param {Array<String>} whitelist of fields
    * @returns {Data}
    */
-  public static transformOutgoingData (model: Model, data: Data): Data {
+  public static transformOutgoingData (model: Model, data: Data, whitelist?: Array<String>): Data {
     const context = Context.getInstance();
     const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
@@ -28,11 +29,16 @@ export default class Transformer {
     Object.keys(data).forEach((key) => {
       const value = data[key];
 
-      // Ignore hasMany/One connections, empty fields and internal fields ($)
-      if ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
-        !key.startsWith('$') && value !== null) {
+      // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
+      if (
+        (whitelist && whitelist.includes(key)) ||
+        (
+          (!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
+          !key.startsWith('$') && value !== null
+        )
+      ) {
 
-        let relatedModel = relations.get(key)
+        let relatedModel = relations.get(key) && relations.get(key)!.parent
           ? context.getModel(inflection.singularize(relations.get(key)!.parent!.entity), true)
           : null;
 

@@ -23,7 +23,9 @@ export default class Fetch extends Action {
     const model = this.getModelFromState(state);
 
     // Filter
-    const filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
+    const filter = params && params.filter ?
+      Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter)) : {};
+
     const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode

@@ -27385,19 +27385,21 @@ var Transformer = /** @class */ (function () {
      *
      * @param model
      * @param {Data} data
+     * @param {Array<String>} whitelist of fields
      * @returns {Data}
      */
-    Transformer.transformOutgoingData = function (model, data) {
+    Transformer.transformOutgoingData = function (model, data, whitelist) {
         var _this = this;
         var context = Context.getInstance();
         var relations = model.getRelations();
         var returnValue = {};
         Object.keys(data).forEach(function (key) {
             var value = data[key];
-            // Ignore hasMany/One connections, empty fields and internal fields ($)
-            if ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
-                !key.startsWith('$') && value !== null) {
-                var relatedModel = relations.get(key)
+            // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
+            if ((whitelist && whitelist.includes(key)) ||
+                ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
+                    !key.startsWith('$') && value !== null)) {
+                var relatedModel = relations.get(key) && relations.get(key).parent
                     ? context.getModel(inflection$1.singularize(relations.get(key).parent.entity), true)
                     : null;
                 if (value instanceof Array) {
@@ -28194,9 +28196,9 @@ var QueryBuilder = /** @class */ (function () {
                             typeOrValue = value.__type + 'Input!';
                         }
                         else if (isArray(value) && field) {
-                            var arg = field.args.find(function (f) { return f.name === key; });
+                            var arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
                             if (!arg)
-                                throw new Error("A argument is of type array but it's not possible to determine the type");
+                                throw new Error("The argument " + key + " is of type array but it's not possible to determine the type, because it's not in the field " + field.name);
                             typeOrValue = Schema.getTypeNameOfField(arg) + '!';
                         }
                         else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
@@ -28283,15 +28285,16 @@ var QueryBuilder = /** @class */ (function () {
         var schemaField;
         if (field) {
             schemaField = field.args.find(function (f) { return f.name === name; });
-            if (!schemaField) {
-                Context.getInstance().logger.warn("Could find the argument with name " + name + " for the mutation/query " + field.name);
-            }
+            if (schemaField)
+                return schemaField;
         }
-        else {
-            // We try to find the FilterType or at least the Type this query belongs to.
-            var type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
-            // Next we try to find the field from the type
-            schemaField = type ? (isFilter ? type.inputFields : type.fields).find(function (f) { return f.name === name; }) : undefined;
+        // We try to find the FilterType or at least the Type this query belongs to.
+        var type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+        // Next we try to find the field from the type
+        schemaField = type ? (isFilter ? type.inputFields : type.fields).find(function (f) { return f.name === name; }) : undefined;
+        // Warn before we return null
+        if (!schemaField) {
+            Context.getInstance().logger.warn("Couldn't find the argument with name " + name + " for the mutation/query " + (field ? field.name : '(?)'));
         }
         return schemaField;
     };
@@ -28749,7 +28752,8 @@ var Fetch = /** @class */ (function (_super) {
                     case 1:
                         _b.sent();
                         model = this.getModelFromState(state);
-                        filter = params && params.filter ? Transformer.transformOutgoingData(model, params.filter) : {};
+                        filter = params && params.filter ?
+                            Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter)) : {};
                         bypassCache = params && params.bypassCache;
                         multiple = !filter['id'];
                         name = NameGenerator.getNameForFetch(model, multiple);

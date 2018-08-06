@@ -185,8 +185,8 @@ export default class QueryBuilder {
               // Case 2 (User!)
               typeOrValue = value.__type + 'Input!';
             } else if (_.isArray(value) && field) {
-              const arg = field.args.find(f => f.name === key);
-              if (!arg) throw new Error("A argument is of type array but it's not possible to determine the type");
+              const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
+              if (!arg) throw new Error(`The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${field.name}`);
               typeOrValue = Schema.getTypeNameOfField(arg) + '!';
             } else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
               // Case 1, 3 and 4
@@ -275,16 +275,18 @@ export default class QueryBuilder {
 
     if (field) {
       schemaField = field.args.find(f => f.name === name);
+      if (schemaField) return schemaField;
+    }
 
-      if (!schemaField) {
-        Context.getInstance().logger.warn(`Could find the argument with name ${name} for the mutation/query ${field.name}`);
-      }
-    } else {
-      // We try to find the FilterType or at least the Type this query belongs to.
-      const type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+    // We try to find the FilterType or at least the Type this query belongs to.
+    const type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
 
-      // Next we try to find the field from the type
-      schemaField = type ? (isFilter ? type.inputFields! : type.fields!).find(f => f.name === name) : undefined;
+    // Next we try to find the field from the type
+    schemaField = type ? (isFilter ? type.inputFields! : type.fields!).find(f => f.name === name) : undefined;
+
+    // Warn before we return null
+    if (!schemaField) {
+      Context.getInstance().logger.warn(`Couldn't find the argument with name ${name} for the mutation/query ${field ? field.name : '(?)'}`);
     }
 
     return schemaField;
