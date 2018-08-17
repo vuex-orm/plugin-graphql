@@ -114,6 +114,37 @@ query test {
 }
       `.trim());
     });
+
+
+    it('respects nested categories', () => {
+      const fields = QueryBuilder.buildRelationsQuery(context.getModel('category'), ['category']);
+      const query = prettify(`query test { ${fields} }`).trim();
+
+      expect(query).toEqual(`
+query test {
+  parent {
+    id
+    name
+    parent {
+      id
+      name
+      parent {
+        id
+        name
+        parent {
+          id
+          name
+          parent {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+      `.trim());
+    });
   });
 
 

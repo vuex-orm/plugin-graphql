@@ -25390,7 +25390,7 @@ var DataStore = /** @class */ (function () {
     return DataStore;
 }());
 
-var version_1 = "2.3.1";
+var version_1 = "2.3.5";
 
 var __assign$7 = (undefined && undefined.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -28324,7 +28324,12 @@ var QueryBuilder = /** @class */ (function () {
                 relatedModel = context.getModel(name);
                 context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
             }
-            var ignore = path.includes(relatedModel.singularName);
+            // We will ignore the field, when it's already in the path. Means: When it's already queried. However there are
+            // cases where the model will have a relationship to itself. For example a nested category strucure where the
+            // category model has a parent: belongsTo(Category). So we also check if the model references itself. If this is
+            // the case, we allow the nesting up to 5 times.
+            var referencesItSelf = takeWhile(path.slice(0).reverse(), function (p) { return p === relatedModel.singularName; }).length;
+            var ignore = referencesItSelf ? referencesItSelf > 5 : path.includes(relatedModel.singularName);
             // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 var newPath = path.slice(0);

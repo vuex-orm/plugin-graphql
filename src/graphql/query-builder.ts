@@ -317,7 +317,12 @@ export default class QueryBuilder {
         context.logger.log('WARNING: field has neither parent nor related property. Fallback to attribute name', field);
       }
 
-      const ignore = path.includes(relatedModel.singularName);
+      // We will ignore the field, when it's already in the path. Means: When it's already queried. However there are
+      // cases where the model will have a relationship to itself. For example a nested category strucure where the
+      // category model has a parent: belongsTo(Category). So we also check if the model references itself. If this is
+      // the case, we allow the nesting up to 5 times.
+      const referencesItSelf = _.takeWhile(path.slice(0).reverse(), p => p === relatedModel.singularName).length;
+      const ignore = referencesItSelf ? referencesItSelf > 5 : path.includes(relatedModel.singularName);
 
       // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
 

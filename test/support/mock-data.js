@@ -132,6 +132,19 @@ export class TariffOption extends ORMModel {
   }
 }
 
+export class Category extends ORMModel {
+  static entity = 'categories';
+
+  static fields () {
+    return {
+      id: this.increment(),
+      name: this.string(''),
+
+      parentId: this.number(0),
+      parent: this.belongsTo(Category, 'parentId'),
+    }
+  }
+}
 
 export async function setupMockData() {
   let store, vuexOrmGraphQL;
@@ -144,7 +157,8 @@ export async function setupMockData() {
     { model: Comment },
     { model: TariffOption },
     { model: Tariff },
-    { model: TariffTariffOption }
+    { model: TariffTariffOption },
+    { model: Category }
   ]);
 
   return [store, vuexOrmGraphQL];

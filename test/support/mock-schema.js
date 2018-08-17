@@ -1,6 +1,7 @@
 import { User, Profile, Video, Post, Comment, Tariff, TariffOption } from 'test/support/mock-data'
 import inflection from 'inflection';
 import * as _ from 'lodash';
+import {Category} from "./mock-data";
 
 
 export const typeDefs = `
@@ -21,6 +22,8 @@ export const typeDefs = `
     tariffs(filter: TariffFilter): TariffTypeConnection!
     tariffTariffOption(id: ID!): TariffTariffOption!
     tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
+    category(id: ID!): Category!
+    categories(filter: CategoryFilter): CategoryTypeConnection!
     
     unpublishedPosts(authorId: ID!): PostTypeConnection
     status: Status
@@ -320,6 +323,34 @@ export const typeDefs = `
   type TariffTariffOptionTypeConnection {
     nodes: [TariffTariffOption!]!
   }
+
+  type Category {
+    id: ID
+    name: String
+    parentId: ID
+    parent: Category
+  }
+
+
+  input CategoryFilter {
+    id: ID
+    name: String
+    parentId: ID
+    parent: CategoryInput
+  }
+
+
+   input CategoryInput {
+    id: ID
+    name: String
+    parentId: ID
+    parent: CategoryInput
+  }
+
+
+  type CategoryTypeConnection {
+    nodes: [Category!]!
+  }
 `;
 
 
@@ -493,6 +524,56 @@ const tariffOptions = [
   }
 ];
 
+const categories = [
+  {
+    id: 1,
+    name: 'Programming',
+    parentId: 0,
+  },
+
+  {
+    id: 2,
+    name: 'Frameworks',
+    parentId: 1,
+  },
+
+  {
+    id: 3,
+    name: 'Languages',
+    parentId: 1,
+  },
+
+  {
+    id: 4,
+    name: 'Patterns',
+    parentId: 1,
+  },
+
+  {
+    id: 5,
+    name: 'Ruby',
+    parentId: 3,
+  },
+
+  {
+    id: 6,
+    name: 'JavaScript',
+    parentId: 3,
+  },
+
+  {
+    id: 7,
+    name: 'PHP',
+    parentId: 3,
+  },
+
+  {
+    id: 8,
+    name: 'RSpec',
+    parentId: 5,
+  },
+];
+
 
 function addRelations(model, record, path = []) {
   if (!record) return record;
@@ -528,6 +609,10 @@ function addRelations(model, record, path = []) {
 
     case TariffOption:
       if (!ignoreRelation(Tariff, path)) record.tariffs = findMany(Tariff, tariffs, () => true, path);
+      break;
+
+    case Category:
+      if (record.parentId) record.parent = findOne(Category, categories, record.parentId);
       break;
 
   }
@@ -600,6 +685,8 @@ export const resolvers = {
     tariffs: (parent, { filter }) => findMany(Tariff, tariffs, filter),
     tariffOption: (parent, { id }) => findOne(TariffOption, tariffOptions, id),
     tariffOptions: (parent, { filter }) => findMany(TariffOption, tariffOptions, filter),
+    category: (parent, { id }) => findOne(Category, categories, id),
+    categories: (parent, { filter }) => findMany(Category, categories, filter),
 
     unpublishedPosts: (parent, { authorId }) => findMany(Post, posts, { authorId }),
     status: (parent, args) => ({
