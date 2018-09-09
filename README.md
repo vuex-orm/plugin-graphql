@@ -1,18 +1,18 @@
-# vuex-orm-graphql
+# Vuex ORM Plugin: GraphQl
 
-[![Travis CI](https://travis-ci.org/vuex-orm/vuex-orm-graphql.svg?branch=master)](https://travis-ci.org/vuex-orm/vuex-orm-graphql)
+[![Travis CI](https://travis-ci.org/vuex-orm/plugin-graphql.svg?branch=master)](https://travis-ci.org/vuex-orm/plugin-graphql)
 [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-[![License](https://img.shields.io/npm/l/@vuex-orm/vuex-orm-graphql.svg)](https://github.com/vuex-orm/vuex-orm-graphql/blob/master/LICENSE.md)
+[![License](https://img.shields.io/npm/l/@vuex-orm/plugin-graphql.svg)](https://github.com/vuex-orm/plugin-graphql/blob/master/LICENSE.md)
 
-**Documentation:** https://vuex-orm.github.io/vuex-orm-graphql/
+**Documentation:** https://vuex-orm.github.io/plugin-graphql/
 
 
 ## Contribution
 
-To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link` in your local
-vuex-orm-graphql directory and run `yarn link @vuex-orm/plugin-graphql` in your project dir.
+To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link`
+in your local plugin-graphql directory and run `yarn link @vuex-orm/plugin-graphql` in your project dir.
 
-Remember to run `yarn build` in your vuex-orm-graphql directory and then again `yarn link` in your project after you have
+Remember to run `yarn build` in your plugin-graphql directory and then again `yarn link` in your project after you have
 made changes to the plugin code. You probably have also to restart your webpack server.
 
 
@@ -64,4 +64,4 @@ Deploys the documentation.
 
 ## License
 
-Vuex ORM GraphQL is open-sourced software licensed under the [MIT license](https://github.com/phortx/vuex-orm-graphql/blob/master/LICENSE.md).
+Vuex ORM GraphQL is open-sourced software licensed under the [MIT license](https://github.com/phortx/plugin-graphql/blob/master/LICENSE.md).

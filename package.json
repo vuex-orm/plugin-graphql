@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vuex-orm/vuex-orm-graphql.git"
+    "url": "git+https://github.com/vuex-orm/plugin-graphql.git"
   },
   "keywords": [
     "vue",
@@ -41,7 +41,7 @@
   "author": "Benjamin Klein",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/vuex-orm/vuex-orm-graphql/issues"
+    "url": "https://github.com/vuex-orm/plugin-graphql/issues"
   },
   "dependencies": {
     "@types/graphql": "^0.12.3",
