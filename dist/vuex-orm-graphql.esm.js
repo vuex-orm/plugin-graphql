@@ -28289,7 +28289,7 @@ var QueryBuilder = /** @class */ (function () {
                 return schemaField;
         }
         // We try to find the FilterType or at least the Type this query belongs to.
-        var type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+        var type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''), true);
         // Next we try to find the field from the type
         schemaField = type ? (isFilter ? type.inputFields : type.fields).find(function (f) { return f.name === name; }) : undefined;
         // Warn before we return null
