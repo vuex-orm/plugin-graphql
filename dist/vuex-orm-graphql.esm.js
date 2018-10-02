@@ -27964,32 +27964,39 @@ var Context = /** @class */ (function () {
     };
     Context.prototype.loadSchema = function () {
         return __awaiter$1(this, void 0, void 0, function () {
-            var context, result;
+            var _this = this;
             return __generator$1(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!!this.schema) return [3 /*break*/, 2];
-                        this.logger.log('Fetching GraphQL Schema initially ...');
-                        if (this.options.connectionQueryMode) {
-                            this.connectionQueryMode = this.options.connectionQueryMode;
-                        }
-                        else {
-                            this.connectionQueryMode = 'auto';
-                        }
-                        context = {
-                            headers: { 'X-GraphQL-Introspection-Query': 'true' }
-                        };
-                        return [4 /*yield*/, this.apollo.simpleQuery(introspectionQuery, {}, true, context)];
-                    case 1:
-                        result = _a.sent();
-                        this.schema = new Schema(result.data.__schema);
-                        this.logger.log('GraphQL Schema successful fetched', result);
-                        this.logger.log('Starting to process the schema ...');
-                        this.processSchema();
-                        this.logger.log('Schema procession done!');
-                        _a.label = 2;
-                    case 2: return [2 /*return*/, this.schema];
+                if (!this.schemaWillBeLoaded) {
+                    this.schemaWillBeLoaded = new Promise(function (resolve, reject) { return __awaiter$1(_this, void 0, void 0, function () {
+                        var context, result;
+                        return __generator$1(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    this.logger.log('Fetching GraphQL Schema initially ...');
+                                    if (this.options.connectionQueryMode) {
+                                        this.connectionQueryMode = this.options.connectionQueryMode;
+                                    }
+                                    else {
+                                        this.connectionQueryMode = 'auto';
+                                    }
+                                    context = {
+                                        headers: { 'X-GraphQL-Introspection-Query': 'true' }
+                                    };
+                                    return [4 /*yield*/, this.apollo.simpleQuery(introspectionQuery, {}, true, context)];
+                                case 1:
+                                    result = _a.sent();
+                                    this.schema = new Schema(result.data.__schema);
+                                    this.logger.log('GraphQL Schema successful fetched', result);
+                                    this.logger.log('Starting to process the schema ...');
+                                    this.processSchema();
+                                    this.logger.log('Schema procession done!');
+                                    resolve(this.schema);
+                                    return [2 /*return*/];
+                            }
+                        });
+                    }); });
                 }
+                return [2 /*return*/, this.schemaWillBeLoaded];
             });
         });
     };

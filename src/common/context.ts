@@ -141,13 +141,21 @@ export default class Context {
 
   /**
    * Instance of Apollo which cares about the communication with the graphql endpoint.
+   * @type {Apollo}
    */
   public apollo!: Apollo;
 
   /**
    * The graphql schema. Is null until the first request.
+   * @type {Schema}
    */
   public schema: Schema | undefined;
+
+  /**
+   * Tells if the schema is already loaded or the loading is currently processed.
+   * @type {boolean}
+   */
+  private schemaWillBeLoaded: Promise<Schema> | undefined;
 
   /**
    * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
@@ -205,31 +213,35 @@ export default class Context {
   }
 
   public async loadSchema (): Promise<Schema> {
-    if (!this.schema) {
-      this.logger.log('Fetching GraphQL Schema initially ...');
+    if (!this.schemaWillBeLoaded) {
+      this.schemaWillBeLoaded = new Promise(async (resolve, reject) => {
+        this.logger.log('Fetching GraphQL Schema initially ...');
 
-      if (this.options.connectionQueryMode) {
-        this.connectionQueryMode = this.options.connectionQueryMode;
-      } else {
-        this.connectionQueryMode = 'auto';
-      }
+        if (this.options.connectionQueryMode) {
+          this.connectionQueryMode = this.options.connectionQueryMode;
+        } else {
+          this.connectionQueryMode = 'auto';
+        }
 
-      // We send a custom header along with the request. This is required for our test suite to mock the schema request.
-      const context = {
-        headers: { 'X-GraphQL-Introspection-Query': 'true' }
-      };
+        // We send a custom header along with the request. This is required for our test suite to mock the schema request.
+        const context = {
+          headers: { 'X-GraphQL-Introspection-Query': 'true' }
+        };
 
-      const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
-      this.schema = new Schema(result.data.__schema);
+        const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
+        this.schema = new Schema(result.data.__schema);
 
-      this.logger.log('GraphQL Schema successful fetched', result);
+        this.logger.log('GraphQL Schema successful fetched', result);
 
-      this.logger.log('Starting to process the schema ...');
-      this.processSchema();
-      this.logger.log('Schema procession done!');
+        this.logger.log('Starting to process the schema ...');
+        this.processSchema();
+        this.logger.log('Schema procession done!');
+
+        resolve(this.schema);
+      });
     }
 
-    return this.schema;
+    return this.schemaWillBeLoaded;
   }
 
   public processSchema () {
