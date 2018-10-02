@@ -279,7 +279,7 @@ export default class QueryBuilder {
     }
 
     // We try to find the FilterType or at least the Type this query belongs to.
-    const type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''));
+    const type = schema.getType(model.singularName + (isFilter ? 'Filter' : ''), true);
 
     // Next we try to find the field from the type
     schemaField = type ? (isFilter ? type.inputFields! : type.fields!).find(f => f.name === name) : undefined;

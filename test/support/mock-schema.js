@@ -23,7 +23,7 @@ export const typeDefs = `
     tariffTariffOption(id: ID!): TariffTariffOption!
     tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
     category(id: ID!): Category!
-    categories(filter: CategoryFilter): CategoryTypeConnection!
+    categories: CategoryTypeConnection!
     
     unpublishedPosts(authorId: ID!): PostTypeConnection
     status: Status
@@ -686,7 +686,7 @@ export const resolvers = {
     tariffOption: (parent, { id }) => findOne(TariffOption, tariffOptions, id),
     tariffOptions: (parent, { filter }) => findMany(TariffOption, tariffOptions, filter),
     category: (parent, { id }) => findOne(Category, categories, id),
-    categories: (parent, { filter }) => findMany(Category, categories, filter),
+    categories: (parent, { filter }) => findMany(Category, categories),
 
     unpublishedPosts: (parent, { authorId }) => findMany(Post, posts, { authorId }),
     status: (parent, args) => ({

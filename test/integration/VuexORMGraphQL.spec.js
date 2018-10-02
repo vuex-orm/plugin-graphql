@@ -1,4 +1,4 @@
-import { setupMockData, User, Profile, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption } from 'test/support/mock-data'
+import { setupMockData, User, Profile, Video, Post, Comment, TariffTariffOption, Tariff, TariffOption, Category } from 'test/support/mock-data'
 import Context from "app/common/context";
 import {recordGraphQLRequest} from "../support/helpers";
 
@@ -194,6 +194,44 @@ query Users {
         email
         age
         sex
+      }
+    }
+  }
+}
+          `.trim() + "\n");
+      });
+    });
+
+    describe('without ID or filter and no FilterType exists', () => {
+      it('sends the correct query to the API', async () => {
+        const request = await recordGraphQLRequest(async () => { await Category.fetch(); });
+
+        expect(request.variables).toEqual({});
+        expect(request.query).toEqual(`
+query Categories {
+  categories {
+    nodes {
+      id
+      name
+      parent {
+        id
+        name
+        parent {
+          id
+          name
+          parent {
+            id
+            name
+            parent {
+              id
+              name
+              parent {
+                id
+                name
+              }
+            }
+          }
+        }
       }
     }
   }
