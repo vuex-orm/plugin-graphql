@@ -27070,7 +27070,6 @@ var Apollo = /** @class */ (function () {
             this.httpLink = new HttpLink({
                 uri: context.options.url ? context.options.url : '/graphql',
                 credentials: context.options.credentials ? context.options.credentials : 'same-origin',
-                headers: context.options.headers ? context.options.headers : {},
                 useGETForQueries: Boolean(context.options.useGETForQueries)
             });
         }
@@ -27093,18 +27092,19 @@ var Apollo = /** @class */ (function () {
         if (mutation === void 0) { mutation = false; }
         if (bypassCache === void 0) { bypassCache = false; }
         return __awaiter$1(this, void 0, void 0, function () {
-            var fetchPolicy, response;
+            var fetchPolicy, context, response;
             return __generator$1(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
                         Context.getInstance().logger.logQuery(query, variables, fetchPolicy);
+                        context = { headers: Apollo.getHeaders() };
                         if (!mutation) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables })];
+                        return [4 /*yield*/, this.apolloClient.mutate({ mutation: query, variables: variables, context: context })];
                     case 1:
                         response = _a.sent();
                         return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, this.apolloClient.query({ query: query, variables: variables, fetchPolicy: fetchPolicy })];
+                    case 2: return [4 /*yield*/, this.apolloClient.query({ query: query, variables: variables, fetchPolicy: fetchPolicy, context: context })];
                     case 3:
                         response = _a.sent();
                         _a.label = 4;
@@ -27121,16 +27121,24 @@ var Apollo = /** @class */ (function () {
             var fetchPolicy;
             return __generator$1(this, function (_a) {
                 fetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-                return [2 /*return*/, this.apolloClient.query({ query: src(query), variables: variables, fetchPolicy: fetchPolicy, context: context })];
+                return [2 /*return*/, this.apolloClient.query({ query: src(query), variables: variables, fetchPolicy: fetchPolicy, context: { headers: Apollo.getHeaders() } })];
             });
         });
     };
     Apollo.prototype.simpleMutation = function (query, variables, context) {
         return __awaiter$1(this, void 0, void 0, function () {
             return __generator$1(this, function (_a) {
-                return [2 /*return*/, this.apolloClient.mutate({ mutation: src(query), variables: variables, context: context })];
+                return [2 /*return*/, this.apolloClient.mutate({ mutation: src(query), variables: variables, context: { headers: Apollo.getHeaders() } })];
             });
         });
+    };
+    Apollo.getHeaders = function () {
+        var context = Context.getInstance();
+        var headers = context.options.headers ? context.options.headers : {};
+        if (headers instanceof Function) {
+            headers = headers(context);
+        }
+        return headers;
     };
     return Apollo;
 }());

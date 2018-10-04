@@ -37,7 +37,6 @@ export default class Apollo {
       this.httpLink = new HttpLink({
         uri: context.options.url ? context.options.url : '/graphql',
         credentials: context.options.credentials ? context.options.credentials : 'same-origin',
-        headers: context.options.headers ? context.options.headers : {},
         useGETForQueries: Boolean(context.options.useGETForQueries)
       });
     }
@@ -64,11 +63,13 @@ export default class Apollo {
     const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
     Context.getInstance().logger.logQuery(query, variables, fetchPolicy);
 
+    const context = { headers: Apollo.getHeaders() };
+
     let response;
     if (mutation) {
-      response = await this.apolloClient.mutate({ mutation: query, variables });
+      response = await this.apolloClient.mutate({ mutation: query, variables, context });
     } else {
-      response = await this.apolloClient.query({ query, variables, fetchPolicy });
+      response = await this.apolloClient.query({ query, variables, fetchPolicy, context });
     }
 
     // Transform incoming data into something useful
@@ -77,10 +78,22 @@ export default class Apollo {
 
   public async simpleQuery (query: string, variables: Arguments, bypassCache: boolean = false, context?: Data): Promise<any> {
     const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first';
-    return this.apolloClient.query({ query: gql(query), variables, fetchPolicy, context });
+    return this.apolloClient.query({ query: gql(query), variables, fetchPolicy, context: { headers: Apollo.getHeaders() } });
   }
 
   public async simpleMutation (query: string, variables: Arguments, context?: Data): Promise<any> {
-    return this.apolloClient.mutate({ mutation: gql(query), variables, context });
+    return this.apolloClient.mutate({ mutation: gql(query), variables, context: { headers: Apollo.getHeaders() } });
+  }
+
+  private static getHeaders () {
+    const context = Context.getInstance();
+
+    let headers: Object | Function = context.options.headers ? context.options.headers : {};
+
+    if (headers instanceof Function) {
+      headers = headers(context);
+    }
+
+    return headers;
   }
 }
