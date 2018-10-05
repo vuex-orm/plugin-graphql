@@ -263,5 +263,199 @@ describe('Transformer', () => {
 
       expect(transformedData).toEqual(expectedData);
     });
+
+    it('transforms incoming data into a Vuex-ORM readable structure in edges connection mode', () => {
+      const incomingData1 = {
+        "tariffs": {
+          "edges": [
+            {
+              "node": {
+                "id": "1",
+                "name": "Tariff S",
+                "displayName": "Tariff S",
+                "slug": "tariff-s",
+                "checked": false,
+                "tariffOptions": {
+                  "edges": [
+                    {
+                      "node": {
+                        "id": "1",
+                        "name": "Foo Bar 1",
+                        "description": "Very foo, much more bar"
+                      }
+                    }
+                  ]
+                }
+              },
+            },
+            {
+              "node": {
+                "id": "2",
+                "name": "Tariff M",
+                "displayName": "Tariff M",
+                "slug": "tariff-m",
+                "checked": true,
+                "tariffOptions": {
+                  "edges": [
+                    {
+                      "node": {
+                        "id": "1",
+                        "name": "Foo Bar 1",
+                        "description": "Very foo, much more bar"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "node": {
+                "id": "3",
+                "name": "Tariff L",
+                "displayName": "Tariff L",
+                "slug": "tariff-l",
+                "checked": false,
+                "tariffOptions": {
+                  "edges": [
+                    {
+                      "node": {
+                        "id": "1",
+                        "name": "Foo Bar 1",
+                        "description": "Very foo, much more bar"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      };
+      const expectedData1 = {
+        "tariffs": [
+          {
+            "$isPersisted": true,
+            "checked": false,
+            "tariffOptions": [
+              {
+                "$isPersisted": true,
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Tariff S",
+            "id": 1,
+            "name": "Tariff S",
+            "slug": "tariff-s",
+          },
+          {
+            "$isPersisted": true,
+            "checked": true,
+            "tariffOptions": [
+              {
+                "$isPersisted": true,
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Tariff M",
+            "id": 2,
+            "name": "Tariff M",
+            "slug": "tariff-m",
+          },
+          {
+            "$isPersisted": true,
+            "checked": false,
+            "tariffOptions": [
+              {
+                "$isPersisted": true,
+                "description": "Very foo, much more bar",
+                "id": 1,
+                "name": "Foo Bar 1",
+              },
+            ],
+            "displayName": "Tariff L",
+            "id": 3,
+            "name": "Tariff L",
+            "slug": "tariff-l",
+          },
+        ],
+      };
+
+      const incomingData2 = {
+        "posts": {
+          "edges": [
+            {
+              "node" : {
+                "id": "1",
+                "content": "example content",
+                "title": "example title",
+                "author": {
+                  "id": "15",
+                  "name": "Charly Brown"
+                },
+                "otherId": "4894.35",
+                "comments": {
+                  "edges": [
+                    {
+                      "node": {
+                        "id": "42",
+                        "content": "Works!",
+                        "author": {
+                          "id": "14",
+                          "name": "Peppermint Patty"
+                        },
+                        "subjectId": "1",
+                        "subjectType": "Post"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      };
+      const expectedData2 = {
+        "posts": [
+          {
+            "$isPersisted": true,
+            "id": 1,
+            "content": "example content",
+            "title": "example title",
+            "author": {
+              "$isPersisted": true,
+              "id": 15,
+              "name": "Charly Brown"
+            },
+            "otherId": 4894.35,
+            "comments": [
+              {
+                "$isPersisted": true,
+                "id": 42,
+                "content": "Works!",
+                "author": {
+                  "$isPersisted": true,
+                  "id": 14,
+                  "name": "Peppermint Patty"
+                },
+                "subjectId": 1,
+                "subjectType": "posts"
+              }
+            ]
+          }
+        ]
+      };
+
+      const tariff = context.getModel('tariff');
+      const post = context.getModel('post');
+
+      context.connectionQueryMode = 'edges';
+
+      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(expectedData1);
+      expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
+    });
   });
 });

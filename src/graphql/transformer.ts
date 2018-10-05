@@ -90,9 +90,14 @@ export default class Transformer {
           if (_.isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 
-            if (data[key].nodes) {
+            if (data[key].nodes && context.connectionQueryMode === 'nodes') {
               result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes,
                 localModel, mutation, true);
+            } else if (data[key].edges && context.connectionQueryMode === 'edges') {
+              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].edges,
+                localModel, mutation, true);
+            } else if (data.node && context.connectionQueryMode === 'edges') {
+              result = this.transformIncomingData(data.node, localModel, mutation, true);
             } else {
               let newKey = key;
 
