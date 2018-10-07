@@ -18,9 +18,17 @@ export default class Fetch extends Action {
    */
   public static async call ({ state, dispatch }: ActionParams, params?: ActionParams): Promise<Data> {
     const context = Context.getInstance();
-    await context.loadSchema();
-
     const model = this.getModelFromState(state);
+
+    const mockReturnValue = model.$mockHook('fetch', {
+      filter: params ? params.filter || {} : {}
+    });
+
+    if (mockReturnValue) {
+      return Store.insertData(mockReturnValue, dispatch);
+    }
+
+    await context.loadSchema();
 
     // Filter
     const filter = params && params.filter ?

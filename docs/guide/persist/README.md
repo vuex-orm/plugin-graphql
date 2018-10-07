@@ -9,11 +9,13 @@ the `persist` action.
 Via calling
 
 ```javascript
-const post = await Post.create({
+await Post.create({ data: {
   content: 'Lorem Ipsum dolor sit amet',
   title: 'Example Post',
-  user: user.query().first()
-});
+  user: User.query().first()
+}});
+
+const post = Post.query().first();
 
 await post.$persist();
 // or

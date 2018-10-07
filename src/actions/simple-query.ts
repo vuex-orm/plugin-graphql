@@ -18,6 +18,7 @@ export default class SimpleQuery extends Action {
   public static async call ({ dispatch }: ActionParams, { query, bypassCache, variables }: ActionParams): Promise<any> {
     if (query) {
       variables = this.prepareArgs(variables);
+
       const result = await Context.getInstance().apollo.simpleQuery(query, variables, bypassCache);
 
       // remove the symbols

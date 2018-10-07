@@ -1,6 +1,7 @@
 import { ActionParams } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
+import { Store } from '../orm/store';
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().
@@ -16,6 +17,13 @@ export default class Destroy extends Action {
     if (id) {
       const model = this.getModelFromState(state);
       const mutationName = NameGenerator.getNameForDestroy(model);
+
+      const mockReturnValue = model.$mockHook('destroy', { id });
+
+      if (mockReturnValue) {
+        await Store.insertData(mockReturnValue, dispatch);
+        return true;
+      }
 
       args = this.prepareArgs(args, id);
 

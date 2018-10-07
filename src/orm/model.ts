@@ -1,10 +1,14 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
 import { Field } from '../support/interfaces';
 import Context from '../common/context';
+import { Mock, Options } from '../test-utils';
+import * as _ from 'lodash-es';
 const inflection = require('inflection');
 
 /**
- * Wrapper around a Vuex-ORM model with some useful methods
+ * Wrapper around a Vuex-ORM model with some useful methods.
+ *
+ * Also provides a mock system, to define mocking responses for actions.
  */
 export default class Model {
   /**
@@ -29,6 +33,8 @@ export default class Model {
    * @type {Map<string, Field>}
    */
   public readonly fields: Map<string, Field> = new Map<string, Field>();
+
+  private mocks: { [key: string]: Array<Mock> } = {};
 
   /**
    * @constructor
@@ -238,5 +244,71 @@ export default class Model {
     return eagerLoadList.find((n) => {
       return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
     }) !== undefined;
+  }
+
+  /**
+   * Adds a mock.
+   *
+   * @param {Mock} mock - Mock config.
+   * @returns {boolean}
+   */
+  public $addMock (mock: Mock): boolean {
+    if (this.$findMock(mock.action, mock.options)) return false;
+    if (!this.mocks[mock.action]) this.mocks[mock.action] = [];
+
+    this.mocks[mock.action].push(mock);
+    return true;
+  }
+
+  /**
+   * Finds a mock for the given action and options.
+   *
+   * @param {string} action - Name of the action like 'fetch'.
+   * @param {Options} options - Options like { variables: { id: 42 } }.
+   * @returns {Mock | null} null when no mock was found.
+   */
+  public $findMock (action: string, options: Options | undefined): Mock | null {
+    if (this.mocks[action]) {
+      return this.mocks[action].find((m) => {
+        if (!m.options || !options) return true;
+
+        const relevantOptions = _.pick(options, Object.keys(m.options));
+        return _.isEqual(relevantOptions, m.options || {});
+      }) || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Hook to be called by all actions in order to get the mock returnValue.
+   *
+   * @param {string} action - Name of the action like 'fetch'.
+   * @param {Options} options - Options.
+   * @returns {any} null when no mock was found.
+   */
+  public $mockHook (action: string, options: Options): any {
+    let returnValue: null | { [key: string]: any } = null;
+    const mock = this.$findMock(action, options);
+
+    if (mock) {
+      if (mock.returnValue instanceof Function) {
+        returnValue = mock.returnValue();
+      } else {
+        returnValue = mock.returnValue || null;
+      }
+    }
+
+    if (returnValue) {
+      if (returnValue instanceof Array) {
+        returnValue.forEach(r => r.$isPersisted = true);
+      } else {
+        returnValue.$isPersisted = true;
+      }
+
+      return { [this.pluralName]: returnValue };
+    }
+
+    return null;
   }
 }
