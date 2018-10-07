@@ -7,6 +7,9 @@
 **Documentation:** https://vuex-orm.github.io/plugin-graphql/
 
 
+**Powered by [i22 Digitalagentur GmbH](https://www.i22.de/)**.
+
+
 ## Contribution
 
 To test this plugin in your existing project, you can use `yarn link` functionality. Run `yarn link`
