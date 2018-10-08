@@ -41,6 +41,42 @@ describe('TestUtils', () => {
     expect(result).toEqual(userResult);
   });
 
+  it('allows to return multiple records', async () => {
+    const userData2 = JSON.parse(JSON.stringify(userData));
+    userData2.id = 8;
+    userData2.name = 'Snoopy';
+
+    mock('fetch').for(User).andReturn([userData, userData2]);
+
+    let result;
+    const request = await recordGraphQLRequest(async () => {
+      result = await User.fetch();
+    }, true);
+
+    expect(request).toEqual(null);
+    expect(result).toEqual({
+      users: [{
+        id: 8,
+        $id: 8,
+        $isPersisted: true,
+        name: 'Snoopy',
+        profileId: 0,
+        posts: [],
+        comments: [],
+        profile: null,
+      }, {
+        id: 42,
+        $id: 42,
+        $isPersisted: true,
+        name: 'Charlie Brown',
+        profileId: 0,
+        posts: [],
+        comments: [],
+        profile: null,
+      }]
+    });
+  });
+
 
   it('only mocks matched options', async () => {
     mock('fetch', { filter: { id: 42 }}).for(User).andReturn(userData);
