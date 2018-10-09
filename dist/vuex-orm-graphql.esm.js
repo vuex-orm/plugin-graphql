@@ -21523,7 +21523,9 @@ var Logger = /** @class */ (function () {
 
 var inflection = require('inflection');
 /**
- * Wrapper around a Vuex-ORM model with some useful methods
+ * Wrapper around a Vuex-ORM model with some useful methods.
+ *
+ * Also provides a mock system, to define mocking responses for actions.
  */
 var Model = /** @class */ (function () {
     /**
@@ -21537,6 +21539,11 @@ var Model = /** @class */ (function () {
          * @type {Map<string, Field>}
          */
         this.fields = new Map();
+        /**
+         * Container for the mocks.
+         * @type {Object}
+         */
+        this.mocks = {};
         this.baseModel = baseModel;
         // Generate name variants
         this.singularName = inflection.singularize(this.baseModel.entity);
@@ -21706,6 +21713,68 @@ var Model = /** @class */ (function () {
         return eagerLoadList.find(function (n) {
             return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
         }) !== undefined;
+    };
+    /**
+     * Adds a mock.
+     *
+     * @param {Mock} mock - Mock config.
+     * @returns {boolean}
+     */
+    Model.prototype.$addMock = function (mock) {
+        if (this.$findMock(mock.action, mock.options))
+            return false;
+        if (!this.mocks[mock.action])
+            this.mocks[mock.action] = [];
+        this.mocks[mock.action].push(mock);
+        return true;
+    };
+    /**
+     * Finds a mock for the given action and options.
+     *
+     * @param {string} action - Name of the action like 'fetch'.
+     * @param {MockOptions} options - MockOptions like { variables: { id: 42 } }.
+     * @returns {Mock | null} null when no mock was found.
+     */
+    Model.prototype.$findMock = function (action, options) {
+        if (this.mocks[action]) {
+            return this.mocks[action].find(function (m) {
+                if (!m.options || !options)
+                    return true;
+                var relevantOptions = pick(options, Object.keys(m.options));
+                return isEqual(relevantOptions, m.options || {});
+            }) || null;
+        }
+        return null;
+    };
+    /**
+     * Hook to be called by all actions in order to get the mock returnValue.
+     *
+     * @param {string} action - Name of the action like 'fetch'.
+     * @param {MockOptions} options - MockOptions.
+     * @returns {any} null when no mock was found.
+     */
+    Model.prototype.$mockHook = function (action, options) {
+        var _a;
+        var returnValue = null;
+        var mock = this.$findMock(action, options);
+        if (mock) {
+            if (mock.returnValue instanceof Function) {
+                returnValue = mock.returnValue();
+            }
+            else {
+                returnValue = mock.returnValue || null;
+            }
+        }
+        if (returnValue) {
+            if (returnValue instanceof Array) {
+                returnValue.forEach(function (r) { return r.$isPersisted = true; });
+            }
+            else {
+                returnValue.$isPersisted = true;
+            }
+            return _a = {}, _a[this.pluralName] = returnValue, _a;
+        }
+        return null;
     };
     return Model;
 }());
@@ -27295,6 +27364,11 @@ var Context = /** @class */ (function () {
          * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
          */
         this.connectionQueryMode = 'auto';
+        /**
+         * Container for the global mocks.
+         * @type {Object}
+         */
+        this.globalMocks = {};
         this.components = components;
         this.options = options;
         this.database = options.database;
@@ -27414,6 +27488,59 @@ var Context = /** @class */ (function () {
                 throw new Error("No such model " + name_1 + "!");
         }
         return model;
+    };
+    /**
+     * Will add a mock for simple mutations or queries. These are model unrelated and have to be
+     * handled  globally.
+     *
+     * @param {Mock} mock - Mock config.
+     */
+    Context.prototype.addGlobalMock = function (mock) {
+        if (this.findGlobalMock(mock.action, mock.options))
+            return false;
+        if (!this.globalMocks[mock.action])
+            this.globalMocks[mock.action] = [];
+        this.globalMocks[mock.action].push(mock);
+        return true;
+    };
+    /**
+     * Finds a global mock for the given action and options.
+     *
+     * @param {string} action - Name of the action like 'simpleQuery' or 'simpleMutation'.
+     * @param {MockOptions} options - MockOptions like { name: 'example' }.
+     * @returns {Mock | null} null when no mock was found.
+     */
+    Context.prototype.findGlobalMock = function (action, options) {
+        if (this.globalMocks[action]) {
+            return this.globalMocks[action].find(function (m) {
+                if (!m.options || !options)
+                    return true;
+                var relevantOptions = pick(options, Object.keys(m.options));
+                return isEqual(relevantOptions, m.options || {});
+            }) || null;
+        }
+        return null;
+    };
+    /**
+     * Hook to be called by simpleMutation and simpleQuery actions in order to get the global mock
+     * returnValue.
+     *
+     * @param {string} action - Name of the action like 'simpleQuery' or 'simpleMutation'.
+     * @param {MockOptions} options - MockOptions.
+     * @returns {any} null when no mock was found.
+     */
+    Context.prototype.globalMockHook = function (action, options) {
+        var returnValue = null;
+        var mock = this.findGlobalMock(action, options);
+        if (mock) {
+            if (mock.returnValue instanceof Function) {
+                returnValue = mock.returnValue();
+            }
+            else {
+                returnValue = mock.returnValue || null;
+            }
+        }
+        return returnValue;
     };
     /**
      * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
@@ -28040,19 +28167,26 @@ var Destroy = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter$5(this, void 0, void 0, function () {
-            var model, mutationName;
+            var model, mutationName, mockReturnValue;
             return __generator$5(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        if (!id) return [3 /*break*/, 2];
+                        if (!id) return [3 /*break*/, 4];
                         model = this.getModelFromState(state);
                         mutationName = NameGenerator.getNameForDestroy(model);
-                        args = this.prepareArgs(args, id);
-                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
+                        mockReturnValue = model.$mockHook('destroy', { id: id });
+                        if (!mockReturnValue) return [3 /*break*/, 2];
+                        return [4 /*yield*/, Store.insertData(mockReturnValue, dispatch)];
                     case 1:
                         _c.sent();
                         return [2 /*return*/, true];
-                    case 2: throw new Error("The destroy action requires the 'id' to be set");
+                    case 2:
+                        args = this.prepareArgs(args, id);
+                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
+                    case 3:
+                        _c.sent();
+                        return [2 /*return*/, true];
+                    case 4: throw new Error("The destroy action requires the 'id' to be set");
                 }
             });
         });
@@ -28122,15 +28256,21 @@ var Fetch = /** @class */ (function (_super) {
     Fetch.call = function (_a, params) {
         var state = _a.state, dispatch = _a.dispatch;
         return __awaiter$6(this, void 0, void 0, function () {
-            var context, model, filter, bypassCache, multiple, name, query, data;
+            var context, model, mockReturnValue, filter, bypassCache, multiple, name, query, data;
             return __generator$6(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         context = Context.getInstance();
+                        model = this.getModelFromState(state);
+                        mockReturnValue = model.$mockHook('fetch', {
+                            filter: params ? params.filter || {} : {}
+                        });
+                        if (mockReturnValue) {
+                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                        }
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
                         _b.sent();
-                        model = this.getModelFromState(state);
                         filter = params && params.filter ?
                             Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter)) : {};
                         bypassCache = params && params.bypassCache;
@@ -28214,16 +28354,23 @@ var Mutate = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var args = _b.args, name = _b.name;
         return __awaiter$7(this, void 0, void 0, function () {
-            var context, schema, model;
+            var context, model, mockReturnValue, schema;
             return __generator$7(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!name) return [3 /*break*/, 2];
                         context = Context.getInstance();
+                        model = this.getModelFromState(state);
+                        mockReturnValue = model.$mockHook('mutate', {
+                            name: name,
+                            args: args || {}
+                        });
+                        if (mockReturnValue) {
+                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                        }
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
                         schema = _c.sent();
-                        model = this.getModelFromState(state);
                         args = this.prepareArgs(args);
                         // There could be anything in the args, but we have to be sure that all records are gone through
                         // transformOutgoingData()
@@ -28301,27 +28448,38 @@ var Persist = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter$8(this, void 0, void 0, function () {
-            var model, mutationName, oldRecord, newRecord;
+            var model, mutationName, oldRecord, mockReturnValue, newRecord_1, newRecord;
             return __generator$8(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        if (!id) return [3 /*break*/, 3];
+                        if (!id) return [3 /*break*/, 5];
                         model = this.getModelFromState(state);
                         mutationName = NameGenerator.getNameForPersist(model);
                         oldRecord = model.getRecordWithId(id);
+                        mockReturnValue = model.$mockHook('persist', {
+                            id: id,
+                            args: args || {}
+                        });
+                        if (!mockReturnValue) return [3 /*break*/, 2];
+                        newRecord_1 = Store.insertData(mockReturnValue, dispatch);
+                        return [4 /*yield*/, this.deleteObsoleteRecord(model, newRecord_1, oldRecord)];
+                    case 1:
+                        _c.sent();
+                        return [2 /*return*/, newRecord_1];
+                    case 2:
                         // Arguments
                         args = this.prepareArgs(args);
                         this.addRecordToArgs(args, model, oldRecord);
                         return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
-                    case 1:
+                    case 3:
                         newRecord = _c.sent();
                         // Delete the old record if necessary
                         return [4 /*yield*/, this.deleteObsoleteRecord(model, newRecord, oldRecord)];
-                    case 2:
+                    case 4:
                         // Delete the old record if necessary
                         _c.sent();
                         return [2 /*return*/, newRecord];
-                    case 3: throw new Error("The persist action requires the 'id' to be set");
+                    case 5: throw new Error("The persist action requires the 'id' to be set");
                 }
             });
         });
@@ -28412,11 +28570,18 @@ var Push = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var data = _b.data, args = _b.args;
         return __awaiter$9(this, void 0, void 0, function () {
-            var model, mutationName;
+            var model, mutationName, mockReturnValue;
             return __generator$9(this, function (_c) {
                 if (data) {
                     model = this.getModelFromState(state);
                     mutationName = NameGenerator.getNameForPush(model);
+                    mockReturnValue = model.$mockHook('push', {
+                        data: data,
+                        args: args || {}
+                    });
+                    if (mockReturnValue) {
+                        return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                    }
                     // Arguments
                     args = this.prepareArgs(args, data.id);
                     this.addRecordToArgs(args, model, data);
@@ -28499,16 +28664,23 @@ var Query = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var name = _b.name, filter = _b.filter, bypassCache = _b.bypassCache;
         return __awaiter$10(this, void 0, void 0, function () {
-            var context, schema, model, multiple, query, data;
+            var context, model, mockReturnValue, schema, multiple, query, data;
             return __generator$10(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!name) return [3 /*break*/, 3];
                         context = Context.getInstance();
+                        model = this.getModelFromState(state);
+                        mockReturnValue = model.$mockHook('query', {
+                            name: name,
+                            filter: filter || {}
+                        });
+                        if (mockReturnValue) {
+                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                        }
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
                         schema = _c.sent();
-                        model = this.getModelFromState(state);
                         // Filter
                         filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
                         multiple = Schema.returnsConnection(schema.getQuery(name));
@@ -28590,13 +28762,22 @@ var SimpleQuery = /** @class */ (function (_super) {
         var dispatch = _a.dispatch;
         var query = _b.query, bypassCache = _b.bypassCache, variables = _b.variables;
         return __awaiter$11(this, void 0, void 0, function () {
-            var result;
+            var context, parsedQuery, mockReturnValue, result;
             return __generator$11(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        context = Context.getInstance();
                         if (!query) return [3 /*break*/, 2];
+                        parsedQuery = parser_1(query);
+                        mockReturnValue = context.globalMockHook('simpleQuery', {
+                            name: parsedQuery.definitions[0]['name'].value,
+                            variables: variables
+                        });
+                        if (mockReturnValue) {
+                            return [2 /*return*/, mockReturnValue];
+                        }
                         variables = this.prepareArgs(variables);
-                        return [4 /*yield*/, Context.getInstance().apollo.simpleQuery(query, variables, bypassCache)];
+                        return [4 /*yield*/, context.apollo.simpleQuery(query, variables, bypassCache)];
                     case 1:
                         result = _c.sent();
                         // remove the symbols
@@ -28672,13 +28853,22 @@ var SimpleMutation = /** @class */ (function (_super) {
         var dispatch = _a.dispatch;
         var query = _b.query, variables = _b.variables;
         return __awaiter$12(this, void 0, void 0, function () {
-            var result;
+            var context, parsedQuery, mockReturnValue, result;
             return __generator$12(this, function (_c) {
                 switch (_c.label) {
                     case 0:
+                        context = Context.getInstance();
                         if (!query) return [3 /*break*/, 2];
+                        parsedQuery = parser_1(query);
+                        mockReturnValue = context.globalMockHook('simpleMutation', {
+                            name: parsedQuery.definitions[0]['name'].value,
+                            variables: variables
+                        });
+                        if (mockReturnValue) {
+                            return [2 /*return*/, mockReturnValue];
+                        }
                         variables = this.prepareArgs(variables);
-                        return [4 /*yield*/, Context.getInstance().apollo.simpleMutation(query, variables)];
+                        return [4 /*yield*/, context.apollo.simpleMutation(query, variables)];
                     case 1:
                         result = _c.sent();
                         // remove the symbols
