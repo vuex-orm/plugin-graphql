@@ -137,7 +137,11 @@ const result = await store.dispatch('entities/simpleMutation', {
 
 ### Resetting a mock
 
-TODO
+::: warning
+Support for resetting a mock is currently work in progress and will be added soon.
+
+See https://github.com/vuex-orm/plugin-graphql/issues/61
+:::
 
 
 ## Misc
@@ -145,7 +149,6 @@ TODO
 The testing utils also provide some other useful functions, which are listed here:
 
 - `async clearORMStore()`: Will remove all records from the Vuex-ORM store to clean up while testing.
-- `resetAllMocks()`: Will remove all registered mocks.
 
 
 ## Integration Testing
@@ -153,5 +156,5 @@ The testing utils also provide some other useful functions, which are listed her
 ::: warning
 Support for integration testing is currently work in progress and will be added soon.
 
-See 
+See https://github.com/vuex-orm/plugin-graphql/issues/59
 :::
