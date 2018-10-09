@@ -222,14 +222,48 @@ describe('TestUtils', () => {
   });
 
 
-  // TODO
   it('allows to mock a simple mutation', async () => {
-    // TODO
+    mock('simpleMutation', {
+      name: 'SendSms',
+      variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+    }).andReturn({ sendSms: { delivered: true }});
+
+    let result;
+    const query = `
+      mutation SendSms($to: string!, $text: string!) {
+        sendSms(to: $to, text: $text) {
+          delivered
+        }
+      }
+    `;
+
+    const request = await recordGraphQLRequest(async () => {
+      result = await store.dispatch('entities/simpleMutation', {
+        query,
+        variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+      });
+    }, true);
+
+    expect(request).toEqual(null);
+    expect(result).toEqual({ sendSms: { delivered: true }});
   });
 
 
-  // TODO
   it('allows to mock a simple query', async () => {
-    // TODO
+    mock('simpleQuery', { name: 'example'}).andReturn({ success: true });
+
+    let result;
+    const query = `
+      query example {
+        success
+      }
+    `;
+
+    const request = await recordGraphQLRequest(async () => {
+      result = await store.dispatch('entities/simpleQuery', { query });
+    }, true);
+
+    expect(request).toEqual(null);
+    expect(result).toEqual({ success: true });
   });
 });

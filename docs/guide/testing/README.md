@@ -98,19 +98,60 @@ post.$mutate({ name: 'upvote' });
 
 ### Simple Query
 
-::: warning
-Support for mocking simple queries is currently work in progress and will be added soon.
-:::
+Mocking simple queries works slightly different then the other actions, because these are not model
+related. Thus we have to mock these globally by omiting the model (`for`):
+
+```js
+// This mock call
+mock('simpleQuery', { name: 'example' }).andReturn({ success: true });
+
+// will be triggered by
+store.dispatch('entities/simpleQuery', { query: 'query example { success }' });
+```
 
 ### Simple Mutation
 
-::: warning
-Support for mocking simple mutations is currently work in progress and will be added soon.
-:::
+Works just like the simple queries:
+
+```js
+// This mock call
+mock('simpleMutation', {
+  name: 'SendSms',
+  variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+}).andReturn({ sendSms: { delivered: true }});
+
+// will be triggered by
+const query = `
+mutation SendSms($to: string!, $text: string!) {
+  sendSms(to: $to, text: $text) {
+    delivered
+  }
+}`;
+
+const result = await store.dispatch('entities/simpleMutation', {
+  query,
+  variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
+});
+```
+
+
+### Resetting a mock
+
+TODO
+
+
+## Misc
+
+The testing utils also provide some other useful functions, which are listed here:
+
+- `async clearORMStore()`: Will remove all records from the Vuex-ORM store to clean up while testing.
+- `resetAllMocks()`: Will remove all registered mocks.
 
 
 ## Integration Testing
 
 ::: warning
 Support for integration testing is currently work in progress and will be added soon.
+
+See 
 :::

@@ -1,7 +1,7 @@
 import ORMModel from '@vuex-orm/core/lib/model/Model';
 import { Field } from '../support/interfaces';
 import Context from '../common/context';
-import { Mock, Options } from '../test-utils';
+import { Mock, MockOptions } from '../test-utils';
 import * as _ from 'lodash-es';
 const inflection = require('inflection');
 
@@ -34,6 +34,10 @@ export default class Model {
    */
   public readonly fields: Map<string, Field> = new Map<string, Field>();
 
+  /**
+   * Container for the mocks.
+   * @type {Object}
+   */
   private mocks: { [key: string]: Array<Mock> } = {};
 
   /**
@@ -264,10 +268,10 @@ export default class Model {
    * Finds a mock for the given action and options.
    *
    * @param {string} action - Name of the action like 'fetch'.
-   * @param {Options} options - Options like { variables: { id: 42 } }.
+   * @param {MockOptions} options - MockOptions like { variables: { id: 42 } }.
    * @returns {Mock | null} null when no mock was found.
    */
-  public $findMock (action: string, options: Options | undefined): Mock | null {
+  public $findMock (action: string, options: MockOptions | undefined): Mock | null {
     if (this.mocks[action]) {
       return this.mocks[action].find((m) => {
         if (!m.options || !options) return true;
@@ -284,10 +288,10 @@ export default class Model {
    * Hook to be called by all actions in order to get the mock returnValue.
    *
    * @param {string} action - Name of the action like 'fetch'.
-   * @param {Options} options - Options.
+   * @param {MockOptions} options - MockOptions.
    * @returns {any} null when no mock was found.
    */
-  public $mockHook (action: string, options: Options): any {
+  public $mockHook (action: string, options: MockOptions): any {
     let returnValue: null | { [key: string]: any } = null;
     const mock = this.$findMock(action, options);
 

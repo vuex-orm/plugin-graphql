@@ -3,7 +3,7 @@ import ORMModel from '@vuex-orm/core/lib/model/Model';
 import Model from './orm/model';
 import Context from './common/context';
 
-export interface Options {
+export interface MockOptions {
   [key: string]: any;
 }
 
@@ -11,11 +11,11 @@ export type ReturnValue = () => (Object | Array<Object>) | Object | Array<Object
 
 export class Mock {
   public readonly action: string;
-  public readonly options?: Options;
+  public readonly options?: MockOptions;
   public modelClass?: ORMModel;
   public returnValue?: ReturnValue;
 
-  constructor (action: string, options?: Options) {
+  constructor (action: string, options?: MockOptions) {
     this.action = action;
     this.options = options;
   }
@@ -33,16 +33,20 @@ export class Mock {
 
   private installMock (): void {
     const context: Context = Context.getInstance();
-    const model: Model = context.getModel(this.modelClass!.entity);
-    model.$addMock(this);
+
+    if (this.action === 'simpleQuery' || this.action === 'simpleMutation') {
+      context.addGlobalMock(this);
+    } else {
+      const model: Model = context.getModel(this.modelClass!.entity);
+      model.$addMock(this);
+    }
   }
 }
 
-export function clearORMStore (): void {
-  // FIXME
-  return;
+export async function clearORMStore () {
+  await Context.getInstance().database.store.dispatch('entities/deleteAll');
 }
 
-export function mock (action: string, options?: Options): Mock {
+export function mock (action: string, options?: MockOptions): Mock {
   return new Mock(action, options);
 }
