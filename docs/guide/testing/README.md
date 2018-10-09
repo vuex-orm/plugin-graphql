@@ -10,7 +10,7 @@ the results of the GraphQL queries. The GraphQL plugin offers some utils to do t
 First we have to import the mock method from the test utils via
 
 ```js
-import { mock } from 'app/test-utils';
+import { mock } from '@vuex-orm/plugin-graphql/lib/test-utils';
 ```
 
 In the next step we can setup mocks via
