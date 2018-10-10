@@ -24,8 +24,18 @@ export default class Query extends Action {
                             { name, filter, bypassCache }: ActionParams): Promise<Data> {
     if (name) {
       const context: Context = Context.getInstance();
-      const schema: Schema = await context.loadSchema();
       const model = this.getModelFromState(state);
+
+      const mockReturnValue = model.$mockHook('query', {
+        name,
+        filter: filter || {}
+      });
+
+      if (mockReturnValue) {
+        return Store.insertData(mockReturnValue, dispatch);
+      }
+
+      const schema: Schema = await context.loadSchema();
 
       // Filter
       filter = filter ? Transformer.transformOutgoingData(model, filter) : {};

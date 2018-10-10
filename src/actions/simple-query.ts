@@ -1,8 +1,8 @@
 import { ActionParams } from '../support/interfaces';
 import Action from './action';
-import NameGenerator from '../graphql/name-generator';
 import Context from '../common/context';
 import * as _ from 'lodash-es';
+import { parse } from 'graphql/language/parser';
 
 /**
  * SimpleQuery action for sending a model unrelated simple query.
@@ -16,9 +16,22 @@ export default class SimpleQuery extends Action {
    * @returns {Promise<any>} The result
    */
   public static async call ({ dispatch }: ActionParams, { query, bypassCache, variables }: ActionParams): Promise<any> {
+    const context: Context = Context.getInstance();
+
     if (query) {
+      const parsedQuery = parse(query);
+      const mockReturnValue = context.globalMockHook('simpleQuery', {
+        name: parsedQuery.definitions[0]['name'].value,
+        variables
+      });
+
+      if (mockReturnValue) {
+        return mockReturnValue;
+      }
+
       variables = this.prepareArgs(variables);
-      const result = await Context.getInstance().apollo.simpleQuery(query, variables, bypassCache);
+
+      const result = await context.apollo.simpleQuery(query, variables, bypassCache);
 
       // remove the symbols
       return _.clone(result.data);

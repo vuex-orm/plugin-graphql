@@ -5,9 +5,11 @@ import { Components } from '@vuex-orm/core/lib/plugins/use';
 import { downcaseFirstLetter } from '../support/utils';
 import Apollo from '../graphql/apollo';
 import Database from '@vuex-orm/core/lib/database/Database';
-import { Data, Field, GraphQLSchema, GraphQLType, Options } from '../support/interfaces';
+import { Field, GraphQLType, Options } from '../support/interfaces';
 import Schema from '../graphql/schema';
+import { Mock, MockOptions } from '../test-utils';
 const inflection = require('inflection');
+import * as _ from 'lodash-es';
 
 const introspectionQuery = `
 query Introspection {
@@ -163,6 +165,12 @@ export default class Context {
   public connectionQueryMode: string = 'auto';
 
   /**
+   * Container for the global mocks.
+   * @type {Object}
+   */
+  private globalMocks: { [key: string]: Array<Mock> } = {};
+
+  /**
    * Private constructor, called by the setup method
    *
    * @constructor
@@ -292,6 +300,63 @@ export default class Context {
     }
 
     return model;
+  }
+
+  /**
+   * Will add a mock for simple mutations or queries. These are model unrelated and have to be
+   * handled  globally.
+   *
+   * @param {Mock} mock - Mock config.
+   */
+  public addGlobalMock (mock: Mock): boolean {
+    if (this.findGlobalMock(mock.action, mock.options)) return false;
+    if (!this.globalMocks[mock.action]) this.globalMocks[mock.action] = [];
+
+    this.globalMocks[mock.action].push(mock);
+    return true;
+  }
+
+  /**
+   * Finds a global mock for the given action and options.
+   *
+   * @param {string} action - Name of the action like 'simpleQuery' or 'simpleMutation'.
+   * @param {MockOptions} options - MockOptions like { name: 'example' }.
+   * @returns {Mock | null} null when no mock was found.
+   */
+  public findGlobalMock (action: string, options: MockOptions | undefined): Mock | null {
+    if (this.globalMocks[action]) {
+      return this.globalMocks[action].find((m) => {
+        if (!m.options || !options) return true;
+
+        const relevantOptions = _.pick(options, Object.keys(m.options));
+        return _.isEqual(relevantOptions, m.options || {});
+      }) || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Hook to be called by simpleMutation and simpleQuery actions in order to get the global mock
+   * returnValue.
+   *
+   * @param {string} action - Name of the action like 'simpleQuery' or 'simpleMutation'.
+   * @param {MockOptions} options - MockOptions.
+   * @returns {any} null when no mock was found.
+   */
+  public globalMockHook (action: string, options: MockOptions): any {
+    let returnValue: null | { [key: string]: any } = null;
+    const mock = this.findGlobalMock(action, options);
+
+    if (mock) {
+      if (mock.returnValue instanceof Function) {
+        returnValue = mock.returnValue();
+      } else {
+        returnValue = mock.returnValue || null;
+      }
+    }
+
+    return returnValue;
   }
 
   /**

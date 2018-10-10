@@ -1,8 +1,8 @@
 import { ActionParams } from '../support/interfaces';
 import Action from './action';
-import NameGenerator from '../graphql/name-generator';
 import Context from '../common/context';
 import * as _ from 'lodash-es';
+import { parse } from 'graphql/language/parser';
 
 /**
  * SimpleMutation action for sending a model unrelated simple mutation.
@@ -15,9 +15,21 @@ export default class SimpleMutation extends Action {
    * @returns {Promise<any>} The result
    */
   public static async call ({ dispatch }: ActionParams, { query, variables }: ActionParams): Promise<any> {
+    const context: Context = Context.getInstance();
+
     if (query) {
+      const parsedQuery = parse(query);
+      const mockReturnValue = context.globalMockHook('simpleMutation', {
+        name: parsedQuery.definitions[0]['name'].value,
+        variables
+      });
+
+      if (mockReturnValue) {
+        return mockReturnValue;
+      }
+
       variables = this.prepareArgs(variables);
-      const result = await Context.getInstance().apollo.simpleMutation(query, variables);
+      const result = await context.apollo.simpleMutation(query, variables);
 
       // remove the symbols
       return _.clone(result.data);

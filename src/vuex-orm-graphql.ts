@@ -23,6 +23,13 @@ export default class VuexORMGraphQL {
   }
 
   /**
+   * Allow everything to read the context.
+   */
+  public getContext (): Context {
+    return Context.getInstance();
+  }
+
+  /**
    * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
    */
   private static setupActions () {

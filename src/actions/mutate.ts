@@ -2,6 +2,7 @@ import { ActionParams, Arguments, Data } from '../support/interfaces';
 import Action from './action';
 import Context from '../common/context';
 import Schema from '../graphql/schema';
+import { Store } from '../orm/store';
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
@@ -18,8 +19,18 @@ export default class Mutate extends Action {
   public static async call ({ state, dispatch }: ActionParams, { args, name }: ActionParams): Promise<Data> {
     if (name) {
       const context: Context = Context.getInstance();
-      const schema: Schema = await context.loadSchema();
       const model = this.getModelFromState(state);
+
+      const mockReturnValue = model.$mockHook('mutate', {
+        name,
+        args: args || {}
+      });
+
+      if (mockReturnValue) {
+        return Store.insertData(mockReturnValue, dispatch);
+      }
+
+      const schema: Schema = await context.loadSchema();
       args = this.prepareArgs(args);
 
       // There could be anything in the args, but we have to be sure that all records are gone through

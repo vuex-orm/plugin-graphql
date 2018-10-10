@@ -193,7 +193,7 @@ mutation SendSms($to: string!, $text: string!) {
   }
 }`;
 
-const result = store.dispatch('entities/simpleQuery', {
+const result = await store.dispatch('entities/simpleMutation', {
   query,
   variables: { to: '+4912345678', text: 'GraphQL is awesome!' }
 });
