@@ -1,7 +1,7 @@
 import {Model as ORMModel} from "@vuex-orm/core";
 import {createStore} from "./helpers";
-import mockServer from "./mock-schema"
-import { buildClientSchema } from 'graphql';
+import { setupTestUtils } from 'app/test-utils'
+import VuexORMGraphQLPlugin from "app";
 
 export class User extends ORMModel {
   static entity = 'users';
@@ -160,6 +160,8 @@ export async function setupMockData() {
     { model: TariffTariffOption },
     { model: Category }
   ]);
+
+  setupTestUtils(VuexORMGraphQLPlugin);
 
   return [store, vuexOrmGraphQL];
 }

@@ -10,10 +10,18 @@ the results of the GraphQL queries. The GraphQL plugin offers some utils to do t
 First we have to import the mock method from the test utils via
 
 ```js
-import { mock } from '@vuex-orm/plugin-graphql/lib/test-utils';
+import VuexORMGraphQL from '@vuex-orm/plugin-graphql';
+import { setupTestUtils, mock } from '@vuex-orm/plugin-graphql/lib/test-utils';
 ```
 
-In the next step we can setup mocks via
+After that we have to setup the test utils, this is very easy, just pass the imported VuexORMGraphQL
+plugin like this:
+
+```
+setupTestUtils(VuexORMGraphQL);
+```
+
+Now we're ready to go. In the next step we can setup mocks via
 
 ```js
 mock('fetch').for(User).andReturn({ id: 1, name: 'Charlie Brown' });

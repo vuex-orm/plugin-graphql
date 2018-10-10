@@ -28931,6 +28931,12 @@ var VuexORMGraphQL = /** @class */ (function () {
         VuexORMGraphQL.setupModelMethods();
     }
     /**
+     * Allow everything to read the context.
+     */
+    VuexORMGraphQL.prototype.getContext = function () {
+        return Context.getInstance();
+    };
+    /**
      * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
      */
     VuexORMGraphQL.setupActions = function () {
@@ -29054,9 +29060,8 @@ var VuexORMGraphQLPlugin = /** @class */ (function () {
      * @returns {VuexORMGraphQL}
      */
     VuexORMGraphQLPlugin.install = function (components, options) {
-        var plugin = new VuexORMGraphQLPlugin();
-        plugin.instance = new VuexORMGraphQL(components, options);
-        return plugin.instance;
+        VuexORMGraphQLPlugin.instance = new VuexORMGraphQL(components, options);
+        return VuexORMGraphQLPlugin.instance;
     };
     return VuexORMGraphQLPlugin;
 }());

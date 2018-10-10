@@ -10,7 +10,7 @@ export default class VuexORMGraphQLPlugin implements Plugin {
   /**
    * Contains the instance of VuexORMGraphQL
    */
-  public instance!: VuexORMGraphQL;
+  public static instance: VuexORMGraphQL;
 
   /**
    * This is called, when VuexORM.install(VuexOrmGraphQL, options) is called.
@@ -20,9 +20,7 @@ export default class VuexORMGraphQLPlugin implements Plugin {
    * @returns {VuexORMGraphQL}
    */
   public static install (components: Components, options: Options): VuexORMGraphQL {
-    const plugin = new VuexORMGraphQLPlugin();
-    plugin.instance = new VuexORMGraphQL(components, options);
-
-    return plugin.instance;
+    VuexORMGraphQLPlugin.instance = new VuexORMGraphQL(components, options);
+    return VuexORMGraphQLPlugin.instance;
   }
 }
