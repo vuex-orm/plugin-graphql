@@ -4,7 +4,7 @@
 
 <h1 align="center">Vuex ORM Plugin: GraphQL</h1>
 
-<h3 align="center">This project is powered by [i22 Digitalagentur GmbH](https://www.i22.de/)</h3>
+<h3 align="center">This project is powered by <a href="https://www.i22.de/" target="_blank">i22 Digitalagentur GmbH</a></h3>
 
 <p align="center">
   <a href="https://travis-ci.org/vuex-orm/plugin-graphql">
