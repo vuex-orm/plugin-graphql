@@ -2,7 +2,9 @@
   <img width="192" src="https://github.com/vuex-orm/vuex-orm/blob/master/logo-vuex-orm.png" alt="Vuex ORM">
 </p>
 
-<h1 align="center">Vuex ORM Plugin: GraphQl</h1>
+<h1 align="center">Vuex ORM Plugin: GraphQL</h1>
+
+<h3 align="center">This project is powered by [i22 Digitalagentur GmbH](https://www.i22.de/)</h3>
 
 <p align="center">
   <a href="https://travis-ci.org/vuex-orm/plugin-graphql">
@@ -25,8 +27,6 @@ reading your and GraphQL schema from your server. Thus it hides the specifics of
 Caching, De- and Serialization of your Data and so on from the developer. Getting a record of a model from the server
 is as easy as calling `Product.fetch()`. This allows you to write sophisticated Single-Page Applications fast and
 efficient without worrying about GraphQL.
-
-**This project is powered by [i22 Digitalagentur GmbH](https://www.i22.de/)**.
 
 
 ## Documentation
