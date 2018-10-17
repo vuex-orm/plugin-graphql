@@ -1,7 +1,7 @@
 {
   "name": "@vuex-orm/plugin-graphql",
   "version": "1.0.0-rc.18",
-  "description": "Vuex-ORM Plugin to sync the data against a GraphQL API.",
+  "description": "Vuex-ORM persistence plugin to sync the store against a GraphQL API.",
   "main": "dist/vuex-orm-graphql.common.js",
   "module": "dist/vuex-orm-graphql.esm.js",
   "unpkg": "dist/vuex-orm-graphql.js",
@@ -43,11 +43,14 @@
   "bugs": {
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@vuex-orm/core": "^0.27.0"
+  },
+  "devDependencies": {
+    "@vuex-orm/core": "^0.27.0",
     "@types/graphql": "^0.12.3",
     "@types/inflection": "^1.5.28",
     "@types/lodash-es": "^4.17.0",
-    "@vuex-orm/core": "^0.26.4",
     "apollo-cache-inmemory": "^1.1.7",
     "apollo-client": "^2.2.2",
     "apollo-link": "^1.2.0",
@@ -57,9 +60,7 @@
     "inflection": "^1.12.0",
     "lodash-es": "^4.17.10",
     "normalizr": "^3.2.4",
-    "vue": "2.5.16"
-  },
-  "devDependencies": {
+    "vue": "2.5.16",
     "@types/sinon": "^5.0.1",
     "apollo-link-schema": "^1.1.0",
     "babel-core": "^6.26.0",
