@@ -40,9 +40,16 @@ function buildEntry ({ input, output }) {
           output: {
             ascii_only: true
           }
-        }).code;
+        });
 
-        return write(output.file, minified, true);
+        if (minified.error) {
+          console.error('Error while minifying code!', minified.error);
+          console.log('Will write unminified code (for debugging purposes)!');
+        } else {
+          code = minified.code;
+        }
+
+        return write(output.file, code, true);
       }
 
       return write(output.file, code);

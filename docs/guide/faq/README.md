@@ -28,3 +28,10 @@ Yes, since version `0.0.38`.
 ## What is `await`?
 
 It's a nice way to work with promises. See https://javascript.info/async-await.
+
+
+## Does it support Nuxt/SSR?
+
+Since Version 1.0.0.RC.21 there is experimental support for SSR. You will need
+[node-fetch](https://www.npmjs.com/package/node-fetch) and register it via `global.fetch = fetch;`
+in order to make it work.

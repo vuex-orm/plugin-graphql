@@ -11,12 +11,12 @@ const configs = {
     format: 'umd',
     env: 'development'
   },
-  umdProd: {
+  /*umdProd: {
     input: resolve('lib/index.cjs.js'),
     file: resolve('dist/vuex-orm-graphql.min.js'),
     format: 'umd',
     env: 'production'
-  },
+  },*/
   commonjs: {
     input: resolve('lib/index.cjs.js'),
     file: resolve('dist/vuex-orm-graphql.common.js'),
