@@ -1,6 +1,6 @@
 {
   "name": "@vuex-orm/plugin-graphql",
-  "version": "1.0.0-rc.18",
+  "version": "1.0.0-rc.19",
   "description": "Vuex-ORM persistence plugin to sync the store against a GraphQL API.",
   "main": "dist/vuex-orm-graphql.common.js",
   "module": "dist/vuex-orm-graphql.esm.js",
