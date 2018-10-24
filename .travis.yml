@@ -1,12 +1,13 @@
 language: node_js
 node_js:
-  - "8"
+  - node
 cache:
   yarn: true
   directories:
-    - "node_modules"
+    - node_modules
 script:
-  - npm run lint
-  - npm run test
-  - npm run coverage
-  - cat ./coverage/lcov.info | ./node_modules/.bin/codecov
+  - npm test:prod && npm run build
+after_success:
+- npm run report-coverage
+- npm run docs:deploy
+
