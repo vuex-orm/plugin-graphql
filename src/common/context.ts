@@ -1,15 +1,14 @@
-import Logger from './logger';
-import Model from '../orm/model';
-import ORMModel from '@vuex-orm/core/lib/model/Model';
-import { Components } from '@vuex-orm/core/lib/plugins/use';
-import { downcaseFirstLetter } from '../support/utils';
-import Apollo from '../graphql/apollo';
-import Database from '@vuex-orm/core/lib/database/Database';
-import { Field, GraphQLType, Options } from '../support/interfaces';
-import Schema from '../graphql/schema';
-import { Mock, MockOptions } from '../test-utils';
-const inflection = require('inflection');
-import * as _ from 'lodash-es';
+import Logger from "./logger";
+import Model from "../orm/model";
+import { Model as ORMModel } from "@vuex-orm/core";
+import { Components } from "@vuex-orm/core/lib/plugins/use";
+import { downcaseFirstLetter, isEqual, pick } from "../support/utils";
+import Apollo from "../graphql/apollo";
+import Database from "@vuex-orm/core/lib/database/Database";
+import { Field, GraphQLType, Options } from "../support/interfaces";
+import Schema from "../graphql/schema";
+import { Mock, MockOptions } from "../test-utils";
+const inflection = require("inflection");
 
 const introspectionQuery = `
 query Introspection {
@@ -162,7 +161,7 @@ export default class Context {
   /**
    * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
    */
-  public connectionQueryMode: string = 'auto';
+  public connectionQueryMode: string = "auto";
 
   /**
    * Container for the global mocks.
@@ -177,7 +176,7 @@ export default class Context {
    * @param {Components} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    */
-  private constructor (components: Components, options: Options) {
+  private constructor(components: Components, options: Options) {
     this.components = components;
     this.options = options;
 
@@ -186,7 +185,7 @@ export default class Context {
     this.logger = new Logger(this.debugMode);
 
     if (!options.database) {
-      throw new Error('database param is required to initialize vuex-orm-graphql!');
+      throw new Error("database param is required to initialize vuex-orm-graphql!");
     }
   }
 
@@ -194,7 +193,7 @@ export default class Context {
    * Get the singleton instance of the context.
    * @returns {Context}
    */
-  public static getInstance (): Context {
+  public static getInstance(): Context {
     return this.instance;
   }
 
@@ -204,46 +203,46 @@ export default class Context {
    * @param {Options} options The options passed to VuexORM.install
    * @returns {Context}
    */
-  public static setup (components: Components, options: Options): Context {
+  public static setup(components: Components, options: Options): Context {
     this.instance = new Context(components, options);
 
     this.instance.apollo = new Apollo();
     this.instance.collectModels();
 
-    this.instance.logger.group('Context setup');
-    this.instance.logger.log('components', this.instance.components);
-    this.instance.logger.log('options', this.instance.options);
-    this.instance.logger.log('database', this.instance.database);
-    this.instance.logger.log('models', this.instance.models);
+    this.instance.logger.group("Context setup");
+    this.instance.logger.log("components", this.instance.components);
+    this.instance.logger.log("options", this.instance.options);
+    this.instance.logger.log("database", this.instance.database);
+    this.instance.logger.log("models", this.instance.models);
     this.instance.logger.groupEnd();
 
     return this.instance;
   }
 
-  public async loadSchema (): Promise<Schema> {
+  public async loadSchema(): Promise<Schema> {
     if (!this.schemaWillBeLoaded) {
       this.schemaWillBeLoaded = new Promise(async (resolve, reject) => {
-        this.logger.log('Fetching GraphQL Schema initially ...');
+        this.logger.log("Fetching GraphQL Schema initially ...");
 
         if (this.options.connectionQueryMode) {
           this.connectionQueryMode = this.options.connectionQueryMode;
         } else {
-          this.connectionQueryMode = 'auto';
+          this.connectionQueryMode = "auto";
         }
 
         // We send a custom header along with the request. This is required for our test suite to mock the schema request.
         const context = {
-          headers: { 'X-GraphQL-Introspection-Query': 'true' }
+          headers: { "X-GraphQL-Introspection-Query": "true" }
         };
 
         const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
         this.schema = new Schema(result.data.__schema);
 
-        this.logger.log('GraphQL Schema successful fetched', result);
+        this.logger.log("GraphQL Schema successful fetched", result);
 
-        this.logger.log('Starting to process the schema ...');
+        this.logger.log("Starting to process the schema ...");
         this.processSchema();
-        this.logger.log('Schema procession done!');
+        this.logger.log("Schema procession done!");
 
         resolve(this.schema);
       });
@@ -252,7 +251,7 @@ export default class Context {
     return this.schemaWillBeLoaded;
   }
 
-  public processSchema () {
+  public processSchema() {
     this.models.forEach((model: Model) => {
       let type: GraphQLType;
 
@@ -265,7 +264,9 @@ export default class Context {
 
       model.fields.forEach((field: Field, fieldName: string) => {
         if (!type.fields!.find(f => f.name === fieldName)) {
-          this.logger.warn(`Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`);
+          this.logger.warn(
+            `Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`
+          );
 
           // TODO: Move skipFields to the model
           model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
@@ -276,9 +277,11 @@ export default class Context {
       });
     });
 
-    if (this.connectionQueryMode === 'auto') {
+    if (this.connectionQueryMode === "auto") {
       this.connectionQueryMode = this.schema!.determineQueryMode();
-      this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by automatic detection`);
+      this.logger.log(
+        `Connection Query Mode is ${this.connectionQueryMode} by automatic detection`
+      );
     } else {
       this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by config`);
     }
@@ -292,8 +295,8 @@ export default class Context {
    *                            found. Default is false
    * @returns {Model}
    */
-  public getModel (model: Model | string, allowNull: boolean = false): Model {
-    if (typeof model === 'string') {
+  public getModel(model: Model | string, allowNull: boolean = false): Model {
+    if (typeof model === "string") {
       const name: string = inflection.singularize(downcaseFirstLetter(model));
       model = this.models.get(name) as Model;
       if (!allowNull && !model) throw new Error(`No such model ${name}!`);
@@ -308,7 +311,7 @@ export default class Context {
    *
    * @param {Mock} mock - Mock config.
    */
-  public addGlobalMock (mock: Mock): boolean {
+  public addGlobalMock(mock: Mock): boolean {
     if (this.findGlobalMock(mock.action, mock.options)) return false;
     if (!this.globalMocks[mock.action]) this.globalMocks[mock.action] = [];
 
@@ -323,14 +326,16 @@ export default class Context {
    * @param {MockOptions} options - MockOptions like { name: 'example' }.
    * @returns {Mock | null} null when no mock was found.
    */
-  public findGlobalMock (action: string, options: MockOptions | undefined): Mock | null {
+  public findGlobalMock(action: string, options: MockOptions | undefined): Mock | null {
     if (this.globalMocks[action]) {
-      return this.globalMocks[action].find((m) => {
-        if (!m.options || !options) return true;
+      return (
+        this.globalMocks[action].find(m => {
+          if (!m.options || !options) return true;
 
-        const relevantOptions = _.pick(options, Object.keys(m.options));
-        return _.isEqual(relevantOptions, m.options || {});
-      }) || null;
+          const relevantOptions = pick(options, Object.keys(m.options));
+          return isEqual(relevantOptions, m.options || {});
+        }) || null
+      );
     }
 
     return null;
@@ -344,7 +349,7 @@ export default class Context {
    * @param {MockOptions} options - MockOptions.
    * @returns {any} null when no mock was found.
    */
-  public globalMockHook (action: string, options: MockOptions): any {
+  public globalMockHook(action: string, options: MockOptions): any {
     let returnValue: null | { [key: string]: any } = null;
     const mock = this.findGlobalMock(action, options);
 
@@ -362,7 +367,7 @@ export default class Context {
   /**
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
-  private collectModels () {
+  private collectModels() {
     this.database.entities.forEach((entity: any) => {
       const model: Model = new Model(entity.model as ORMModel);
       this.models.set(model.singularName, model);

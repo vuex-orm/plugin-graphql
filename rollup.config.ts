@@ -1,13 +1,22 @@
+// @ts-ignore
 import resolve from 'rollup-plugin-node-resolve';
+
+// @ts-ignore
 import commonjs from 'rollup-plugin-commonjs';
+
+// @ts-ignore
 import sourceMaps from 'rollup-plugin-sourcemaps';
+
+// @ts-ignore
 import camelCase from 'lodash.camelcase';
 import typescript from 'rollup-plugin-typescript2';
+
+// @ts-ignore
 import json from 'rollup-plugin-json';
 
 const pkg = require('./package.json');
 
-const libraryName = 'vuex-orm-graphql'
+const libraryName = 'vuex-orm-graphql';
 
 export default {
   input: `src/${libraryName}.ts`,

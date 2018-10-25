@@ -1,9 +1,9 @@
-import Context from '../common/context';
-import { ActionParams, Data } from '../support/interfaces';
-import Action from './action';
-import NameGenerator from '../graphql/name-generator';
-import Model from '../orm/model';
-import { Store } from '../orm/store';
+import Context from "../common/context";
+import { ActionParams, Data } from "../support/interfaces";
+import Action from "./action";
+import NameGenerator from "../graphql/name-generator";
+import Model from "../orm/model";
+import { Store } from "../orm/store";
 
 /**
  * Persist action for sending a create mutation. Will be used for record.$persist().
@@ -15,29 +15,32 @@ export default class Persist extends Action {
    * @param {string} id ID of the record to persist
    * @returns {Promise<Data>} The saved record
    */
-  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<Data> {
+  public static async call(
+    { state, dispatch }: ActionParams,
+    { id, args }: ActionParams
+  ): Promise<Data> {
     if (id) {
-      const model = this.getModelFromState(state);
+      const model = this.getModelFromState(state!);
       const mutationName = NameGenerator.getNameForPersist(model);
       const oldRecord = model.getRecordWithId(id);
 
-      const mockReturnValue = model.$mockHook('persist', {
+      const mockReturnValue = model.$mockHook("persist", {
         id,
         args: args || {}
       });
 
       if (mockReturnValue) {
-        const newRecord = Store.insertData(mockReturnValue, dispatch);
+        const newRecord = Store.insertData(mockReturnValue, dispatch!);
         await this.deleteObsoleteRecord(model, newRecord, oldRecord);
         return newRecord;
       }
 
       // Arguments
       args = this.prepareArgs(args);
-      this.addRecordToArgs(args, model, oldRecord);
+      this.addRecordToArgs(args!, model, oldRecord);
 
       // Send mutation
-      const newRecord = await Action.mutation(mutationName, args, dispatch, model);
+      const newRecord = await Action.mutation(mutationName, args, dispatch!, model);
 
       // Delete the old record if necessary
       await this.deleteObsoleteRecord(model, newRecord, oldRecord);
@@ -56,9 +59,9 @@ export default class Persist extends Action {
    * @param {Data} record
    * @returns {Promise<void>}
    */
-  private static async deleteObsoleteRecord (model: Model, newRecord: Data, oldRecord: Data) {
+  private static async deleteObsoleteRecord(model: Model, newRecord: Data, oldRecord: Data) {
     if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
-      Context.getInstance().logger.log('Dropping deprecated record', oldRecord);
+      Context.getInstance().logger.log("Dropping deprecated record", oldRecord);
       return oldRecord.$delete();
     }
   }

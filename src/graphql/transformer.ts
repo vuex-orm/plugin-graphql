@@ -1,10 +1,9 @@
-import { Data, Field } from '../support/interfaces';
-import Model from '../orm/model';
-import { Model as ORMModel } from '@vuex-orm/core';
-import Context from '../common/context';
-import { downcaseFirstLetter } from '../support/utils';
-import * as _ from 'lodash-es';
-const inflection = require('inflection');
+import { Data, Field } from "../support/interfaces";
+import Model from "../orm/model";
+import { Model as ORMModel } from "@vuex-orm/core";
+import Context from "../common/context";
+import { clone, downcaseFirstLetter, isPlainObject } from "../support/utils";
+const inflection = require("inflection");
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -21,32 +20,37 @@ export default class Transformer {
    * @param {Array<String>} whitelist of fields
    * @returns {Data}
    */
-  public static transformOutgoingData (model: Model, data: Data, whitelist?: Array<String>): Data {
+  public static transformOutgoingData(model: Model, data: Data, whitelist?: Array<String>): Data {
     const context = Context.getInstance();
     const relations: Map<string, Field> = model.getRelations();
     const returnValue: Data = {};
 
-    Object.keys(data).forEach((key) => {
+    Object.keys(data).forEach(key => {
       const value = data[key];
+
+      if (key === "comments") {
+        console.log("model", model, model.baseModel.$entitiy, model.constructor.name);
+        console.log("data", data);
+        console.log("whitelist", whitelist);
+      }
 
       // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
       if (
         (whitelist && whitelist.includes(key)) ||
-        (
-          (!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
-          !key.startsWith('$') && value !== null
-        )
+        ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
+          !key.startsWith("$") &&
+          value !== null &&
+          value !== undefined)
       ) {
-
-        let relatedModel = relations.get(key) && relations.get(key)!.parent
-          ? context.getModel(inflection.singularize(relations.get(key)!.parent!.entity), true)
-          : null;
-
+        let relatedModel =
+          relations.get(key) && relations.get(key)!.parent
+            ? context.getModel(inflection.singularize(relations.get(key)!.parent!.entity), true)
+            : null;
         if (value instanceof Array) {
           // Iterate over all fields and transform them if value is an array
           const arrayModel = context.getModel(inflection.singularize(key));
-          returnValue[key] = value.map((v) => this.transformOutgoingData(arrayModel || model, v));
-        } else if (typeof value === 'object' && value.$id !== undefined) {
+          returnValue[key] = value.map(v => this.transformOutgoingData(arrayModel || model, v));
+        } else if (typeof value === "object" && value.$id !== undefined) {
           if (!relatedModel) {
             relatedModel = context.getModel((value as ORMModel).$self().entity);
           }
@@ -72,32 +76,44 @@ export default class Transformer {
    * @param {boolean} recursiveCall
    * @returns {Data}
    */
-  public static transformIncomingData (data: Data | Array<Data>, model: Model, mutation: boolean = false,
-                                       recursiveCall: boolean = false): Data {
+  public static transformIncomingData(
+    data: Data | Array<Data>,
+    model: Model,
+    mutation: boolean = false,
+    recursiveCall: boolean = false
+  ): Data {
     let result: Data = {};
     const context = Context.getInstance();
 
     if (!recursiveCall) {
-      context.logger.group('Transforming incoming data');
-      context.logger.log('Raw data:', data);
+      context.logger.group("Transforming incoming data");
+      context.logger.log("Raw data:", data);
     }
 
-    if (_.isArray(data)) {
-      result = (data).map(d => this.transformIncomingData(d, model, mutation, true));
+    if (Array.isArray(data)) {
+      result = data.map((d: any) => this.transformIncomingData(d, model, mutation, true));
     } else {
-      Object.keys(data).forEach((key) => {
+      Object.keys(data).forEach(key => {
         if (data[key] !== undefined && data[key] !== null) {
-          if (_.isPlainObject(data[key])) {
+          if (isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 
-            if (data[key].nodes && context.connectionQueryMode === 'nodes') {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].nodes,
-                localModel, mutation, true);
-            } else if (data[key].edges && context.connectionQueryMode === 'edges') {
-              result[inflection.pluralize(key)] = this.transformIncomingData(data[key].edges,
-                localModel, mutation, true);
-            } else if (data.node && context.connectionQueryMode === 'edges') {
-              result = this.transformIncomingData(data.node, localModel, mutation, true);
+            if (data[key].nodes && context.connectionQueryMode === "nodes") {
+              result[inflection.pluralize(key)] = this.transformIncomingData(
+                data[key].nodes,
+                localModel,
+                mutation,
+                true
+              );
+            } else if (data[key].edges && context.connectionQueryMode === "edges") {
+              result[inflection.pluralize(key)] = this.transformIncomingData(
+                data[key].edges,
+                localModel,
+                mutation,
+                true
+              );
+            } else if (data["node"] && context.connectionQueryMode === "edges") {
+              result = this.transformIncomingData(data["node"], localModel, mutation, true);
             } else {
               let newKey = key;
 
@@ -110,7 +126,7 @@ export default class Transformer {
             }
           } else if (Model.isFieldNumber(model.fields.get(key))) {
             result[key] = parseFloat(data[key]);
-          } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphicRelation(key)) {
+          } else if (key.endsWith("Type") && model.isTypeFieldOfPolymorphicRelation(key)) {
             result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
           } else {
             result[key] = data[key];
@@ -120,13 +136,13 @@ export default class Transformer {
     }
 
     if (!recursiveCall) {
-      context.logger.log('Transformed data:', result);
+      context.logger.log("Transformed data:", result);
       context.logger.groupEnd();
     } else {
-      result['$isPersisted'] = true;
+      result["$isPersisted"] = true;
     }
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
-    return _.clone(result);
+    return clone(result);
   }
 }

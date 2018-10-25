@@ -11,7 +11,7 @@
   "scripts": {
     "lint": "tslint  --project tsconfig.json -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
     "prebuild": "rimraf dist",
-    "build": "tsc --module commonjs && rollup -c rollup.config.ts && typedoc --out docs --target es6 --theme minimal --mode file src",
+    "build": "tsc --module commonjs && rollup -c rollup.config.ts && npm run build:docs",
     "build:docs": "vuepress build docs",
     "start": "rollup -c rollup.config.ts -w",
     "test": "jest",
@@ -51,7 +51,8 @@
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
   },
   "dependencies": {
-    "inflection": "^1.12.0"
+    "inflection": "^1.12.0",
+    "app": "latest"
   },
   "peerDependencies": {
     "@vuex-orm/core": "^0.27.0"
@@ -60,7 +61,6 @@
     "@vuex-orm/core": "^0.27.0",
     "@types/graphql": "^0.12.3",
     "@types/inflection": "^1.5.28",
-    "@types/lodash-es": "^4.17.0",
     "apollo-cache-inmemory": "^1.1.7",
     "apollo-client": "^2.2.2",
     "apollo-link": "^1.2.0",
@@ -69,7 +69,6 @@
     "graphql": "^0.12.3",
     "graphql-tag": "^2.6.1",
     "graphql-tools": "^3.0.4",
-    "lodash-es": "^4.17.10",
     "@commitlint/cli": "^7.1.2",
     "@commitlint/config-conventional": "^7.1.2",
     "@types/jest": "^23.3.2",
@@ -83,7 +82,6 @@
     "jest": "^23.6.0",
     "jest-config": "^23.6.0",
     "lint-staged": "^7.3.0",
-    "lodash.camelcase": "^4.3.0",
     "prettier": "^1.14.3",
     "prompt": "^1.0.0",
     "replace-in-file": "^3.4.2",
@@ -100,10 +98,10 @@
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "tslint-config-standard": "^8.0.1",
-    "typedoc": "^0.12.0",
     "typescript": "^3.0.3",
     "vuepress": "^0.8.4",
     "node-fetch": "^2.1.1",
+    "lodash.isequal": "^4.5.0",
 
 
 
@@ -116,7 +114,7 @@
   },
   "jest": {
     "transform": {
-      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+      ".(ts|tsx)": "ts-jest"
     },
     "testEnvironment": "node",
     "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
@@ -125,9 +123,15 @@
       "tsx",
       "js"
     ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/src/",
+      "/dist/"
+    ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/test/"
+      "/test/",
+      "/dist/"
     ],
     "coverageThreshold": {
       "global": {

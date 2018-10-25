@@ -64,3 +64,8 @@ typings/
 
 # docs
 /docs/.vuepress/dist
+
+
+compiled
+.awcache
+.rpt2_cache
