@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -46,12 +47,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import QueryBuilder from "../graphql/query-builder";
-import Context from "../common/context";
-import { Store } from "../orm/store";
-import Transformer from "../graphql/transformer";
-import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var query_builder_1 = __importDefault(require("../graphql/query-builder"));
+var context_1 = __importDefault(require("../common/context"));
+var store_1 = require("../orm/store");
+var transformer_1 = __importDefault(require("../graphql/transformer"));
+var action_1 = __importDefault(require("./action"));
+var name_generator_1 = __importDefault(require("../graphql/name-generator"));
 /**
  * Fetch action for sending a query. Will be used for Model.fetch().
  */
@@ -73,34 +78,34 @@ var Fetch = /** @class */ (function (_super) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        context = Context.getInstance();
+                        context = context_1.default.getInstance();
                         model = this.getModelFromState(state);
                         mockReturnValue = model.$mockHook("fetch", {
                             filter: params ? params.filter || {} : {}
                         });
                         if (mockReturnValue) {
-                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                            return [2 /*return*/, store_1.Store.insertData(mockReturnValue, dispatch)];
                         }
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
                         _b.sent();
                         filter = params && params.filter
-                            ? Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter))
+                            ? transformer_1.default.transformOutgoingData(model, params.filter, Object.keys(params.filter))
                             : {};
                         bypassCache = params && params.bypassCache;
                         multiple = !filter["id"];
-                        name = NameGenerator.getNameForFetch(model, multiple);
-                        query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
+                        name = name_generator_1.default.getNameForFetch(model, multiple);
+                        query = query_builder_1.default.buildQuery("query", model, name, filter, multiple, multiple);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 2:
                         data = _b.sent();
                         // Insert incoming data into the store
-                        return [2 /*return*/, Store.insertData(data, dispatch)];
+                        return [2 /*return*/, store_1.Store.insertData(data, dispatch)];
                 }
             });
         });
     };
     return Fetch;
-}(Action));
-export default Fetch;
+}(action_1.default));
+exports.default = Fetch;
 //# sourceMappingURL=fetch.js.map

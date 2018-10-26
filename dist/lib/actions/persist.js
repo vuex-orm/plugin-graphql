@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -46,10 +47,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import Context from "../common/context";
-import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
-import { Store } from "../orm/store";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var context_1 = __importDefault(require("../common/context"));
+var action_1 = __importDefault(require("./action"));
+var name_generator_1 = __importDefault(require("../graphql/name-generator"));
+var store_1 = require("../orm/store");
 /**
  * Persist action for sending a create mutation. Will be used for record.$persist().
  */
@@ -74,14 +79,14 @@ var Persist = /** @class */ (function (_super) {
                     case 0:
                         if (!id) return [3 /*break*/, 5];
                         model = this.getModelFromState(state);
-                        mutationName = NameGenerator.getNameForPersist(model);
+                        mutationName = name_generator_1.default.getNameForPersist(model);
                         oldRecord = model.getRecordWithId(id);
                         mockReturnValue = model.$mockHook("persist", {
                             id: id,
                             args: args || {}
                         });
                         if (!mockReturnValue) return [3 /*break*/, 2];
-                        newRecord_1 = Store.insertData(mockReturnValue, dispatch);
+                        newRecord_1 = store_1.Store.insertData(mockReturnValue, dispatch);
                         return [4 /*yield*/, this.deleteObsoleteRecord(model, newRecord_1, oldRecord)];
                     case 1:
                         _c.sent();
@@ -90,7 +95,7 @@ var Persist = /** @class */ (function (_super) {
                         // Arguments
                         args = this.prepareArgs(args);
                         this.addRecordToArgs(args, model, oldRecord);
-                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
+                        return [4 /*yield*/, action_1.default.mutation(mutationName, args, dispatch, model)];
                     case 3:
                         newRecord = _c.sent();
                         // Delete the old record if necessary
@@ -116,7 +121,7 @@ var Persist = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
-                    Context.getInstance().logger.log("Dropping deprecated record", oldRecord);
+                    context_1.default.getInstance().logger.log("Dropping deprecated record", oldRecord);
                     return [2 /*return*/, oldRecord.$delete()];
                 }
                 return [2 /*return*/];
@@ -124,6 +129,6 @@ var Persist = /** @class */ (function (_super) {
         });
     };
     return Persist;
-}(Action));
-export default Persist;
+}(action_1.default));
+exports.default = Persist;
 //# sourceMappingURL=persist.js.map

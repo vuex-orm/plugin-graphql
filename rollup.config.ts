@@ -14,6 +14,12 @@ import typescript from 'rollup-plugin-typescript2';
 // @ts-ignore
 import json from 'rollup-plugin-json';
 
+// @ts-ignore
+import uglify from 'rollup-plugin-uglify';
+
+// @ts-ignore
+import babel from 'rollup-plugin-babel';
+
 const pkg = require('./package.json');
 
 const libraryName = 'vuex-orm-graphql';
@@ -41,7 +47,13 @@ export default {
     // https://github.com/rollup/rollup-plugin-node-resolve#usage
     resolve(),
 
+    babel({
+      exclude: 'node_modules/**',
+    }),
+
+    uglify(),
+
     // Resolve source maps to the original source
-    sourceMaps()
+    sourceMaps(),
   ]
 };

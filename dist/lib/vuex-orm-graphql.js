@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -33,12 +34,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import Context from "./common/context";
-import { Destroy, Fetch, Mutate, Persist, Push } from "./actions";
-import Query from "./actions/query";
-import SimpleQuery from "./actions/simple-query";
-import SimpleMutation from "./actions/simple-mutation";
-import { isPlainObject } from "./support/utils";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var context_1 = __importDefault(require("./common/context"));
+var actions_1 = require("./actions");
+var query_1 = __importDefault(require("./actions/query"));
+var simple_query_1 = __importDefault(require("./actions/simple-query"));
+var simple_mutation_1 = __importDefault(require("./actions/simple-mutation"));
+var utils_1 = require("./support/utils");
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
  */
@@ -49,7 +54,7 @@ var VuexORMGraphQL = /** @class */ (function () {
      * @param {Options} options The options passed to VuexORM.install
      */
     function VuexORMGraphQL(components, options) {
-        Context.setup(components, options);
+        context_1.default.setup(components, options);
         VuexORMGraphQL.setupActions();
         VuexORMGraphQL.setupModelMethods();
     }
@@ -57,28 +62,28 @@ var VuexORMGraphQL = /** @class */ (function () {
      * Allow everything to read the context.
      */
     VuexORMGraphQL.prototype.getContext = function () {
-        return Context.getInstance();
+        return context_1.default.getInstance();
     };
     /**
      * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
      */
     VuexORMGraphQL.setupActions = function () {
-        var context = Context.getInstance();
-        context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
-        context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
-        context.components.Actions.fetch = Fetch.call.bind(Fetch);
-        context.components.Actions.persist = Persist.call.bind(Persist);
-        context.components.Actions.push = Push.call.bind(Push);
-        context.components.Actions.destroy = Destroy.call.bind(Destroy);
-        context.components.Actions.mutate = Mutate.call.bind(Mutate);
-        context.components.Actions.query = Query.call.bind(Query);
+        var context = context_1.default.getInstance();
+        context.components.RootActions.simpleQuery = simple_query_1.default.call.bind(simple_query_1.default);
+        context.components.RootActions.simpleMutation = simple_mutation_1.default.call.bind(simple_mutation_1.default);
+        context.components.Actions.fetch = actions_1.Fetch.call.bind(actions_1.Fetch);
+        context.components.Actions.persist = actions_1.Persist.call.bind(actions_1.Persist);
+        context.components.Actions.push = actions_1.Push.call.bind(actions_1.Push);
+        context.components.Actions.destroy = actions_1.Destroy.call.bind(actions_1.Destroy);
+        context.components.Actions.mutate = actions_1.Mutate.call.bind(actions_1.Mutate);
+        context.components.Actions.query = query_1.default.call.bind(query_1.default);
     };
     /**
      * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
      * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
      */
     VuexORMGraphQL.setupModelMethods = function () {
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         // Register static model convenience methods
         context.components.Model.fetch = function (filter, bypassCache) {
             if (bypassCache === void 0) { bypassCache = false; }
@@ -86,7 +91,7 @@ var VuexORMGraphQL = /** @class */ (function () {
                 var filterObj;
                 return __generator(this, function (_a) {
                     filterObj = filter;
-                    if (!isPlainObject(filterObj))
+                    if (!utils_1.isPlainObject(filterObj))
                         filterObj = { id: filter };
                     return [2 /*return*/, this.dispatch("fetch", { filter: filterObj, bypassCache: bypassCache })];
                 });
@@ -167,5 +172,5 @@ var VuexORMGraphQL = /** @class */ (function () {
     };
     return VuexORMGraphQL;
 }());
-export default VuexORMGraphQL;
+exports.default = VuexORMGraphQL;
 //# sourceMappingURL=vuex-orm-graphql.js.map

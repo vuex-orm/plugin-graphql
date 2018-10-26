@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -33,12 +34,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import QueryBuilder from "../graphql/query-builder";
-import Context from "../common/context";
-import { Store } from "../orm/store";
-import Transformer from "../graphql/transformer";
-import NameGenerator from "../graphql/name-generator";
-import Schema from "../graphql/schema";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var query_builder_1 = __importDefault(require("../graphql/query-builder"));
+var context_1 = __importDefault(require("../common/context"));
+var store_1 = require("../orm/store");
+var transformer_1 = __importDefault(require("../graphql/transformer"));
+var name_generator_1 = __importDefault(require("../graphql/name-generator"));
+var schema_1 = __importDefault(require("../graphql/schema"));
 var inflection = require("inflection");
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -63,20 +68,20 @@ var Action = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         if (!variables) return [3 /*break*/, 5];
-                        context = Context.getInstance();
+                        context = context_1.default.getInstance();
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
                         schema = _b.sent();
-                        multiple = Schema.returnsConnection(schema.getMutation(name));
-                        query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
-                        return [4 /*yield*/, Context.getInstance().apollo.request(model, query, variables, true)];
+                        multiple = schema_1.default.returnsConnection(schema.getMutation(name));
+                        query = query_builder_1.default.buildQuery("mutation", model, name, variables, multiple);
+                        return [4 /*yield*/, context_1.default.getInstance().apollo.request(model, query, variables, true)];
                     case 2:
                         newData = _b.sent();
-                        if (!(name !== NameGenerator.getNameForDestroy(model))) return [3 /*break*/, 4];
+                        if (!(name !== name_generator_1.default.getNameForDestroy(model))) return [3 /*break*/, 4];
                         newData = newData[Object.keys(newData)[0]];
                         // IDs as String cause terrible issues, so we convert them to integers.
                         newData.id = parseInt(newData.id, 10);
-                        return [4 /*yield*/, Store.insertData((_a = {}, _a[model.pluralName] = newData, _a), dispatch)];
+                        return [4 /*yield*/, store_1.Store.insertData((_a = {}, _a[model.pluralName] = newData, _a), dispatch)];
                     case 3:
                         insertedData = _b.sent();
                         records = insertedData[model.pluralName];
@@ -85,7 +90,7 @@ var Action = /** @class */ (function () {
                             return [2 /*return*/, newRecord];
                         }
                         else {
-                            Context.getInstance().logger.log("Couldn't find the record of type '", model.pluralName, "' within", insertedData, ". Falling back to find()");
+                            context_1.default.getInstance().logger.log("Couldn't find the record of type '", model.pluralName, "' within", insertedData, ". Falling back to find()");
                             return [2 /*return*/, model.baseModel.query().last()];
                         }
                         _b.label = 4;
@@ -101,7 +106,7 @@ var Action = /** @class */ (function () {
      * @returns {Model}
      */
     Action.getModelFromState = function (state) {
-        return Context.getInstance().getModel(state.$name);
+        return context_1.default.getInstance().getModel(state.$name);
     };
     /**
      * Makes sure args is a hash.
@@ -126,7 +131,7 @@ var Action = /** @class */ (function () {
      * @returns {Arguments}
      */
     Action.addRecordToArgs = function (args, model, data) {
-        args[model.singularName] = Transformer.transformOutgoingData(model, data);
+        args[model.singularName] = transformer_1.default.transformOutgoingData(model, data);
         return args;
     };
     /**
@@ -135,12 +140,12 @@ var Action = /** @class */ (function () {
      * @returns {Arguments}
      */
     Action.transformArgs = function (args) {
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         Object.keys(args).forEach(function (key) {
             var value = args[key];
             if (value instanceof context.components.Model) {
                 var model = context.getModel(inflection.singularize(value.$self().entity));
-                var transformedValue = Transformer.transformOutgoingData(model, value);
+                var transformedValue = transformer_1.default.transformOutgoingData(model, value);
                 context.logger.log("A", key, "model was found within the variables and will be transformed from", value, "to", transformedValue);
                 args[key] = transformedValue;
             }
@@ -149,5 +154,5 @@ var Action = /** @class */ (function () {
     };
     return Action;
 }());
-export default Action;
+exports.default = Action;
 //# sourceMappingURL=action.js.map

@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -46,7 +47,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import { Model as ORMModel } from "@vuex-orm/core";
+Object.defineProperty(exports, "__esModule", { value: true });
+var core_1 = require("@vuex-orm/core");
 var PatchedModel = /** @class */ (function (_super) {
     __extends(PatchedModel, _super);
     function PatchedModel() {
@@ -75,6 +77,6 @@ var PatchedModel = /** @class */ (function (_super) {
         });
     };
     return PatchedModel;
-}(ORMModel));
-export { PatchedModel };
+}(core_1.Model));
+exports.PatchedModel = PatchedModel;
 //# sourceMappingURL=interfaces.js.map

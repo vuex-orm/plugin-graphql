@@ -1,8 +1,13 @@
-import Model from "../orm/model";
-import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/utils";
-import gql from "graphql-tag";
-import Context from "../common/context";
-import Schema from "./schema";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var model_1 = __importDefault(require("../orm/model"));
+var utils_1 = require("../support/utils");
+var graphql_tag_1 = __importDefault(require("graphql-tag"));
+var context_1 = __importDefault(require("../common/context"));
+var schema_1 = __importDefault(require("./schema"));
 /**
  * Contains all logic to build GraphQL queries/mutations.
  */
@@ -30,7 +35,7 @@ var QueryBuilder = /** @class */ (function () {
         if (path === void 0) { path = []; }
         if (filter === void 0) { filter = false; }
         if (allowIdFields === void 0) { allowIdFields = false; }
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         model = context.getModel(model);
         name = name ? name : model.pluralName;
         var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
@@ -65,18 +70,18 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {any} Whatever gql() returns
      */
     QueryBuilder.buildQuery = function (type, model, name, args, multiple, filter) {
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         // model
         model = context.getModel(model);
         if (!model)
             throw new Error("No model provided to build the query!");
         // args
-        args = args ? clone(args) : {};
+        args = args ? utils_1.clone(args) : {};
         if (!args)
             throw new Error("args is undefined");
         Object.keys(args).forEach(function (key) {
-            if (args && args[key] && isPlainObject(args[key])) {
-                args[key] = { __type: upcaseFirstLetter(key) };
+            if (args && args[key] && utils_1.isPlainObject(args[key])) {
+                args[key] = { __type: utils_1.upcaseFirstLetter(key) };
             }
         });
         // multiple
@@ -87,10 +92,10 @@ var QueryBuilder = /** @class */ (function () {
         // field
         var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter, true, field) + " {\n" +
+        var query = type + " " + utils_1.upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter, true, field) + " {\n" +
             ("  " + this.buildField(model, multiple, args, [], name, filter, true) + "\n") +
             "}";
-        return gql(query);
+        return graphql_tag_1.default(query);
     };
     /**
      * Generates the arguments string for a graphql query based on a given map.
@@ -133,12 +138,12 @@ var QueryBuilder = /** @class */ (function () {
                 var isForeignKey = model.skipField(key);
                 var skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
                 var schemaField = _this.findSchemaFieldForArgument(key, field, model, filter);
-                var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
+                var isConnectionField = schemaField && schema_1.default.getTypeNameOfField(schemaField).endsWith("TypeConnection");
                 // Ignore null fields, ids and connections
                 if (value && !skipFieldDueId && !isConnectionField) {
                     var typeOrValue = "";
                     if (signature) {
-                        if (isPlainObject(value) && value.__type) {
+                        if (utils_1.isPlainObject(value) && value.__type) {
                             // Case 2 (User!)
                             typeOrValue = value.__type + "Input!";
                         }
@@ -147,11 +152,11 @@ var QueryBuilder = /** @class */ (function () {
                             if (!arg) {
                                 throw new Error("The argument " + key + " is of type array but it's not possible to determine the type, because it's not in the field " + field.name);
                             }
-                            typeOrValue = Schema.getTypeNameOfField(arg) + "!";
+                            typeOrValue = schema_1.default.getTypeNameOfField(arg) + "!";
                         }
-                        else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
+                        else if (schemaField && schema_1.default.getTypeNameOfField(schemaField)) {
                             // Case 1, 3 and 4
-                            typeOrValue = Schema.getTypeNameOfField(schemaField) + "!";
+                            typeOrValue = schema_1.default.getTypeNameOfField(schemaField) + "!";
                         }
                         else if (key === "id" || isForeignKey) {
                             // Case 1 (ID!)
@@ -190,7 +195,7 @@ var QueryBuilder = /** @class */ (function () {
      * @returns {string}
      */
     QueryBuilder.determineAttributeType = function (model, key, value, query) {
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         var field = model.fields.get(key);
         var schemaField;
         if (query) {
@@ -205,8 +210,8 @@ var QueryBuilder = /** @class */ (function () {
         else {
             schemaField = context.schema.getType(model.singularName).fields.find(function (f) { return f.name === key; });
         }
-        if (schemaField && Schema.getTypeNameOfField(schemaField)) {
-            return Schema.getTypeNameOfField(schemaField);
+        if (schemaField && schema_1.default.getTypeNameOfField(schemaField)) {
+            return schema_1.default.getTypeNameOfField(schemaField);
         }
         else {
             if (field instanceof context.components.String) {
@@ -230,7 +235,7 @@ var QueryBuilder = /** @class */ (function () {
         }
     };
     QueryBuilder.findSchemaFieldForArgument = function (name, field, model, isFilter) {
-        var schema = Context.getInstance().schema;
+        var schema = context_1.default.getInstance().schema;
         var schemaField;
         if (field) {
             schemaField = field.args.find(function (f) { return f.name === name; });
@@ -245,7 +250,7 @@ var QueryBuilder = /** @class */ (function () {
             : undefined;
         // Warn before we return null
         if (!schemaField) {
-            Context.getInstance().logger.warn("Couldn't find the argument with name " + name + " for the mutation/query " + (field ? field.name : "(?)"));
+            context_1.default.getInstance().logger.warn("Couldn't find the argument with name " + name + " for the mutation/query " + (field ? field.name : "(?)"));
         }
         return schemaField;
     };
@@ -261,7 +266,7 @@ var QueryBuilder = /** @class */ (function () {
         if (path === void 0) { path = []; }
         if (model === null)
             return "";
-        var context = Context.getInstance();
+        var context = context_1.default.getInstance();
         var relationQueries = [];
         model.getRelations().forEach(function (field, name) {
             var relatedModel;
@@ -279,7 +284,7 @@ var QueryBuilder = /** @class */ (function () {
             // cases where the model will have a relationship to itself. For example a nested category strucure where the
             // category model has a parent: belongsTo(Category). So we also check if the model references itself. If this is
             // the case, we allow the nesting up to 5 times.
-            var referencesItSelf = takeWhile(path.slice(0).reverse(), function (p) { return p === relatedModel.singularName; }).length;
+            var referencesItSelf = utils_1.takeWhile(path.slice(0).reverse(), function (p) { return p === relatedModel.singularName; }).length;
             var ignore = referencesItSelf
                 ? referencesItSelf > 5
                 : path.includes(relatedModel.singularName);
@@ -287,12 +292,12 @@ var QueryBuilder = /** @class */ (function () {
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 var newPath = path.slice(0);
                 newPath.push(relatedModel.singularName);
-                relationQueries.push(_this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
+                relationQueries.push(_this.buildField(relatedModel, model_1.default.isConnection(field), undefined, newPath, name, false));
             }
         });
         return relationQueries.join("\n");
     };
     return QueryBuilder;
 }());
-export default QueryBuilder;
+exports.default = QueryBuilder;
 //# sourceMappingURL=query-builder.js.map

@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -33,7 +34,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import Context from '../common/context';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var context_1 = __importDefault(require("../common/context"));
 /**
  * Provides some helper methods to interact with the Vuex-ORM store
  */
@@ -61,7 +66,7 @@ var Store = /** @class */ (function () {
                                     switch (_a.label) {
                                         case 0:
                                             value = data[key];
-                                            Context.getInstance().logger.log('Inserting records', value);
+                                            context_1.default.getInstance().logger.log('Inserting records', value);
                                             return [4 /*yield*/, dispatch('insertOrUpdate', { data: value })];
                                         case 1:
                                             newData = _a.sent();
@@ -83,5 +88,5 @@ var Store = /** @class */ (function () {
     };
     return Store;
 }());
-export { Store };
+exports.Store = Store;
 //# sourceMappingURL=store.js.map

@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -46,9 +47,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import Action from "./action";
-import Context from "../common/context";
-import { Store } from "../orm/store";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var action_1 = __importDefault(require("./action"));
+var context_1 = __importDefault(require("../common/context"));
+var store_1 = require("../orm/store");
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
  */
@@ -74,14 +79,14 @@ var Mutate = /** @class */ (function (_super) {
                 switch (_c.label) {
                     case 0:
                         if (!name) return [3 /*break*/, 2];
-                        context = Context.getInstance();
+                        context = context_1.default.getInstance();
                         model = this.getModelFromState(state);
                         mockReturnValue = model.$mockHook("mutate", {
                             name: name,
                             args: args || {}
                         });
                         if (mockReturnValue) {
-                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                            return [2 /*return*/, store_1.Store.insertData(mockReturnValue, dispatch)];
                         }
                         return [4 /*yield*/, context.loadSchema()];
                     case 1:
@@ -91,13 +96,13 @@ var Mutate = /** @class */ (function (_super) {
                         // transformOutgoingData()
                         this.transformArgs(args);
                         // Send the mutation
-                        return [2 /*return*/, Action.mutation(name, args, dispatch, model)];
+                        return [2 /*return*/, action_1.default.mutation(name, args, dispatch, model)];
                     case 2: throw new Error("The mutate action requires the mutation name ('mutation') to be set");
                 }
             });
         });
     };
     return Mutate;
-}(Action));
-export default Mutate;
+}(action_1.default));
+exports.default = Mutate;
 //# sourceMappingURL=mutate.js.map
