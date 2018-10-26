@@ -38,6 +38,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch(42);
     }, true);
 
@@ -56,6 +57,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch();
     }, true);
 
@@ -93,6 +95,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch(1);
     }, true);
 
@@ -107,6 +110,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch(42);
     }, true);
 
@@ -121,6 +125,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch(42);
     }, true);
 
@@ -135,6 +140,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.fetch(42);
     }, true);
 
@@ -171,6 +177,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await Post.mutate({ name: "upvote", args: { id: 4 } });
     }, true);
 
@@ -235,6 +242,7 @@ describe("TestUtils", () => {
 
     let result;
     const request = await recordGraphQLRequest(async () => {
+      // @ts-ignore
       result = await User.customQuery({ name: "example", filter: { test: 42 } });
     }, true);
 

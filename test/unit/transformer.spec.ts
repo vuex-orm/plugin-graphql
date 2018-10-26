@@ -15,6 +15,7 @@ describe("Transformer", () => {
 
   describe(".transformOutgoingData", () => {
     test("transforms models to a useful data hashmap", async () => {
+      // @ts-ignore
       await Video.fetch(1);
       const video = context.getModel("video").getRecordWithId(1);
       const transformedData = Transformer.transformOutgoingData(context.getModel("video"), video);

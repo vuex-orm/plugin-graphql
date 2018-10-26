@@ -37,7 +37,7 @@ export default class Persist extends Action {
 
       // Arguments
       args = this.prepareArgs(args);
-      this.addRecordToArgs(args!, model, oldRecord);
+      this.addRecordToArgs(args, model, oldRecord);
 
       // Send mutation
       const newRecord = await Action.mutation(mutationName, args, dispatch!, model);

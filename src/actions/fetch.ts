@@ -24,7 +24,7 @@ export default class Fetch extends Action {
     const model = this.getModelFromState(state!);
 
     const mockReturnValue = model.$mockHook("fetch", {
-      filter: params ? params!.filter || {} : {}
+      filter: params ? params.filter || {} : {}
     });
 
     if (mockReturnValue) {
@@ -35,11 +35,11 @@ export default class Fetch extends Action {
 
     // Filter
     const filter =
-      params && params!.filter
-        ? Transformer.transformOutgoingData(model, params!.filter!, Object.keys(params!.filter!))
+      params && params.filter
+        ? Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter))
         : {};
 
-    const bypassCache = params && params!.bypassCache;
+    const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter["id"];
