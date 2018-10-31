@@ -30,7 +30,7 @@ describe('QueryBuilder', () => {
         }]
       }, true, false, false);
 
-      expect(args).toEqual('($content: String!, $title: String!, $otherId: ID!, $author: UserInput!)');
+      expect(args).toEqual('$content: String!, $title: String!, $otherId: ID!, $author: UserInput!');
 
 
 
@@ -39,7 +39,7 @@ describe('QueryBuilder', () => {
         itemIds: [1, 2, 4, 9, 68]
       }, true, false, true, context.schema.getMutation('reorderItems'));
 
-      expect(args).toEqual('($id: ID!, $itemIds: [ID]!)');
+      expect(args).toEqual('$id: ID!, $itemIds: [ID]!');
     });
 
     it('can generate fields with variables', () => {
@@ -57,8 +57,8 @@ describe('QueryBuilder', () => {
         }]
       }, false, false, false);
 
-      expect(args).toEqual('(content: $content, title: $title, otherId: $otherId, author: $author, ' +
-        'crazyIDList: $crazyIDList)');
+      expect(args).toEqual('content: $content, title: $title, otherId: $otherId, author: $author, ' +
+        'crazyIDList: $crazyIDList');
     });
 
     it('can generate filter field with variables', () => {
@@ -71,7 +71,7 @@ describe('QueryBuilder', () => {
         author: { __type: 'User' }
       }, false, true, false);
 
-      expect(args).toEqual('(filter: { content: $content, title: $title, otherId: $otherId, author: $author })');
+      expect(args).toEqual('filter: { content: $content, title: $title, otherId: $otherId, author: $author }');
     });
   });
 
@@ -150,7 +150,7 @@ query test {
 
   describe('.buildField', () => {
     it('generates query fields for all model fields and relations', () => {
-      let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+      let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, undefined, true);
       query = prettify(`query users { ${query} }`).trim();
 
       expect(query).toEqual(`
@@ -175,7 +175,7 @@ query users {
       it('contains a nodes field when connection mode is nodes', () => {
         context.connectionQueryMode = 'nodes';
 
-        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, undefined, true);
         query = prettify(`query users { ${query} }`).trim();
 
         expect(query).toEqual(`
@@ -199,7 +199,7 @@ query users {
       it('contains a edges field when connection mode is edges', () => {
         context.connectionQueryMode = 'edges';
 
-        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, undefined, true);
         query = prettify(`query users { ${query} }`).trim();
 
         expect(query).toEqual(`
@@ -225,7 +225,7 @@ query users {
       it('contains no meta field when connection mode is plain', () => {
         context.connectionQueryMode = 'plain';
 
-        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, true);
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, undefined, true);
         query = prettify(`query users { ${query} }`).trim();
 
         expect(query).toEqual(`
@@ -251,7 +251,7 @@ query users {
     it('generates a complete query for a model', () => {
       const args = { title: 'Example Post 1' };
 
-      let query = QueryBuilder.buildQuery('query', context.getModel('post'), null, args, true, true);
+      let query = QueryBuilder.buildQuery('query', context.getModel('post'), null, args, undefined, true, true);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -301,7 +301,7 @@ query Posts($title: String!) {
     it('generates a complete create mutation query for a model', () => {
       const variables = { post: { id: 15, authorId: 2, title: 'test', content: 'even more test' } };
       let post = context.getModel('post');
-      let query = QueryBuilder.buildQuery('mutation', post, 'createPost', variables, false);
+      let query = QueryBuilder.buildQuery('mutation', post, 'createPost', variables, undefined, false);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -349,7 +349,7 @@ mutation CreatePost($post: PostInput!) {
     it('generates a complete update mutation query for a model', () => {
       const variables = { id: 2, post: { id: 2, authorId: 1, title: 'test', content: 'Even more test' } };
       let post = context.getModel('post');
-      let query = QueryBuilder.buildQuery('mutation', post, 'updatePost', variables, false);
+      let query = QueryBuilder.buildQuery('mutation', post, 'updatePost', variables, undefined, false);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`
@@ -397,7 +397,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
 
 
     it('generates a complete delete mutation query for a model', () => {
-      let query = QueryBuilder.buildQuery('mutation', context.getModel('user'), 'deleteUser', { id: 15 });
+      let query = QueryBuilder.buildQuery('mutation', context.getModel('user'), 'deleteUser', { id: 15 }, undefined);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(`

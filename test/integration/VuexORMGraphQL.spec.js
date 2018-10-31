@@ -90,7 +90,7 @@ query Post($id: ID!) {
         let request2 = await recordGraphQLRequest(async () => { await User.fetch(1); }, true);
         expect(request2).toEqual(null);
 
-        let request3 = await recordGraphQLRequest(async () => { await User.fetch(1, true); }, true);
+        let request3 = await recordGraphQLRequest(async () => { await User.fetch(1, undefined, true); }, true);
         expect(request3).not.toEqual(null);
       });
 
@@ -139,6 +139,129 @@ query Users($profileId: ID!) {
 }
           `.trim() + "\n");
       });
+    });
+
+    describe('with ID and extraArg', () => {
+        it("doesn't cache when bypassCache = true", async () => {
+            let request1 = await recordGraphQLRequest(async () => { await User.fetch(1); }, true);
+            expect(request1).not.toEqual(null);
+
+            let request2 = await recordGraphQLRequest(async () => { await User.fetch(1); }, true);
+            expect(request2).toEqual(null);
+
+            let request3 = await recordGraphQLRequest(async () => { await User.fetch(1, { first: 5 }, true); }, true);
+            expect(request3).not.toEqual(null);
+        });
+
+        it('sends the correct query to the API', async () => {
+            const request = await recordGraphQLRequest(async () => { await User.fetch(1, { first: 5 }); });
+
+            expect(request.variables).toEqual({ id: 1, first: 5 });
+            expect(request.query).toEqual(`
+query User($id: ID!, $first: Int!) {
+  user(id: $id, first: $first) {
+    id
+    name
+    profile {
+      id
+      email
+      age
+      sex
+    }
+  }
+}
+      `.trim() + "\n");
+        });
+    });
+
+    describe('without ID but with filter with ID and extraArg', () => {
+        it('sends the correct query to the API', async () => {
+            const request = await recordGraphQLRequest(async () => {
+                await User.fetch({ profileId: 2 }, { first: 5 });
+            });
+
+            expect(request.variables).toEqual({ profileId: 2, first: 5 });
+            expect(request.query).toEqual(`
+query Users($profileId: ID!, $first: Int!) {
+  users(filter: {profileId: $profileId}, first: $first) {
+    nodes {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+  }
+}
+        `.trim() + "\n");
+        });
+    });
+
+    describe('without ID but with filter with object and extraArg', () => {
+        it('sends the correct query to the API', async () => {
+            await Profile.fetch(2);
+            const profile = Context.getInstance().getModel('profile').getRecordWithId(2);
+
+            const request = await recordGraphQLRequest(async () => {
+                await User.fetch({ profile }, { first: 5 });
+            });
+
+            expect(request.variables).toEqual({
+                profile: {
+                    id: profile.id,
+                    email: profile.email,
+                    age: profile.age,
+                    sex: profile.sex,
+                },
+                first: 5,
+            });
+
+            expect(request.query).toEqual(`
+query Users($profile: ProfileInput!, $first: Int!) {
+  users(filter: {profile: $profile}, first: $first) {
+    nodes {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+  }
+}
+        `.trim() + "\n");
+        });
+    });
+
+    describe('without ID and filter but with extraArg', () => {
+        it('sends the correct query to the API', async () => {
+            const request = await recordGraphQLRequest(async () => {
+                await User.fetch(undefined, { first: 5 });
+            });
+
+            expect(request.variables).toEqual({ first: 5 });
+            expect(request.query).toEqual(`
+query Users($first: Int!) {
+  users(first: $first) {
+    nodes {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+  }
+}
+        `.trim() + "\n");
+        });
     });
 
     describe('without ID but with filter with object', () => {
