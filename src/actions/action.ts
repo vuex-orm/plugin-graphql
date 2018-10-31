@@ -34,10 +34,11 @@ export default class Action {
       const schema: Schema = await context.loadSchema();
 
       const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!);
-      const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
+      const query = QueryBuilder.buildQuery("mutation", model, name, variables, undefined, multiple);
 
       // Send GraphQL Mutation
       let newData = await Context.getInstance().apollo.request(model, query, variables, true);
+      newData = Transformer.transformIncomingData(newData, model, true);
 
       // When this was not a destroy action, we get new data, which we should insert in the store
       if (name !== NameGenerator.getNameForDestroy(model)) {

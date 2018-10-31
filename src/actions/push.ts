@@ -2,6 +2,7 @@ import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
 import NameGenerator from "../graphql/name-generator";
 import { Store } from "../orm/store";
+import Transformer from "../graphql/transformer";
 
 /**
  * Push action for sending a update mutation. Will be used for record.$push().
@@ -28,7 +29,7 @@ export default class Push extends Action {
       });
 
       if (mockReturnValue) {
-        return Store.insertData(mockReturnValue, dispatch!);
+        return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, true), dispatch!);
       }
 
       // Arguments

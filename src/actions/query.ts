@@ -34,7 +34,7 @@ export default class Query extends Action {
       });
 
       if (mockReturnValue) {
-        return Store.insertData(mockReturnValue, dispatch!);
+        return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, false), dispatch!);
       }
 
       const schema: Schema = await context.loadSchema();
@@ -46,7 +46,7 @@ export default class Query extends Action {
       const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
 
       // Build query
-      const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, false);
+      const query = QueryBuilder.buildQuery("query", model, name, filter, undefined, multiple, false);
 
       // Send the request to the GraphQL API
       const data = await context.apollo.request(
@@ -58,7 +58,7 @@ export default class Query extends Action {
       );
 
       // Insert incoming data into the store
-      return Store.insertData(data, dispatch!);
+      return Store.insertData(Transformer.transformIncomingData(data, model, false), dispatch!);
     } else {
       /* istanbul ignore next */
       throw new Error("The customQuery action requires the query name ('name') to be set");

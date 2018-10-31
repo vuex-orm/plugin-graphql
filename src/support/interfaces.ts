@@ -25,6 +25,7 @@ export interface ActionParams {
   rootState?: any;
   state?: RootState;
   filter?: Filter;
+  extraArgs?: any;
   id?: number;
   data?: Data;
   args?: Arguments;
@@ -86,6 +87,9 @@ export class PatchedModel extends ORMModel {
     return undefined;
   }
   static async customQuery(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+  static async fetchMore (): Promise<any> {
     return undefined;
   }
 }
