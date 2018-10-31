@@ -17,6 +17,7 @@ export default class QueryBuilder {
    * @param {Model|string} model The model to use
    * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
    * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
+   * @param {Arguments} extraArgs Extra args to be passed to the field
    * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
    *                                    Mainly for recursion
    * @param {string} name Optional name of the field. If not provided, this will be the model name
@@ -30,6 +31,7 @@ export default class QueryBuilder {
   public static buildField (model: Model | string,
                      multiple: boolean = true,
                      args?: Arguments,
+                     extraArgs?: Arguments,
                      path: Array<string> = [],
                      name?: string,
                      filter: boolean = false,
@@ -41,7 +43,22 @@ export default class QueryBuilder {
     name = name ? name : model.pluralName;
     const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
 
-    let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field);
+    let params: string = '';
+    const argumentsString = this.buildArguments(model, args, false, filter, allowIdFields, field);
+    const extraArgumentsString = this.buildArguments(model, extraArgs, false, false, allowIdFields, field);
+    if (argumentsString.length > 0 || extraArgumentsString.length > 0) {
+      params = '(';
+      if (argumentsString.length > 0) {
+        params += argumentsString;
+      }
+      if (argumentsString.length > 0 && extraArgumentsString.length > 0) {
+        params += ',';
+      }
+      if (extraArgumentsString.length > 0) {
+        params += extraArgumentsString;
+      }
+      params += ')';
+    }
     path = path.length === 0 ? [model.singularName] : path;
 
     const fields = `
@@ -93,12 +110,13 @@ export default class QueryBuilder {
    * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
    * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
    * @param {Arguments} args Arguments for the query
+   * @param {Arguments} extraArgs Extra Arguments for the query
    * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
    * @param {boolean} filter When true the query arguments are passed via a filter object.
    * @returns {any} Whatever gql() returns
    */
-  public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, multiple?: boolean,
-                            filter?: boolean) {
+  public static buildQuery (type: string, model: Model | string, name?: string, args?: Arguments, extraArgs?: Arguments,
+                            multiple?: boolean, filter?: boolean) {
     const context = Context.getInstance();
 
     // model
@@ -125,9 +143,25 @@ export default class QueryBuilder {
     const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
 
     // build query
+    const argumentsString = this.buildArguments(model, args, true, filter, true, field);
+    const extraArgumentsString = this.buildArguments(model, extraArgs, true, false, true, field);
+    let params: string = '';
+    if (argumentsString.length > 0 || extraArgumentsString.length > 0) {
+      params = '(';
+      if (argumentsString.length > 0) {
+        params += argumentsString;
+      }
+      if (argumentsString.length > 0 && extraArgumentsString.length > 0) {
+        params += ',';
+      }
+      if (extraArgumentsString.length > 0) {
+        params += extraArgumentsString;
+      }
+      params += ')';
+    }
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter, true, field)} {\n` +
-      `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
+      `${type} ${upcaseFirstLetter(name)}${params} {\n` +
+      `  ${this.buildField(model, multiple, args, extraArgs, [], name, filter, true)}\n` +
       `}`;
 
     return gql(query);
@@ -212,7 +246,7 @@ export default class QueryBuilder {
 
       if (!first) {
         if (!signature && filter) returnValue = `filter: { ${returnValue} }`;
-        returnValue = `(${returnValue})`;
+        returnValue = `${returnValue}`;
       }
     }
 
@@ -330,7 +364,7 @@ export default class QueryBuilder {
         const newPath = path.slice(0);
         newPath.push(relatedModel.singularName);
 
-        relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
+        relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, undefined, newPath, name, false));
       }
     });
 

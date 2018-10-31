@@ -44,7 +44,7 @@ export default class Query extends Action {
       const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
 
       // Build query
-      const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false);
+      const query = QueryBuilder.buildQuery('query', model, name, filter, undefined, multiple, false);
 
       // Send the request to the GraphQL API
       const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
