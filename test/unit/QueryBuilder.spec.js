@@ -222,6 +222,39 @@ query users {
       `.trim());
       });
 
+      it('contains edges and pagination fields when connection mode is relay', () => {
+        context.connectionQueryMode = 'relay';
+
+        let query = QueryBuilder.buildField(context.getModel('user'), true, { age: 32 }, undefined, undefined, undefined, true);
+        query = prettify(`query users { ${query} }`).trim();
+
+        expect(query).toEqual(`
+query users {
+  users(filter: {age: $age}) {
+    edges {
+      cursor
+      node {
+        id
+        name
+        profile {
+          id
+          email
+          age
+          sex
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+  }
+}
+      `.trim());
+      });
+
       it('contains no meta field when connection mode is plain', () => {
         context.connectionQueryMode = 'plain';
 
