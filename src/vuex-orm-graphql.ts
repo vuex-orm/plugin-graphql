@@ -110,7 +110,6 @@ export default class VuexORMGraphQL {
     const context = Context.getInstance();
 
     if (context.connectionQueryMode === 'relay') {
-      // Adding pageInfo to entities.
       _.map(context.database.entities, (entity: any) => {
         // Adding pageInfo to state.
         entity.module.state.pageInfo = {
@@ -123,6 +122,11 @@ export default class VuexORMGraphQL {
         // Adding pageInfo to getters.
         entity.module.getters.pageInfo = (state: any) => {
           return state.pageInfo;
+        };
+
+        // Adding commitPageInfo to mutations.
+        entity.module.mutations.commitPageInfo = (state: any, payload: any) => {
+          state[payload.entity.pluralName].pageInfo = payload;
         };
       });
     }
