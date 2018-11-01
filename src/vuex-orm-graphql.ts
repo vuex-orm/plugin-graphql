@@ -111,8 +111,6 @@ export default class VuexORMGraphQL {
   private static setupPagination () {
     const context = Context.getInstance();
 
-    console.log(context.connectionQueryMode);
-
     _.map(context.database.entities, (entity: any) => {
       if (entity.module.state) {
         // Adding pagination to state.
