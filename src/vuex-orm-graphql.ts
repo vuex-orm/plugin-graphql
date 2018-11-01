@@ -6,6 +6,7 @@ import Query from './actions/query';
 import SimpleQuery from './actions/simple-query';
 import SimpleMutation from './actions/simple-mutation';
 import * as _ from 'lodash-es';
+import InsertPaginationData from './actions/insertPaginationData';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -20,7 +21,7 @@ export default class VuexORMGraphQL {
     Context.setup(components, options);
     VuexORMGraphQL.setupActions();
     VuexORMGraphQL.setupModelMethods();
-    VuexORMGraphQL.setupPageInfo();
+    VuexORMGraphQL.setupPagination();
   }
 
   /**
@@ -106,29 +107,32 @@ export default class VuexORMGraphQL {
    * This method will setup pageInfo for state and getters.
    * Only when relay is used for connectionQueryMode.
    */
-  private static setupPageInfo () {
+  private static setupPagination () {
     const context = Context.getInstance();
 
     if (context.connectionQueryMode === 'relay') {
       _.map(context.database.entities, (entity: any) => {
-        // Adding pageInfo to state.
-        entity.module.state.pageInfo = {
+        // Adding pagination to state.
+        entity.module.state.pagination = {
           hasNextPage: false,
           hasPreviousPage: false,
           startCursor: '',
           endCursor: ''
         };
 
-        // Adding pageInfo to getters.
-        entity.module.getters.pageInfo = (state: any) => {
-          return state.pageInfo;
+        // Adding pagination to getters.
+        entity.module.getters.pagination = (state: any) => {
+          return state.pagination;
         };
 
-        // Adding commitPageInfo to mutations.
-        entity.module.mutations.commitPageInfo = (state: any, payload: any) => {
-          state[payload.entity.pluralName].pageInfo = payload;
+        // Adding commitPagination to mutations.
+        entity.module.mutations.commitPagination = (state: any, payload: any) => {
+          state[payload.entity.pluralName].pagination = payload;
         };
       });
+
+      // Adding insertPaginationData to actions.
+      context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
     }
   }
 }

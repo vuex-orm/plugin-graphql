@@ -28,4 +28,17 @@ export class Store {
 
     return insertedData;
   }
+
+  /**
+   * Inserts incoming pageInfo data into the store.
+   *
+   * @param {Data} data
+   * @param {DispatchFunction} dispatch
+   * @returns {Promise<Data>}
+   */
+  public static async insertPaginationData (data: Data, dispatch: DispatchFunction): Promise<Data> {
+    Context.getInstance().logger.log('inserting pagination data');
+
+    return dispatch('insertPaginationData', data);
+  }
 }
