@@ -20,6 +20,7 @@ export default class VuexORMGraphQL {
     Context.setup(components, options);
     VuexORMGraphQL.setupActions();
     VuexORMGraphQL.setupModelMethods();
+    VuexORMGraphQL.setupPageInfo();
   }
 
   /**
@@ -99,5 +100,31 @@ export default class VuexORMGraphQL {
       await this.$delete();
       return this.$destroy();
     };
+  }
+
+  /**
+   * This method will setup pageInfo for state and getters.
+   * Only when relay is used for connectionQueryMode.
+   */
+  private static setupPageInfo () {
+    const context = Context.getInstance();
+
+    if (context.connectionQueryMode === 'relay') {
+      // Adding pageInfo to entities.
+      _.map(context.database.entities, (entity: any) => {
+        // Adding pageInfo to state.
+        entity.module.state.pageInfo = {
+          hasNextPage: false,
+          hasPreviousPage: false,
+          startCursor: '',
+          endCursor: ''
+        };
+
+        // Adding pageInfo to getters.
+        entity.module.getters.pageInfo = (state: any) => {
+          return state.pageInfo;
+        };
+      });
+    }
   }
 }
