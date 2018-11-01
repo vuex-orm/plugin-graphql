@@ -1,5 +1,6 @@
 import { Data, DispatchFunction } from '../support/interfaces';
 import Context from '../common/context';
+import * as _ from 'lodash-es';
 
 /**
  * Provides some helper methods to interact with the Vuex-ORM store

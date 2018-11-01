@@ -5,7 +5,6 @@ import Transformer from '../graphql/transformer';
 import { ActionParams, Data } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
-import * as _ from 'lodash-es';
 
 /**
  * Fetch action for sending a query. Will be used for Model.fetch().
@@ -49,10 +48,10 @@ export default class Fetch extends Action {
     const data = await context.apollo.request(model, query, { ...filter, ...extraArgs }, false, bypassCache as boolean);
 
     if (context.connectionQueryMode === 'relay') {
-      await Store.insertPaginationData(_.pick(data, 'pageInfo'), dispatch);
+      await Store.insertPaginationData(data, dispatch);
     }
 
     // Insert incoming data into the store
-    return Store.insertData(data, dispatch);
+    return Store.insertData(Transformer.transformIncomingData(data as Data, model, false), dispatch);
   }
 }

@@ -73,7 +73,8 @@ export default class Apollo {
     }
 
     // Transform incoming data into something useful
-    return Transformer.transformIncomingData(response.data as Data, model, mutation);
+    // return Transformer.transformIncomingData(response.data as Data, model, mutation);
+    return response.data as Data;
   }
 
   public async simpleQuery (query: string, variables: Arguments, bypassCache: boolean = false, context?: Data): Promise<any> {

@@ -7,6 +7,7 @@ import SimpleQuery from './actions/simple-query';
 import SimpleMutation from './actions/simple-mutation';
 import * as _ from 'lodash-es';
 import InsertPaginationData from './actions/insertPaginationData';
+import CommitPagination from './mutations/commitPagination';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -110,8 +111,10 @@ export default class VuexORMGraphQL {
   private static setupPagination () {
     const context = Context.getInstance();
 
-    if (context.connectionQueryMode === 'relay') {
-      _.map(context.database.entities, (entity: any) => {
+    console.log(context.connectionQueryMode);
+
+    _.map(context.database.entities, (entity: any) => {
+      if (entity.module.state) {
         // Adding pagination to state.
         entity.module.state.pagination = {
           hasNextPage: false,
@@ -119,20 +122,20 @@ export default class VuexORMGraphQL {
           startCursor: '',
           endCursor: ''
         };
+      }
 
+      if (entity.module.getters) {
         // Adding pagination to getters.
         entity.module.getters.pagination = (state: any) => {
           return state.pagination;
         };
+      }
+    });
 
-        // Adding commitPagination to mutations.
-        entity.module.mutations.commitPagination = (state: any, payload: any) => {
-          state[payload.entity.pluralName].pagination = payload;
-        };
-      });
+    // Adding commitPagination to rootMutations.
+    context.components.RootMutations.commitPagination = CommitPagination.call.bind(CommitPagination);
 
-      // Adding insertPaginationData to actions.
-      context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
-    }
+    // Adding insertPaginationData to actions.
+    context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
   }
 }
