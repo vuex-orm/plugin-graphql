@@ -87,6 +87,23 @@ export default class QueryBuilder {
             }
           }
         `;
+      } else if (context.connectionQueryMode === 'relay') {
+        return `
+          ${header} {
+            edges {
+              cursor
+              node {
+                ${fields}
+              }
+            }
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+          }
+        `;
       } else {
         return `
           ${header} {
