@@ -25,7 +25,7 @@ export default class Fetch extends Action {
     });
 
     if (mockReturnValue) {
-      return Store.insertData(mockReturnValue, dispatch);
+      return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, false), dispatch);
     }
 
     await context.loadSchema();

@@ -32,7 +32,7 @@ export default class Query extends Action {
       });
 
       if (mockReturnValue) {
-        return Store.insertData(mockReturnValue, dispatch);
+        return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, false), dispatch);
       }
 
       const schema: Schema = await context.loadSchema();
@@ -50,7 +50,7 @@ export default class Query extends Action {
       const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
 
       // Insert incoming data into the store
-      return Store.insertData(data, dispatch);
+      return Store.insertData(Transformer.transformIncomingData(data, model, false), dispatch);
     } else {
       throw new Error("The customQuery action requires the query name ('name') to be set");
     }
