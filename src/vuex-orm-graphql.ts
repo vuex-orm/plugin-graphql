@@ -8,6 +8,9 @@ import SimpleMutation from './actions/simple-mutation';
 import * as _ from 'lodash-es';
 import InsertPaginationData from './actions/insertPaginationData';
 import CommitPagination from './mutations/commitPagination';
+import NextPage from './actions/nextPage';
+import CommitPreviousQuery from './mutations/commitPreviousQuery';
+import InsertPreviousQuery from './actions/insertPreviousQuery';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -55,6 +58,9 @@ export default class VuexORMGraphQL {
    */
   private static setupModelMethods () {
     const context = Context.getInstance();
+
+    // TODO: Fundera på om actions för nextPage, prevPage och selectPage ska läggas till. Och i sådana fall hur.
+    // TODO: Även möjlighet för att hantera olika connectionQueryModes ska finnas.
 
     // Register static model convenience methods
     (context.components.Model as (typeof PatchedModel)).fetch = async function (filter?: any, extraArgs?: any, bypassCache = false) {
@@ -120,6 +126,9 @@ export default class VuexORMGraphQL {
           startCursor: '',
           endCursor: ''
         };
+
+        // Adding previousQuery to state. Will be used for selecting next/prev page.
+        entity.module.state.previousQuery = {};
       }
 
       if (entity.module.getters) {
@@ -127,13 +136,23 @@ export default class VuexORMGraphQL {
         entity.module.getters.pagination = (state: any) => {
           return state.pagination;
         };
+
+        entity.module.getters.previousQuery = (state: any) => {
+          return state.previousQuery;
+        };
+      }
+
+      if (entity.module.actions) {
+        entity.module.actions.nextPage = NextPage.call.bind(NextPage);
       }
     });
 
-    // Adding commitPagination to rootMutations.
+    // Global Mutations.
     context.components.RootMutations.commitPagination = CommitPagination.call.bind(CommitPagination);
+    context.components.RootMutations.commitPreviousQuery = CommitPreviousQuery.call.bind(CommitPreviousQuery);
 
-    // Adding insertPaginationData to actions.
+    // Global actions.
     context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
+    context.components.Actions.insertPreviousQuery = InsertPreviousQuery.call.bind(InsertPreviousQuery);
   }
 }

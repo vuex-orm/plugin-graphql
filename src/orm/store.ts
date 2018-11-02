@@ -41,4 +41,17 @@ export class Store {
 
     return dispatch('insertPaginationData', data);
   }
+
+  /**
+   * Inserts sent Queryparams into the store.
+   *
+   * @param {Data} data
+   * @param {DispatchFunction} dispatch
+   * @returns {Promise<Data>}
+   */
+  public static async insertPreviousQuery (data: Data, dispatch: DispatchFunction): Promise<Data> {
+    Context.getInstance().logger.log('inserting previousQuery data');
+
+    return dispatch('insertPreviousQuery', data);
+  }
 }

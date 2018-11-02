@@ -49,6 +49,7 @@ export default class Fetch extends Action {
 
     if (context.connectionQueryMode === 'relay') {
       await Store.insertPaginationData(data, dispatch);
+      await Store.insertPreviousQuery({ filter, extraArgs }, dispatch);
     }
 
     // Insert incoming data into the store
