@@ -53,6 +53,6 @@ export default class Fetch extends Action {
     }
 
     // Insert incoming data into the store
-    return Store.insertData(Transformer.transformIncomingData(data as Data, model, false), dispatch);
+    return Store.insertData(Transformer.transformIncomingData(data, model, false), dispatch);
   }
 }

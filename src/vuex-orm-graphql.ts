@@ -8,9 +8,9 @@ import SimpleMutation from './actions/simple-mutation';
 import * as _ from 'lodash-es';
 import InsertPaginationData from './actions/insertPaginationData';
 import CommitPagination from './mutations/commitPagination';
-import NextPage from './actions/nextPage';
 import CommitPreviousQuery from './mutations/commitPreviousQuery';
 import InsertPreviousQuery from './actions/insertPreviousQuery';
+import FetchMore from './actions/fetchMore';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -140,7 +140,7 @@ export default class VuexORMGraphQL {
       }
 
       if (entity.module.actions) {
-        entity.module.actions.nextPage = NextPage.call.bind(NextPage);
+        entity.module.actions.fetchMore = FetchMore.call.bind(FetchMore);
       }
     });
 

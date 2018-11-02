@@ -4,7 +4,7 @@ import Action from './action';
 import NameGenerator from '../graphql/name-generator';
 import Model from '../orm/model';
 import { Store } from '../orm/store';
-import Transformer from "../graphql/transformer";
+import Transformer from '../graphql/transformer';
 
 /**
  * Persist action for sending a create mutation. Will be used for record.$persist().

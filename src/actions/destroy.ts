@@ -2,7 +2,7 @@ import { ActionParams } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
 import { Store } from '../orm/store';
-import Transformer from "../graphql/transformer";
+import Transformer from '../graphql/transformer';
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().

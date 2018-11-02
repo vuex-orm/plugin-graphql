@@ -3,7 +3,7 @@ import Action from './action';
 import Context from '../common/context';
 import Schema from '../graphql/schema';
 import { Store } from '../orm/store';
-import Transformer from "../graphql/transformer";
+import Transformer from '../graphql/transformer';
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().

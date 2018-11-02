@@ -2,7 +2,7 @@ import { ActionParams, Data } from '../support/interfaces';
 import Action from './action';
 import NameGenerator from '../graphql/name-generator';
 import { Store } from '../orm/store';
-import Transformer from "../graphql/transformer";
+import Transformer from '../graphql/transformer';
 
 /**
  * Push action for sending a update mutation. Will be used for record.$push().
