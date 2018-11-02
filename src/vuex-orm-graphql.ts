@@ -59,9 +59,6 @@ export default class VuexORMGraphQL {
   private static setupModelMethods () {
     const context = Context.getInstance();
 
-    // TODO: Fundera på om actions för nextPage, prevPage och selectPage ska läggas till. Och i sådana fall hur.
-    // TODO: Även möjlighet för att hantera olika connectionQueryModes ska finnas.
-
     // Register static model convenience methods
     (context.components.Model as (typeof PatchedModel)).fetch = async function (filter?: any, extraArgs?: any, bypassCache = false) {
       let filterObj = filter;
