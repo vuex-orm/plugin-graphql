@@ -82,4 +82,5 @@ export class PatchedModel extends ORMModel {
   static async fetch (filter: any, bypassCache: boolean = false): Promise<any> { return undefined; }
   static async mutate (params: ActionParams): Promise<any> { return undefined; }
   static async customQuery (params: ActionParams): Promise<any> { return undefined; }
+  static async fetchMore (): Promise<any> { return undefined; }
 }

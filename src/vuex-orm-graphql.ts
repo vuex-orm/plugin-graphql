@@ -108,8 +108,7 @@ export default class VuexORMGraphQL {
   }
 
   /**
-   * This method will setup pageInfo for state and getters.
-   * Only when relay is used for connectionQueryMode.
+   * This method will setup pagination for state and getters.
    */
   private static setupPagination () {
     const context = Context.getInstance();
@@ -151,5 +150,10 @@ export default class VuexORMGraphQL {
     // Global actions.
     context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
     context.components.Actions.insertPreviousQuery = InsertPreviousQuery.call.bind(InsertPreviousQuery);
+
+    // Register static model convenience methods
+    (context.components.Model as (typeof PatchedModel)).fetchMore = async function () {
+      return this.dispatch('fetchMore');
+    };
   }
 }
