@@ -6,12 +6,6 @@ import Query from "./actions/query";
 import SimpleQuery from "./actions/simple-query";
 import SimpleMutation from "./actions/simple-mutation";
 import { isPlainObject } from "./support/utils";
-import { map } from "lodash-es";
-import InsertPaginationData from './actions/insertPaginationData';
-import CommitPagination from './mutations/commitPagination';
-import CommitPreviousQuery from './mutations/commitPreviousQuery';
-import InsertPreviousQuery from './actions/insertPreviousQuery';
-import FetchMore from './actions/fetchMore';
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -26,7 +20,6 @@ export default class VuexORMGraphQL {
     Context.setup(components, options);
     VuexORMGraphQL.setupActions();
     VuexORMGraphQL.setupModelMethods();
-    VuexORMGraphQL.setupPagination();
   }
 
   /**
@@ -61,10 +54,13 @@ export default class VuexORMGraphQL {
     const context = Context.getInstance();
 
     // Register static model convenience methods
-    (context.components.Model as typeof PatchedModel).fetch = async function (filter?: any, extraArgs?: any, bypassCache = false) {
+    (context.components.Model as typeof PatchedModel).fetch = async function(
+      filter: any,
+      bypassCache = false
+    ) {
       let filterObj = filter;
       if (!isPlainObject(filterObj)) filterObj = { id: filter };
-      return this.dispatch("fetch", { filter: filterObj, extraArgs, bypassCache });
+      return this.dispatch("fetch", { filter: filterObj, bypassCache });
     };
 
     (context.components.Model as typeof PatchedModel).mutate = async function(
@@ -112,56 +108,6 @@ export default class VuexORMGraphQL {
     model.$deleteAndDestroy = async function() {
       await this.$delete();
       return this.$destroy();
-    };
-  }
-
-  /**
-   * This method will setup pagination for state and getters.
-   */
-  private static setupPagination () {
-    const context = Context.getInstance();
-
-    map(context.database.entities, (entity: any) => {
-      if (entity.module.state) {
-        // Adding pagination to state.
-        entity.module.state.pagination = {
-          hasNextPage: false,
-          hasPreviousPage: false,
-          startCursor: '',
-          endCursor: ''
-        };
-
-        // Adding previousQuery to state. Will be used for selecting next/prev page.
-        entity.module.state.previousQuery = {};
-      }
-
-      if (entity.module.getters) {
-        // Adding pagination to getters.
-        entity.module.getters.pagination = (state: any) => {
-          return state.pagination;
-        };
-
-        entity.module.getters.previousQuery = (state: any) => {
-          return state.previousQuery;
-        };
-      }
-
-      if (entity.module.actions) {
-        entity.module.actions.fetchMore = FetchMore.call.bind(FetchMore);
-      }
-    });
-
-    // Global Mutations.
-    context.components.RootMutations.commitPagination = CommitPagination.call.bind(CommitPagination);
-    context.components.RootMutations.commitPreviousQuery = CommitPreviousQuery.call.bind(CommitPreviousQuery);
-
-    // Global actions.
-    context.components.Actions.insertPaginationData = InsertPaginationData.call.bind(InsertPaginationData);
-    context.components.Actions.insertPreviousQuery = InsertPreviousQuery.call.bind(InsertPreviousQuery);
-
-    // Register static model convenience methods
-    (context.components.Model as (typeof PatchedModel)).fetchMore = async function () {
-      return this.dispatch('fetchMore');
     };
   }
 }

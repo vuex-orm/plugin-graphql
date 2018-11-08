@@ -4,7 +4,6 @@ import Action from "./action";
 import NameGenerator from "../graphql/name-generator";
 import Model from "../orm/model";
 import { Store } from "../orm/store";
-import Transformer from "../graphql/transformer";
 
 /**
  * Persist action for sending a create mutation. Will be used for record.$persist().
@@ -31,7 +30,7 @@ export default class Persist extends Action {
       });
 
       if (mockReturnValue) {
-        const newRecord = Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, true), dispatch!);
+        const newRecord = Store.insertData(mockReturnValue, dispatch!);
         await this.deleteObsoleteRecord(model, newRecord, oldRecord);
         return newRecord;
       }

@@ -28,7 +28,7 @@ export default class Fetch extends Action {
     });
 
     if (mockReturnValue) {
-      return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, false), dispatch!);
+      return Store.insertData(mockReturnValue, dispatch!);
     }
 
     await context.loadSchema();
@@ -39,25 +39,17 @@ export default class Fetch extends Action {
         ? Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter))
         : {};
 
-    const extraArgs = params && params.extraArgs ?
-      Transformer.transformOutgoingData(model, params.extraArgs, Object.keys(params.extraArgs)) : {};
-
     const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter["id"];
     const name: string = NameGenerator.getNameForFetch(model, multiple);
-    const query = QueryBuilder.buildQuery("query", model, name, filter, extraArgs, multiple, multiple);
+    const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
-    const data = await context.apollo.request(model, query, { ...filter, ...extraArgs }, false, bypassCache as boolean);
-
-    if (context.connectionQueryMode === 'relay') {
-      await Store.insertPaginationData(data, dispatch);
-      await Store.insertPreviousQuery({ filter, extraArgs }, dispatch);
-    }
+    const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
 
     // Insert incoming data into the store
-    return Store.insertData(Transformer.transformIncomingData(data as Data, model, false), dispatch!);
+    return Store.insertData(data, dispatch!);
   }
 }

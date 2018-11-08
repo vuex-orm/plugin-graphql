@@ -3,7 +3,6 @@ import Action from "./action";
 import Context from "../common/context";
 import Schema from "../graphql/schema";
 import { Store } from "../orm/store";
-import Transformer from "../graphql/transformer";
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
@@ -31,7 +30,7 @@ export default class Mutate extends Action {
       });
 
       if (mockReturnValue) {
-        return Store.insertData(Transformer.transformIncomingData(mockReturnValue, model, true), dispatch!);
+        return Store.insertData(mockReturnValue, dispatch!);
       }
 
       const schema: Schema = await context.loadSchema();

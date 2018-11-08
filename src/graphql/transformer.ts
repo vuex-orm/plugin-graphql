@@ -113,10 +113,6 @@ export default class Transformer {
               );
             } else if (data["node"] && context.connectionQueryMode === "edges") {
               result = this.transformIncomingData(data["node"], localModel, mutation, true);
-            } else if (data.node && context.connectionQueryMode === 'relay') {
-              let insertData = data.node;
-              insertData.cursor = data.cursor || '';
-              result = this.transformIncomingData(insertData, localModel, mutation, true);
             } else {
               let newKey = key;
 
