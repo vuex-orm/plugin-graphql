@@ -115,6 +115,44 @@ query test {
       `.trim());
     });
 
+    it('generates query fields for all relations for videos', () => {
+      const fields = QueryBuilder.buildRelationsQuery(context.getModel('video'), ['video'], {first: 5});
+      const query = prettify(`query test($first: Int!) { ${fields} }`).trim();
+
+      expect(query).toEqual(`
+query test($first: Int!) {
+  author {
+    id
+    name
+    profile {
+      id
+      email
+      age
+      sex
+    }
+  }
+  comments(first: $first) {
+    nodes {
+      id
+      content
+      subjectId
+      subjectType
+      author {
+        id
+        name
+        profile {
+          id
+          email
+          age
+          sex
+        }
+      }
+    }
+  }
+}
+      `.trim());
+    });
+
 
     it('respects nested categories', () => {
       const fields = QueryBuilder.buildRelationsQuery(context.getModel('category'), ['category']);
@@ -164,6 +202,52 @@ query users {
         email
         age
         sex
+      }
+    }
+  }
+}
+      `.trim());
+    });
+
+    it('generates query fields for all model fields and relations with hasMany relation', () => {
+      let query = QueryBuilder.buildField(context.getModel('video'), true, { age: 32 }, { first: 5 }, undefined, undefined, true);
+      query = prettify(`query videos($first: Int!) { ${query} }`).trim();
+
+      expect(query).toEqual(`
+query videos($first: Int!) {
+  videos(filter: {age: $age}, first: $first) {
+    nodes {
+      id
+      content
+      title
+      otherId
+      author {
+        id
+        name
+        profile {
+          id
+          email
+          age
+          sex
+        }
+      }
+      comments(first: $first) {
+        nodes {
+          id
+          content
+          subjectId
+          subjectType
+          author {
+            id
+            name
+            profile {
+              id
+              email
+              age
+              sex
+            }
+          }
+        }
       }
     }
   }

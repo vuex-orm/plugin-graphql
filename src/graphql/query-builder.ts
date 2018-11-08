@@ -112,6 +112,9 @@ export default class QueryBuilder {
         `;
       }
     } else {
+      if (path.length > 1) {
+        params = '';
+      }
       return `
         ${name ? name : model.singularName}${params} {
           ${fields}
@@ -348,10 +351,10 @@ export default class QueryBuilder {
    *
    * @param {Model} model
    * @param {Array<Model>} path
-   * @param extraArgs
+   * @param {Arguments} extraArgs
    * @returns {string}
    */
-  private static buildRelationsQuery (model: (null | Model), path: Array<string> = [], extraArgs: Arguments | undefined): string {
+  private static buildRelationsQuery (model: (null | Model), path: Array<string> = [], extraArgs?: Arguments): string {
     if (model === null) return '';
 
     const context = Context.getInstance();
@@ -381,10 +384,6 @@ export default class QueryBuilder {
       if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
         const newPath = path.slice(0);
         newPath.push(relatedModel.singularName);
-
-        if (context.connectionQueryMode !== 'relay') {
-          extraArgs = undefined;
-        }
 
         relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, extraArgs, newPath, name, false));
       }
