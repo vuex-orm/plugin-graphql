@@ -1,4 +1,4 @@
-import { DocumentNode } from "graphql";
+import { DocumentNode } from "graphql/language/ast";
 import { Arguments } from "../support/interfaces";
 import { FetchPolicy } from "apollo-client";
 import { isPlainObject, prettify } from "../support/utils";
