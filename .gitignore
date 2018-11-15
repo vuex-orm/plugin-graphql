@@ -69,3 +69,6 @@ typings/
 compiled
 .awcache
 .rpt2_cache
+
+/dist/lib
+/dist/types
