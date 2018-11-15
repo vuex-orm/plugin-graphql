@@ -2,13 +2,12 @@ import Logger from "./logger";
 import Model from "../orm/model";
 import { Model as ORMModel } from "@vuex-orm/core";
 import { Components } from "@vuex-orm/core/lib/plugins/use";
-import { downcaseFirstLetter, isEqual, pick } from "../support/utils";
+import { singularize, downcaseFirstLetter, isEqual, pick } from "../support/utils";
 import Apollo from "../graphql/apollo";
 import Database from "@vuex-orm/core/lib/database/Database";
 import { Field, GraphQLType, Options } from "../support/interfaces";
 import Schema from "../graphql/schema";
 import { Mock, MockOptions } from "../test-utils";
-const inflection = require("inflection");
 
 const introspectionQuery = `
 query Introspection {
@@ -297,7 +296,7 @@ export default class Context {
    */
   public getModel(model: Model | string, allowNull: boolean = false): Model {
     if (typeof model === "string") {
-      const name: string = inflection.singularize(downcaseFirstLetter(model));
+      const name: string = singularize(downcaseFirstLetter(model));
       model = this.models.get(name) as Model;
       if (!allowNull && !model) throw new Error(`No such model ${name}!`);
     }

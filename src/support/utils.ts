@@ -7,6 +7,11 @@ import lodashIsEqual from "lodash.isequal";
 // @ts-ignore
 import lodashClone from "lodash.clone";
 
+// @ts-ignore
+import pluralizeLib from "pluralize";
+export const pluralize = pluralizeLib.plural;
+export const singularize = pluralizeLib.singular;
+
 /**
  * Capitalizes the first letter of the given string.
  *

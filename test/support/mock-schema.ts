@@ -1,7 +1,6 @@
 import { Category, User, Profile, Video, Post, Comment, Tariff, TariffOption } from "./mock-data";
 import { Model } from "@vuex-orm/core";
-import inflection from "inflection";
-import { clone, matches } from "../../src/support/utils";
+import { clone, matches, singularize } from "../../src/support/utils";
 
 export const typeDefs = `
   type Query {
@@ -658,7 +657,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
 }
 
 function ignoreRelation(model: typeof Model, path: Array<string>) {
-  return path.includes(inflection.singularize(model.entity));
+  return path.includes(singularize(model.entity));
 }
 
 function findMany(
@@ -682,7 +681,7 @@ function findMany(
   return {
     nodes: records.map(r => {
       const newPath = path.slice(0); // clone
-      newPath.push(inflection.singularize(model.entity));
+      newPath.push(singularize(model.entity));
       return addRelations(model, r, newPath);
     })
   };
@@ -707,7 +706,7 @@ function findOne(
   const record = collection.find(filterFn);
 
   const newPath = path.slice(0); // clone
-  newPath.push(inflection.singularize(model.entity));
+  newPath.push(singularize(model.entity));
 
   return addRelations(model, record, newPath);
 }
@@ -760,43 +759,43 @@ export const resolvers = {
     // Creates
 
     createUser: (parent: any, { user }: any) => {
-      const path = [inflection.singularize(User.entity)];
+      const path = [singularize(User.entity)];
       Object.assign(user, { id: 4 });
       return addRelations(User, user, path);
     },
 
     createProfile: (parent: any, { profile }: any) => {
-      const path = [inflection.singularize(Profile.entity)];
+      const path = [singularize(Profile.entity)];
       Object.assign(profile, { id: 4 });
       return addRelations(Profile, profile, path);
     },
 
     createPost: (parent: any, { post }: any) => {
-      const path = [inflection.singularize(Post.entity)];
+      const path = [singularize(Post.entity)];
       Object.assign(post, { id: 4 });
       return addRelations(Post, post, path);
     },
 
     createVideo: (parent: any, { video }: any) => {
-      const path = [inflection.singularize(Video.entity)];
+      const path = [singularize(Video.entity)];
       Object.assign(video, { id: 4 });
       return addRelations(Video, video, path);
     },
 
     createComment: (parent: any, { comment }: any) => {
-      const path = [inflection.singularize(Comment.entity)];
+      const path = [singularize(Comment.entity)];
       Object.assign(comment, { id: 4 });
       return addRelations(Comment, comment, path);
     },
 
     createTariffOption: (parent: any, { tariffOption }: any) => {
-      const path = [inflection.singularize(TariffOption.entity)];
+      const path = [singularize(TariffOption.entity)];
       Object.assign(tariffOption, { id: 4 });
       return addRelations(TariffOption, tariffOption, path);
     },
 
     createTariff: (parent: any, { tariff }: any) => {
-      const path = [inflection.singularize(Tariff.entity)];
+      const path = [singularize(Tariff.entity)];
       Object.assign(tariff, { id: 4 });
       return addRelations(Tariff, tariff, path);
     },

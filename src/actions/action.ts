@@ -7,8 +7,7 @@ import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import Transformer from "../graphql/transformer";
 import NameGenerator from "../graphql/name-generator";
 import Schema from "../graphql/schema";
-
-const inflection = require("inflection");
+import { singularize } from "../support/utils";
 
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -122,7 +121,7 @@ export default class Action {
       const value: any = args[key];
 
       if (value instanceof context.components.Model) {
-        const model = context.getModel(inflection.singularize(value.$self().entity));
+        const model = context.getModel(singularize(value.$self().entity));
         const transformedValue = Transformer.transformOutgoingData(model, value);
         context.logger.log(
           "A",

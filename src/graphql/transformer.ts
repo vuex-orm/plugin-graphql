@@ -2,8 +2,13 @@ import { Data, Field } from "../support/interfaces";
 import Model from "../orm/model";
 import { Model as ORMModel } from "@vuex-orm/core";
 import Context from "../common/context";
-import { clone, downcaseFirstLetter, isPlainObject } from "../support/utils";
-const inflection = require("inflection");
+import {
+  pluralize,
+  singularize,
+  clone,
+  downcaseFirstLetter,
+  isPlainObject
+} from "../support/utils";
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -38,11 +43,11 @@ export default class Transformer {
       ) {
         let relatedModel =
           relations.get(key) && relations.get(key)!.parent
-            ? context.getModel(inflection.singularize(relations.get(key)!.parent!.entity), true)
+            ? context.getModel(singularize(relations.get(key)!.parent!.entity), true)
             : null;
         if (value instanceof Array) {
           // Iterate over all fields and transform them if value is an array
-          const arrayModel = context.getModel(inflection.singularize(key));
+          const arrayModel = context.getModel(singularize(key));
           returnValue[key] = value.map(v => this.transformOutgoingData(arrayModel || model, v));
         } else if (typeof value === "object" && value.$id !== undefined) {
           if (!relatedModel) {
@@ -93,14 +98,14 @@ export default class Transformer {
             const localModel: Model = context.getModel(key, true) || model;
 
             if (data[key].nodes && context.connectionQueryMode === "nodes") {
-              result[inflection.pluralize(key)] = this.transformIncomingData(
+              result[pluralize(key)] = this.transformIncomingData(
                 data[key].nodes,
                 localModel,
                 mutation,
                 true
               );
             } else if (data[key].edges && context.connectionQueryMode === "edges") {
-              result[inflection.pluralize(key)] = this.transformIncomingData(
+              result[pluralize(key)] = this.transformIncomingData(
                 data[key].edges,
                 localModel,
                 mutation,
@@ -121,7 +126,7 @@ export default class Transformer {
           } else if (Model.isFieldNumber(model.fields.get(key))) {
             result[key] = parseFloat(data[key]);
           } else if (key.endsWith("Type") && model.isTypeFieldOfPolymorphicRelation(key)) {
-            result[key] = inflection.pluralize(downcaseFirstLetter(data[key]));
+            result[key] = pluralize(downcaseFirstLetter(data[key]));
           } else {
             result[key] = data[key];
           }

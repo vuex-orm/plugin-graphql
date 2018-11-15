@@ -2,8 +2,7 @@ import { Model as ORMModel } from "@vuex-orm/core";
 import { Field } from "../support/interfaces";
 import Context from "../common/context";
 import { Mock, MockOptions } from "../test-utils";
-import { pick, isEqual } from "../support/utils";
-const inflection = require("inflection");
+import { pluralize, singularize, pick, isEqual } from "../support/utils";
 
 /**
  * Wrapper around a Vuex-ORM model with some useful methods.
@@ -48,8 +47,8 @@ export default class Model {
     this.baseModel = baseModel;
 
     // Generate name variants
-    this.singularName = inflection.singularize(this.baseModel.entity);
-    this.pluralName = inflection.pluralize(this.baseModel.entity);
+    this.singularName = singularize(this.baseModel.entity);
+    this.pluralName = pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
