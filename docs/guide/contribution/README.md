@@ -10,32 +10,26 @@ made changes to the plugin code. You probably have also to restart your webpack 
 
 
 ```bash
-$ yarn run build
+$ yarn build
 ```
 
 Compile files and generate bundles in dist directory.
 
 ```bash
-$ yarn run lint
+$ yarn lint
 ```
 
 Lint files using a rule of Standard JS.
 
 ```bash
-$ yarn run test
+$ yarn test
 ```
 
-Run the test using Mocha Webpack.
-
-```bash
-$ yarn run coverage
-```
-
-Generate test coverage in coverage directory.
+Run the test using Jest and prints a coverage report.
 
 
 ```bash
-yarn docs:build
+yarn build:docs
 ```
 
 Builds the documentation.

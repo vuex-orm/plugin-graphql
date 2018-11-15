@@ -1,8 +1,8 @@
-import { ActionParams } from '../support/interfaces';
-import Action from './action';
-import Context from '../common/context';
-import * as _ from 'lodash-es';
-import { parse } from 'graphql/language/parser';
+import { ActionParams } from "../support/interfaces";
+import Action from "./action";
+import Context from "../common/context";
+import { parse } from "graphql/language/parser";
+import { clone, removeSymbols } from "../support/utils";
 
 /**
  * SimpleQuery action for sending a model unrelated simple query.
@@ -15,13 +15,16 @@ export default class SimpleQuery extends Action {
    * @param {boolean} bypassCache Whether to bypass the cache
    * @returns {Promise<any>} The result
    */
-  public static async call ({ dispatch }: ActionParams, { query, bypassCache, variables }: ActionParams): Promise<any> {
+  public static async call(
+    { dispatch }: ActionParams,
+    { query, bypassCache, variables }: ActionParams
+  ): Promise<any> {
     const context: Context = Context.getInstance();
 
     if (query) {
       const parsedQuery = parse(query);
-      const mockReturnValue = context.globalMockHook('simpleQuery', {
-        name: parsedQuery.definitions[0]['name'].value,
+      const mockReturnValue = context.globalMockHook("simpleQuery", {
+        name: parsedQuery.definitions[0]["name"].value,
         variables
       });
 
@@ -34,7 +37,7 @@ export default class SimpleQuery extends Action {
       const result = await context.apollo.simpleQuery(query, variables, bypassCache);
 
       // remove the symbols
-      return _.clone(result.data);
+      return removeSymbols(clone(result.data));
     } else {
       throw new Error("The simpleQuery action requires the 'query' to be set");
     }

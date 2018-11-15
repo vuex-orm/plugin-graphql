@@ -1,7 +1,7 @@
-import { ActionParams } from '../support/interfaces';
-import Action from './action';
-import NameGenerator from '../graphql/name-generator';
-import { Store } from '../orm/store';
+import { ActionParams } from "../support/interfaces";
+import Action from "./action";
+import NameGenerator from "../graphql/name-generator";
+import { Store } from "../orm/store";
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().
@@ -13,21 +13,24 @@ export default class Destroy extends Action {
    * @param {string} id ID of the record to delete
    * @returns {Promise<any>} true
    */
-  public static async call ({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<boolean> {
+  public static async call(
+    { state, dispatch }: ActionParams,
+    { id, args }: ActionParams
+  ): Promise<boolean> {
     if (id) {
-      const model = this.getModelFromState(state);
+      const model = this.getModelFromState(state!);
       const mutationName = NameGenerator.getNameForDestroy(model);
 
-      const mockReturnValue = model.$mockHook('destroy', { id });
+      const mockReturnValue = model.$mockHook("destroy", { id });
 
       if (mockReturnValue) {
-        await Store.insertData(mockReturnValue, dispatch);
+        await Store.insertData(mockReturnValue, dispatch!);
         return true;
       }
 
       args = this.prepareArgs(args, id);
 
-      await Action.mutation(mutationName, args, dispatch, model);
+      await Action.mutation(mutationName, args, dispatch!, model);
       return true;
     } else {
       throw new Error("The destroy action requires the 'id' to be set");

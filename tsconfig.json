@@ -1,30 +1,26 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "strict": true,
-    "module": "es2015",
     "moduleResolution": "node",
-    "rootDir": "src",
-    "outDir": "lib",
+    "target": "es5",
+    "module": "es2015",
+    "lib": ["esnext.asynciterable", "dom", "es2015", "es2016", "es2017"],
+    "strict": true,
     "declaration": true,
     "sourceMap": true,
+    "esModuleInterop": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "suppressImplicitAnyIndexErrors": true,
-
-    "lib": [
-      "esnext.asynciterable",
-      "dom",
-      "es2017"
-    ],
-
-    "baseUrl": ".",
-
-    "paths": {
-      "*": ["*"]
-    }
+    "declarationDir": "dist/types",
+    "outDir": "dist/lib",
+    "rootDir": "src",
+    "typeRoots": [
+      "node_modules/@types"
+    ]
   },
 
   "include": [
@@ -32,6 +28,7 @@
   ],
 
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "test"
   ]
 }
