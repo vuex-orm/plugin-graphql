@@ -1,7 +1,6 @@
-import ORMModel from '@vuex-orm/core/lib/model/Model';
-import Database from '@vuex-orm/core/lib/database/Database';
-import RootState from '@vuex-orm/core/lib/modules/contracts/RootState';
-import { ApolloLink } from 'apollo-link';
+import { Database, Model as ORMModel } from "@vuex-orm/core";
+import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
+import { ApolloLink } from "apollo-link";
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
 
@@ -17,14 +16,13 @@ export interface Options {
 }
 
 export interface ActionParams {
-  commit: any;
-  dispatch: DispatchFunction;
-  getters: any;
-  rootGetters: any;
-  rootState: any;
-  state: RootState;
+  commit?: any;
+  dispatch?: DispatchFunction;
+  getters?: any;
+  rootGetters?: any;
+  rootState?: any;
+  state?: RootState;
   filter?: Filter;
-  extraArgs?: any;
   id?: number;
   data?: Data;
   args?: Arguments;
@@ -79,8 +77,13 @@ export interface Field {
 }
 
 export class PatchedModel extends ORMModel {
-  static async fetch (filter: any, bypassCache: boolean = false): Promise<any> { return undefined; }
-  static async mutate (params: ActionParams): Promise<any> { return undefined; }
-  static async customQuery (params: ActionParams): Promise<any> { return undefined; }
-  static async fetchMore (): Promise<any> { return undefined; }
+  static async fetch(filter?: any, bypassCache: boolean = false): Promise<any> {
+    return undefined;
+  }
+  static async mutate(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+  static async customQuery(params: ActionParams): Promise<any> {
+    return undefined;
+  }
 }

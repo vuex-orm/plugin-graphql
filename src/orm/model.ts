@@ -1,9 +1,8 @@
-import ORMModel from '@vuex-orm/core/lib/model/Model';
-import { Field } from '../support/interfaces';
-import Context from '../common/context';
-import { Mock, MockOptions } from '../test-utils';
-import * as _ from 'lodash-es';
-const inflection = require('inflection');
+import { Model as ORMModel } from "@vuex-orm/core";
+import { Field } from "../support/interfaces";
+import Context from "../common/context";
+import { Mock, MockOptions } from "../test-utils";
+import { pluralize, singularize, pick, isEqual } from "../support/utils";
 
 /**
  * Wrapper around a Vuex-ORM model with some useful methods.
@@ -44,12 +43,12 @@ export default class Model {
    * @constructor
    * @param {Model} baseModel The original Vuex-ORM model
    */
-  public constructor (baseModel: ORMModel) {
+  public constructor(baseModel: ORMModel) {
     this.baseModel = baseModel;
 
     // Generate name variants
-    this.singularName = inflection.singularize(this.baseModel.entity);
-    this.pluralName = inflection.pluralize(this.baseModel.entity);
+    this.singularName = singularize(this.baseModel.entity);
+    this.pluralName = pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
@@ -64,11 +63,13 @@ export default class Model {
    * @param {Field | undefined} field
    * @returns {boolean}
    */
-  public static isFieldNumber (field: Field | undefined): boolean {
+  public static isFieldNumber(field: Field | undefined): boolean {
     if (!field) return false;
 
     const context = Context.getInstance();
-    return field instanceof context.components.Number || field instanceof context.components.Increment;
+    return (
+      field instanceof context.components.Number || field instanceof context.components.Increment
+    );
   }
 
   /**
@@ -76,14 +77,16 @@ export default class Model {
    * @param {Field} field
    * @returns {boolean}
    */
-  public static isFieldAttribute (field: Field): boolean {
+  public static isFieldAttribute(field: Field): boolean {
     const context = Context.getInstance();
 
-    return field instanceof context.components.Increment ||
+    return (
+      field instanceof context.components.Increment ||
       field instanceof context.components.Attr ||
       field instanceof context.components.String ||
       field instanceof context.components.Number ||
-      field instanceof context.components.Boolean;
+      field instanceof context.components.Boolean
+    );
   }
 
   /**
@@ -91,7 +94,7 @@ export default class Model {
    * @param {Field} field
    * @returns {boolean}
    */
-  public static isConnection (field: Field): boolean {
+  public static isConnection(field: Field): boolean {
     const context = Context.getInstance();
 
     return !(
@@ -107,13 +110,13 @@ export default class Model {
    * @todo is this a good way to add fields?
    * @param {Model} model
    */
-  public static augment (model: Model) {
+  public static augment(model: Model) {
     const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
 
     model.baseModel.fields = () => {
       const originalFields = originalFieldGenerator();
 
-      originalFields['$isPersisted'] = model.baseModel.boolean(false);
+      originalFields["$isPersisted"] = model.baseModel.boolean(false);
 
       return originalFields;
     };
@@ -124,7 +127,7 @@ export default class Model {
    * skipFields array or start with $.
    * @returns {Array<string>} field names which should be queried
    */
-  public getQueryFields (): Array<string> {
+  public getQueryFields(): Array<string> {
     const fields: Array<string> = [];
 
     this.fields.forEach((field: Field, name: string) => {
@@ -143,8 +146,8 @@ export default class Model {
    * @param {string} field
    * @returns {boolean}
    */
-  public skipField (field: string) {
-    if (field.startsWith('$')) return true;
+  public skipField(field: string) {
+    if (field.startsWith("$")) return true;
     if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
 
     const context = Context.getInstance();
@@ -153,7 +156,8 @@ export default class Model {
 
     this.getRelations().forEach((relation: Field) => {
       if (
-        (relation instanceof context.components.BelongsTo || relation instanceof context.components.HasOne) &&
+        (relation instanceof context.components.BelongsTo ||
+          relation instanceof context.components.HasOne) &&
         relation.foreignKey === field
       ) {
         shouldSkipField = true;
@@ -168,7 +172,7 @@ export default class Model {
   /**
    * @returns {Map<string, Field>} all relations of the model which should be included in a graphql query
    */
-  public getRelations (): Map<string, Field> {
+  public getRelations(): Map<string, Field> {
     const relations = new Map<string, Field>();
 
     this.fields.forEach((field: Field, name: string) => {
@@ -186,21 +190,26 @@ export default class Model {
    * @param {string} name
    * @returns {boolean}
    */
-  public isTypeFieldOfPolymorphicRelation (name: string): boolean {
+  public isTypeFieldOfPolymorphicRelation(name: string): boolean {
     const context = Context.getInstance();
     let found: boolean = false;
 
-    context.models.forEach((model) => {
+    context.models.forEach(model => {
       if (found) return false;
 
-      model.getRelations().forEach((relation) => {
-        if (relation instanceof context.components.MorphMany ||
+      model.getRelations().forEach(relation => {
+        if (
+          relation instanceof context.components.MorphMany ||
           relation instanceof context.components.MorphedByMany ||
           relation instanceof context.components.MorphOne ||
           relation instanceof context.components.MorphTo ||
-          relation instanceof context.components.MorphToMany) {
-
-          if (relation.type === name && relation.related && relation.related.entity === this.baseModel.entity) {
+          relation instanceof context.components.MorphToMany
+        ) {
+          if (
+            relation.type === name &&
+            relation.related &&
+            relation.related.entity === this.baseModel.entity
+          ) {
             found = true;
             return false;
           }
@@ -220,8 +229,12 @@ export default class Model {
    * @param {number} id
    * @returns {any}
    */
-  public getRecordWithId (id: number) {
-    return this.baseModel.query().withAllRecursive().where('id', id).first();
+  public getRecordWithId(id: number) {
+    return this.baseModel
+      .query()
+      .withAllRecursive()
+      .where("id", id)
+      .first();
   }
 
   /**
@@ -233,7 +246,7 @@ export default class Model {
    * @param {Model} relatedModel Related model
    * @returns {boolean}
    */
-  public shouldEagerLoadRelation (fieldName: string, field: Field, relatedModel: Model): boolean {
+  public shouldEagerLoadRelation(fieldName: string, field: Field, relatedModel: Model): boolean {
     const context = Context.getInstance();
 
     if (
@@ -245,9 +258,11 @@ export default class Model {
     }
 
     const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
-    return eagerLoadList.find((n) => {
-      return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
-    }) !== undefined;
+    return (
+      eagerLoadList.find(n => {
+        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+      }) !== undefined
+    );
   }
 
   /**
@@ -256,7 +271,7 @@ export default class Model {
    * @param {Mock} mock - Mock config.
    * @returns {boolean}
    */
-  public $addMock (mock: Mock): boolean {
+  public $addMock(mock: Mock): boolean {
     if (this.$findMock(mock.action, mock.options)) return false;
     if (!this.mocks[mock.action]) this.mocks[mock.action] = [];
 
@@ -271,14 +286,16 @@ export default class Model {
    * @param {MockOptions} options - MockOptions like { variables: { id: 42 } }.
    * @returns {Mock | null} null when no mock was found.
    */
-  public $findMock (action: string, options: MockOptions | undefined): Mock | null {
+  public $findMock(action: string, options: MockOptions | undefined): Mock | null {
     if (this.mocks[action]) {
-      return this.mocks[action].find((m) => {
-        if (!m.options || !options) return true;
+      return (
+        this.mocks[action].find(m => {
+          if (!m.options || !options) return true;
 
-        const relevantOptions = _.pick(options, Object.keys(m.options));
-        return _.isEqual(relevantOptions, m.options || {});
-      }) || null;
+          const relevantOptions = pick(options, Object.keys(m.options));
+          return isEqual(relevantOptions, m.options || {});
+        }) || null
+      );
     }
 
     return null;
@@ -291,7 +308,7 @@ export default class Model {
    * @param {MockOptions} options - MockOptions.
    * @returns {any} null when no mock was found.
    */
-  public $mockHook (action: string, options: MockOptions): any {
+  public $mockHook(action: string, options: MockOptions): any {
     let returnValue: null | { [key: string]: any } = null;
     const mock = this.$findMock(action, options);
 
@@ -305,7 +322,7 @@ export default class Model {
 
     if (returnValue) {
       if (returnValue instanceof Array) {
-        returnValue.forEach(r => r.$isPersisted = true);
+        returnValue.forEach(r => (r.$isPersisted = true));
       } else {
         returnValue.$isPersisted = true;
       }

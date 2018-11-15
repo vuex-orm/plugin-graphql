@@ -90,8 +90,15 @@ mock('destroy', { id: 17 }).for(User).andReturn({ id: 17, name: 'Charlie Brown' 
 user.$destroy();
 ```
 
-### Query
+### Custom query
 
+```js
+// This mock call
+mock('query', { name: 'status' }).for(Post).andReturn({ ... });
+
+// will be triggerd by
+Post.customQuery({ name: 'status' });
+```
 
 
 ### Mutate

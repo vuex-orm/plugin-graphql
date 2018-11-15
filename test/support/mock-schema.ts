@@ -1,8 +1,6 @@
-import { User, Profile, Video, Post, Comment, Tariff, TariffOption } from 'test/support/mock-data'
-import inflection from 'inflection';
-import * as _ from 'lodash';
-import {Category} from "./mock-data";
-
+import { Category, User, Profile, Video, Post, Comment, Tariff, TariffOption } from "./mock-data";
+import { Model } from "@vuex-orm/core";
+import { clone, matches, singularize } from "../../src/support/utils";
 
 export const typeDefs = `
   type Query {
@@ -353,23 +351,22 @@ export const typeDefs = `
   }
 `;
 
-
 const users = [
   {
     id: 1,
-    name: 'Charlie Brown',
+    name: "Charlie Brown",
     profileId: 1
   },
 
   {
     id: 2,
-    name: 'Peppermint Patty',
+    name: "Peppermint Patty",
     profileId: 2
   },
 
   {
     id: 3,
-    name: 'Snoopy',
+    name: "Snoopy",
     profileId: 3
   }
 ];
@@ -377,21 +374,21 @@ const users = [
 const profiles = [
   {
     id: 1,
-    email: 'charlie@peanuts.com',
+    email: "charlie@peanuts.com",
     age: 8,
     sex: true
   },
 
   {
     id: 2,
-    email: 'peppermint@peanuts.com',
+    email: "peppermint@peanuts.com",
     age: 9,
     sex: false
   },
 
   {
     id: 3,
-    email: 'snoopy@peanuts.com',
+    email: "snoopy@peanuts.com",
     age: 5,
     sex: true
   }
@@ -400,24 +397,24 @@ const profiles = [
 const videos = [
   {
     id: 1,
-    content: 'Foo',
-    title: 'Example Video 1',
+    content: "Foo",
+    title: "Example Video 1",
     otherId: 42,
     authorId: 1
   },
 
   {
     id: 2,
-    content: 'Bar',
-    title: 'Example Video 2',
+    content: "Bar",
+    title: "Example Video 2",
     otherId: 67,
     authorId: 2
   },
 
   {
     id: 3,
-    content: 'FooBar',
-    title: 'Example Video 3',
+    content: "FooBar",
+    title: "Example Video 3",
     otherId: 491,
     authorId: 2
   }
@@ -426,8 +423,8 @@ const videos = [
 const posts = [
   {
     id: 1,
-    content: 'GraphQL is so nice!',
-    title: 'GraphQL',
+    content: "GraphQL is so nice!",
+    title: "GraphQL",
     otherId: 123,
     published: true,
     authorId: 1
@@ -435,8 +432,8 @@ const posts = [
 
   {
     id: 2,
-    content: 'Vue is so awesome!',
-    title: 'Vue.js',
+    content: "Vue is so awesome!",
+    title: "Vue.js",
     otherId: 435,
     published: true,
     authorId: 3
@@ -444,8 +441,8 @@ const posts = [
 
   {
     id: 3,
-    content: 'Vuex-ORM is so crisp',
-    title: 'Vuex-ORM',
+    content: "Vuex-ORM is so crisp",
+    title: "Vuex-ORM",
     otherId: 987,
     published: false,
     authorId: 3
@@ -455,148 +452,184 @@ const posts = [
 const comments = [
   {
     id: 1,
-    content: 'Yes!!!!',
+    content: "Yes!!!!",
     authorId: 2,
     subjectId: 1,
-    subjectType: 'post'
+    subjectType: "post"
   },
 
   {
     id: 2,
-    content: 'So crazy :O',
+    content: "So crazy :O",
     authorId: 1,
     subjectId: 2,
-    subjectType: 'video'
+    subjectType: "video"
   },
 
   {
     id: 3,
-    content: 'Hell no!',
+    content: "Hell no!",
     authorId: 3,
     subjectId: 3,
-    subjectType: 'post'
+    subjectType: "post"
   }
 ];
 
 const tariffs = [
   {
     id: 1,
-    name: 'Super DSL S',
-    displayName: 'super-dsl-s',
-    tariffType: 'dsl',
-    slug: '1as8d8w6iu'
+    name: "Super DSL S",
+    displayName: "super-dsl-s",
+    tariffType: "dsl",
+    slug: "1as8d8w6iu"
   },
 
   {
     id: 2,
-    name: 'Super DSL M',
-    displayName: 'super-dsl-m',
-    tariffType: 'dsl',
-    slug: 'asd8e2c89'
+    name: "Super DSL M",
+    displayName: "super-dsl-m",
+    tariffType: "dsl",
+    slug: "asd8e2c89"
   },
 
   {
     id: 3,
-    name: 'Super DSL L',
-    displayName: 'super-dsl-l',
-    tariffType: 'dsl',
-    slug: '8aas6e8a4w'
+    name: "Super DSL L",
+    displayName: "super-dsl-l",
+    tariffType: "dsl",
+    slug: "8aas6e8a4w"
   }
 ];
 
 const tariffOptions = [
   {
     id: 1,
-    name: 'Installation',
-    description: 'Someone will come up your house and setup the router and so on.'
+    name: "Installation",
+    description: "Someone will come up your house and setup the router and so on."
   },
 
   {
     id: 2,
-    name: 'Spotify Music',
-    description: 'Spotify Premium'
+    name: "Spotify Music",
+    description: "Spotify Premium"
   },
 
   {
     id: 3,
-    name: 'HomeMatic IP Access Point',
-    description: 'Smarthome stuff.'
+    name: "HomeMatic IP Access Point",
+    description: "Smarthome stuff."
   }
 ];
 
 const categories = [
   {
     id: 1,
-    name: 'Programming',
-    parentId: 0,
+    name: "Programming",
+    parentId: 0
   },
 
   {
     id: 2,
-    name: 'Frameworks',
-    parentId: 1,
+    name: "Frameworks",
+    parentId: 1
   },
 
   {
     id: 3,
-    name: 'Languages',
-    parentId: 1,
+    name: "Languages",
+    parentId: 1
   },
 
   {
     id: 4,
-    name: 'Patterns',
-    parentId: 1,
+    name: "Patterns",
+    parentId: 1
   },
 
   {
     id: 5,
-    name: 'Ruby',
-    parentId: 3,
+    name: "Ruby",
+    parentId: 3
   },
 
   {
     id: 6,
-    name: 'JavaScript',
-    parentId: 3,
+    name: "JavaScript",
+    parentId: 3
   },
 
   {
     id: 7,
-    name: 'PHP',
-    parentId: 3,
+    name: "PHP",
+    parentId: 3
   },
 
   {
     id: 8,
-    name: 'RSpec',
-    parentId: 5,
-  },
+    name: "RSpec",
+    parentId: 5
+  }
 ];
 
-
-function addRelations(model, record, path = []) {
+function addRelations(model: typeof Model, record: any, path: Array<string> = []) {
   if (!record) return record;
 
   switch (model) {
     case User:
-      if (!ignoreRelation(Profile, path)) record.profile = findOne(Profile, profiles, record.profileId, path);
-      if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.authorId) === parseInt(record.id), path);
-      if (!ignoreRelation(Post, path)) record.posts = findMany(Post, posts, (r) => parseInt(r.authorId) === parseInt(record.id), path);
+      if (!ignoreRelation(Profile, path)) {
+        record.profile = findOne(Profile, profiles, record.profileId, path);
+      }
+      if (!ignoreRelation(Comment, path)) {
+        record.comments = findMany(
+          Comment,
+          comments,
+          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
+          path
+        );
+      }
+      if (!ignoreRelation(Post, path)) {
+        record.posts = findMany(
+          Post,
+          posts,
+          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
+          path
+        );
+      }
       break;
 
     case Profile:
-      if (!ignoreRelation(User, path)) record.user = findOne(User, users, (r) => parseInt(r.profileId) === parseInt(record.id), path);
+      if (!ignoreRelation(User, path)) {
+        record.user = findOne(
+          User,
+          users,
+          (r: any) => parseInt(r.profileId, 10) === parseInt(record.id, 10),
+          path
+        );
+      }
       break;
 
     case Video:
       if (!ignoreRelation(User, path)) record.author = findOne(User, users, record.authorId, path);
-      if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.subjectId) === parseInt(record.id) && r.subjectType === 'video', path);
+      if (!ignoreRelation(Comment, path)) {
+        record.comments = findMany(
+          Comment,
+          comments,
+          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "video",
+          path
+        );
+      }
       break;
 
     case Post:
       if (!ignoreRelation(User, path)) record.author = findOne(User, users, record.authorId);
-      if (!ignoreRelation(Comment, path)) record.comments = findMany(Comment, comments, (r) => parseInt(r.subjectId) === parseInt(record.id) && r.subjectType === 'post', path);
+      if (!ignoreRelation(Comment, path)) {
+        record.comments = findMany(
+          Comment,
+          comments,
+          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "post",
+          path
+        );
+      }
       break;
 
     case Comment:
@@ -604,205 +637,211 @@ function addRelations(model, record, path = []) {
       break;
 
     case Tariff:
-      if (!ignoreRelation(TariffOption, path)) record.tariffOptions = findMany(TariffOption, tariffOptions, () => true, path);
+      if (!ignoreRelation(TariffOption, path)) {
+        record.tariffOptions = findMany(TariffOption, tariffOptions, () => true, path);
+      }
       break;
 
     case TariffOption:
-      if (!ignoreRelation(Tariff, path)) record.tariffs = findMany(Tariff, tariffs, () => true, path);
+      if (!ignoreRelation(Tariff, path)) {
+        record.tariffs = findMany(Tariff, tariffs, () => true, path);
+      }
       break;
 
     case Category:
       if (record.parentId) record.parent = findOne(Category, categories, record.parentId);
       break;
-
   }
 
   return record;
 }
 
-
-function ignoreRelation(model, path) {
-  return path.includes(inflection.singularize(model.entity));
+function ignoreRelation(model: typeof Model, path: Array<string>) {
+  return path.includes(singularize(model.entity));
 }
 
-
-function findMany(model, collection, filterFn, path = []) {
+function findMany(
+  model: typeof Model,
+  collection: Array<any>,
+  filterFn?: (v: any) => boolean,
+  path: Array<string> = []
+) {
   if (!filterFn) {
     filterFn = () => true;
   }
 
-  if (typeof filterFn !== 'function') {
-    filterFn = _.matches(filterFn);
+  if (typeof filterFn !== "function") {
+    filterFn = matches(filterFn);
   }
 
-  const records = _.filter(collection, filterFn);
+  const records = collection.filter(filterFn);
 
   if (records.length === 0) return { nodes: [] };
 
   return {
-    nodes: _.map(records, r => {
+    nodes: records.map(r => {
       const newPath = path.slice(0); // clone
-      newPath.push(inflection.singularize(model.entity));
+      newPath.push(singularize(model.entity));
       return addRelations(model, r, newPath);
     })
   };
 }
 
-
-function findOne(model, collection, idOrFn, path = []) {
+function findOne(
+  model: typeof Model,
+  collection: Array<any>,
+  idOrFn: any,
+  path: Array<string> = []
+) {
   let filterFn;
 
-  if (typeof idOrFn === 'function') {
-    filterFn = idOrFn
+  if (typeof idOrFn === "function") {
+    filterFn = idOrFn;
   } else {
-    filterFn = r => {
-      return parseInt(r.id) === parseInt(idOrFn);
-    }
+    filterFn = (r: any) => {
+      return parseInt(r.id, 10) === parseInt(idOrFn, 10);
+    };
   }
 
-  const record = _.find(collection, filterFn);
+  const record = collection.find(filterFn);
 
   const newPath = path.slice(0); // clone
-  newPath.push(inflection.singularize(model.entity));
+  newPath.push(singularize(model.entity));
 
   return addRelations(model, record, newPath);
 }
 
-
 export const resolvers = {
   Query: {
-    user: (parent, { id }) => findOne(User, users, id),
-    users: (parent, { filter }) => findMany(User, users, filter),
-    profile: (parent, { id }) => findOne(Profile, profiles, id),
-    profiles: (parent, { filter }) => findMany(Profile, profiles, filter),
-    video: (parent, { id }) => findOne(Video, videos, id),
-    videos: (parent, { filter }) => findMany(Video, videos, filter),
-    post: (parent, { id }) => findOne(Post, posts, id),
-    posts: (parent, { filter }) => findMany(Post, posts, filter),
-    comment: (parent, { id }) => findOne(Comment, comments, id),
-    comments: (parent, { filter }) => findMany(Comment, comments, filter),
-    tariff: (parent, { id }) => findOne(Tariff, tariffs, id),
-    tariffs: (parent, { filter }) => findMany(Tariff, tariffs, filter),
-    tariffOption: (parent, { id }) => findOne(TariffOption, tariffOptions, id),
-    tariffOptions: (parent, { filter }) => findMany(TariffOption, tariffOptions, filter),
-    category: (parent, { id }) => findOne(Category, categories, id),
-    categories: (parent, { filter }) => findMany(Category, categories),
+    user: (parent: any, { id }: any) => findOne(User, users, id),
+    users: (parent: any, { filter }: any) => findMany(User, users, filter),
+    profile: (parent: any, { id }: any) => findOne(Profile, profiles, id),
+    profiles: (parent: any, { filter }: any) => findMany(Profile, profiles, filter),
+    video: (parent: any, { id }: any) => findOne(Video, videos, id),
+    videos: (parent: any, { filter }: any) => findMany(Video, videos, filter),
+    post: (parent: any, { id }: any) => findOne(Post, posts, id),
+    posts: (parent: any, { filter }: any) => findMany(Post, posts, filter),
+    comment: (parent: any, { id }: any) => findOne(Comment, comments, id),
+    comments: (parent: any, { filter }: any) => findMany(Comment, comments, filter),
+    tariff: (parent: any, { id }: any) => findOne(Tariff, tariffs, id),
+    tariffs: (parent: any, { filter }: any) => findMany(Tariff, tariffs, filter),
+    tariffOption: (parent: any, { id }: any) => findOne(TariffOption, tariffOptions, id),
+    tariffOptions: (parent: any, { filter }: any) => findMany(TariffOption, tariffOptions, filter),
+    category: (parent: any, { id }: any) => findOne(Category, categories, id),
+    categories: (parent: any, { filter }: any) => findMany(Category, categories),
 
-    unpublishedPosts: (parent, { authorId }) => findMany(Post, posts, { authorId }),
-    status: (parent, args) => ({
-        backend: true,
-        smsGateway: false,
-        paypalIntegration: true
+    // @ts-ignore
+    unpublishedPosts: (parent: any, { authorId }: any) => findMany(Post, posts, { authorId }),
+
+    status: (parent: any, args: any) => ({
+      backend: true,
+      smsGateway: false,
+      paypalIntegration: true
     })
   },
 
   Mutation: {
     // Customs
 
-    upvotePost: (parent, { captchaToken, postId }) => findOne(Post, posts, postId),
-    sendSms: (parent, { to, text }) => ({ delivered: true }),
-
+    upvotePost: (parent: any, { captchaToken, postId }: any) => findOne(Post, posts, postId),
+    sendSms: (parent: any, { to, text }: any) => ({ delivered: true }),
 
     // Deletes
 
-    deleteUser: (parent, { id }) => findOne(User, users, id),
-    deleteProfile: (parent, { id }) => findOne(Profile, profiles, id),
-    deletePost: (parent, { id }) => findOne(Post, posts, id),
-    deleteVideo: (parent, { id }) => findOne(Video, videos, id),
-    deleteComment: (parent, { id }) => findOne(Comment, comments, id),
-    deleteTariffOption: (parent, { id }) => findOne(TariffOption, tariffOptions, id),
-    deleteTariff: (parent, { id }) => findOne(Tariff, tariffs, id),
-
-
+    deleteUser: (parent: any, { id }: any) => findOne(User, users, id),
+    deleteProfile: (parent: any, { id }: any) => findOne(Profile, profiles, id),
+    deletePost: (parent: any, { id }: any) => findOne(Post, posts, id),
+    deleteVideo: (parent: any, { id }: any) => findOne(Video, videos, id),
+    deleteComment: (parent: any, { id }: any) => findOne(Comment, comments, id),
+    deleteTariffOption: (parent: any, { id }: any) => findOne(TariffOption, tariffOptions, id),
+    deleteTariff: (parent: any, { id }: any) => findOne(Tariff, tariffs, id),
 
     // Creates
 
-    createUser: (parent, { user }) => {
-      const path = [inflection.singularize(User.entity)];
-      _.assign(user, { id: 4 });
+    createUser: (parent: any, { user }: any) => {
+      const path = [singularize(User.entity)];
+      Object.assign(user, { id: 4 });
       return addRelations(User, user, path);
     },
 
-    createProfile: (parent, { profile }) => {
-      const path = [inflection.singularize(Profile.entity)];
-      _.assign(profile, { id: 4 });
+    createProfile: (parent: any, { profile }: any) => {
+      const path = [singularize(Profile.entity)];
+      Object.assign(profile, { id: 4 });
       return addRelations(Profile, profile, path);
     },
 
-    createPost: (parent, { post }) => {
-      const path = [inflection.singularize(Post.entity)];
-      _.assign(post, { id: 4 });
+    createPost: (parent: any, { post }: any) => {
+      const path = [singularize(Post.entity)];
+      Object.assign(post, { id: 4 });
       return addRelations(Post, post, path);
     },
 
-    createVideo: (parent, { video }) => {
-      const path = [inflection.singularize(Video.entity)];
-      _.assign(video, { id: 4 });
+    createVideo: (parent: any, { video }: any) => {
+      const path = [singularize(Video.entity)];
+      Object.assign(video, { id: 4 });
       return addRelations(Video, video, path);
     },
 
-    createComment: (parent, { comment }) => {
-      const path = [inflection.singularize(Comment.entity)];
-      _.assign(comment, { id: 4 });
+    createComment: (parent: any, { comment }: any) => {
+      const path = [singularize(Comment.entity)];
+      Object.assign(comment, { id: 4 });
       return addRelations(Comment, comment, path);
     },
 
-    createTariffOption: (parent, { tariffOption }) => {
-      const path = [inflection.singularize(TariffOption.entity)];
-      _.assign(tariffOption, { id: 4 });
+    createTariffOption: (parent: any, { tariffOption }: any) => {
+      const path = [singularize(TariffOption.entity)];
+      Object.assign(tariffOption, { id: 4 });
       return addRelations(TariffOption, tariffOption, path);
     },
 
-    createTariff: (parent, { tariff }) => {
-      const path = [inflection.singularize(Tariff.entity)];
-      _.assign(tariff, { id: 4 });
+    createTariff: (parent: any, { tariff }: any) => {
+      const path = [singularize(Tariff.entity)];
+      Object.assign(tariff, { id: 4 });
       return addRelations(Tariff, tariff, path);
     },
 
-
-
     // Updates
 
-    updateUser: (parent, { id, user }) => {
-      const record = _.clone(findOne(User, users, id));
-      _.assign(record, user);
+    updateUser: (parent: any, { id, user }: any) => {
+      const record = clone(findOne(User, users, id));
+      Object.assign(record, user);
       return record;
     },
 
-    updateProfile: (parent, { id, profile }) => {
-      const record = _.clone(findOne(Profile, profiles, id));
-      _.assign(record, profile);
+    updateProfile: (parent: any, { id, profile }: any) => {
+      const record = clone(findOne(Profile, profiles, id));
+      Object.assign(record, profile);
       return record;
     },
 
-    updatePost: (parent, { id, post }) => {
-      const record = _.clone(findOne(Post, posts, id));
-      _.assign(record, post);
+    updatePost: (parent: any, { id, post }: any) => {
+      const record = clone(findOne(Post, posts, id));
+      Object.assign(record, post);
       return record;
     },
 
-    updateVideo: (parent, { id, video }) => {
-      const record = _.clone(findOne(Video, videos, id));
-      _.assign(record, video);
+    updateVideo: (parent: any, { id, video }: any) => {
+      const record = clone(findOne(Video, videos, id));
+      Object.assign(record, video);
       return record;
     },
 
-    updateComment: (parent, { id, comment }) => {
-      const record = _.clone(findOne(Comment, comments, id));
-      _.assign(record, comment);
+    updateComment: (parent: any, { id, comment }: any) => {
+      const record = clone(findOne(Comment, comments, id));
+      Object.assign(record, comment);
       return record;
     },
 
-    updateTariffOption: (parent, { id, tariffOption }) => {
-      const record = _.clone(findOne(TariffOption, tariffOptions, id));
-      _.assign(record, tariffOption);
+    updateTariffOption: (parent: any, { id, tariffOption }: any) => {
+      const record = clone(findOne(TariffOption, tariffOptions, id));
+      Object.assign(record, tariffOption);
       return record;
     },
 
-    updateTariff: (parent, { id, tariff }) => {
-      const record = _.clone(findOne(Tariff, tariffs, id));
-      _.assign(record, tariff);
+    updateTariff: (parent: any, { id, tariff }: any) => {
+      const record = clone(findOne(Tariff, tariffs, id));
+      Object.assign(record, tariff);
       return record;
-    },
+    }
   }
 };
