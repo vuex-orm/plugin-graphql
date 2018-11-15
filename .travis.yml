@@ -6,8 +6,7 @@ cache:
   directories:
     - node_modules
 script:
-  - npm test:prod && npm run build
+  - npm test && npm run build
 after_success:
-- npm run report-coverage
 - npm run docs:deploy
 
