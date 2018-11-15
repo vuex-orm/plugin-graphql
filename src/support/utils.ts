@@ -4,6 +4,9 @@ import { print } from "graphql/language/printer";
 // @ts-ignore
 import lodashIsEqual from "lodash.isequal";
 
+// @ts-ignore
+import lodashClone from "lodash.clone";
+
 /**
  * Capitalizes the first letter of the given string.
  *
@@ -38,10 +41,22 @@ export function prettify(query: string): string {
  *
  * @param {any} value - Value to check.
  */
-export function isPlainObject(value: any): boolean {
-  return (
-    value != null && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype
-  );
+export function isPlainObject(obj: any): boolean {
+  // Basic check for Type object that's not null
+  if (typeof obj === "object" && obj !== null) {
+    // If Object.getPrototypeOf supported, use it
+    if (typeof Object.getPrototypeOf === "function") {
+      const proto = Object.getPrototypeOf(obj);
+      return proto === Object.prototype || proto === null;
+    }
+
+    // Otherwise, use internal class
+    // This should be reliable as if getPrototypeOf not supported, is pre-ES5
+    return Object.prototype.toString.call(obj) === "[object Object]";
+  }
+
+  // Not an object
+  return false;
 }
 
 /**
@@ -72,7 +87,8 @@ export function isEqual(a: object, b: object): boolean {
 }
 
 export function clone(input: any): any {
-  return JSON.parse(JSON.stringify(input));
+  // Couldn' find a simpler working implementation yet.
+  return lodashClone(input);
 }
 
 export function takeWhile(
@@ -92,4 +108,8 @@ export function matches(source: any) {
   source = clone(source);
 
   return (object: any) => isEqual(object, source);
+}
+
+export function removeSymbols(input: any) {
+  return JSON.parse(JSON.stringify(input));
 }

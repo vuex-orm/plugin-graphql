@@ -2,7 +2,7 @@ import { ActionParams } from "../support/interfaces";
 import Action from "./action";
 import Context from "../common/context";
 import { parse } from "graphql/language/parser";
-import { clone } from "../support/utils";
+import { clone, removeSymbols } from "../support/utils";
 
 /**
  * SimpleQuery action for sending a model unrelated simple query.
@@ -37,7 +37,7 @@ export default class SimpleQuery extends Action {
       const result = await context.apollo.simpleQuery(query, variables, bypassCache);
 
       // remove the symbols
-      return clone(result.data);
+      return removeSymbols(clone(result.data));
     } else {
       throw new Error("The simpleQuery action requires the 'query' to be set");
     }

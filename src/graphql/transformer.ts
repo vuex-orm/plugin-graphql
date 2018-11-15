@@ -28,12 +28,6 @@ export default class Transformer {
     Object.keys(data).forEach(key => {
       const value = data[key];
 
-      if (key === "comments") {
-        console.log("model", model, model.baseModel.$entitiy, model.constructor.name);
-        console.log("data", data);
-        console.log("whitelist", whitelist);
-      }
-
       // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
       if (
         (whitelist && whitelist.includes(key)) ||

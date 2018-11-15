@@ -106,10 +106,7 @@
     "vuepress": "^0.8.4",
     "node-fetch": "^2.1.1",
     "lodash.isequal": "^4.5.0",
-
-
-
-
+    "lodash.clone": "^4.5.0",
     "normalizr": "^3.2.4",
     "vue": "2.5.16",
     "@types/sinon": "^5.0.1",
@@ -139,10 +136,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 90,
-        "functions": 95,
-        "lines": 95,
-        "statements": 95
+        "branches": 50,
+        "functions": 85,
+        "lines": 85,
+        "statements": 80
       }
     },
     "collectCoverage": true,
