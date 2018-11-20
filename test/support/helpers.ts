@@ -74,6 +74,6 @@ export async function recordGraphQLRequest(callback: Function, allowToFail: bool
   return {
     operationName: relevantCall!.args[0].operationName,
     variables: relevantCall!.args[0].variables,
-    query: prettify(relevantCall!.args[0].query.loc.source.body)
+    query: prettify(relevantCall!.args[0].query.loc!.source.body)
   };
 }
