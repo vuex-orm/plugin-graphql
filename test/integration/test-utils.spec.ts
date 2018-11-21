@@ -172,7 +172,8 @@ describe("TestUtils", () => {
         id: 4,
         content: "Test content",
         title: "Test title",
-        published: true
+        published: true,
+        tags: []
       });
 
     let result;
@@ -195,7 +196,8 @@ describe("TestUtils", () => {
           otherId: 0,
           published: true,
           author: null,
-          comments: []
+          comments: [],
+          tags: []
         }
       ]
     });
