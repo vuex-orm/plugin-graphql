@@ -143,6 +143,12 @@ query test {
       }
     }
   }
+  tags {
+    nodes {
+      id
+      name
+    }
+  }
 }
       `.trim()
       );
@@ -367,6 +373,12 @@ query Posts($title: String!) {
           }
         }
       }
+      tags {
+        nodes {
+          id
+          name
+        }
+      }
     }
   }
 }
@@ -415,6 +427,12 @@ mutation CreatePost($post: PostInput!) {
             sex
           }
         }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
       }
     }
   }
@@ -467,6 +485,12 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
             sex
           }
         }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
       }
     }
   }

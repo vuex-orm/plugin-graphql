@@ -1,3 +1,4 @@
+import { Relation } from "@vuex-orm/core";
 import Model from "../orm/model";
 import { Arguments, Field, GraphQLField } from "../support/interfaces";
 import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/utils";
@@ -354,16 +355,32 @@ export default class QueryBuilder {
 
     model.getRelations().forEach((field: Field, name: string) => {
       let relatedModel: Model;
+      let fieldAsRelation: Relation = field as Relation;
 
-      if (field.related) {
-        relatedModel = context.getModel(field.related.entity);
-      } else if (field.parent) {
-        relatedModel = context.getModel(field.parent.entity);
+      if (
+        fieldAsRelation instanceof context.components.BelongsToMany ||
+        fieldAsRelation instanceof context.components.HasMany ||
+        fieldAsRelation instanceof context.components.HasManyThrough ||
+        fieldAsRelation instanceof context.components.MorphedByMany ||
+        fieldAsRelation instanceof context.components.MorphMany ||
+        fieldAsRelation instanceof context.components.MorphOne ||
+        fieldAsRelation instanceof context.components.MorphToMany ||
+        fieldAsRelation instanceof context.components.HasOne
+      ) {
+        relatedModel = context.getModel(fieldAsRelation.related.entity);
+      } else if (
+        fieldAsRelation instanceof context.components.BelongsTo ||
+        fieldAsRelation instanceof context.components.HasManyBy
+      ) {
+        relatedModel = context.getModel(fieldAsRelation.parent.entity);
+      } else if (fieldAsRelation instanceof context.components.MorphTo) {
+        relatedModel = context.getModel(fieldAsRelation.type);
       } else {
         relatedModel = context.getModel(name);
+
         context.logger.log(
-          "WARNING: field has neither parent nor related property. Fallback to attribute name",
-          field
+          "WARNING: unknown field type. Fallback to attribute name",
+          fieldAsRelation
         );
       }
 

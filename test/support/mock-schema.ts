@@ -1,4 +1,14 @@
-import { Category, User, Profile, Video, Post, Comment, Tariff, TariffOption } from "./mock-data";
+import {
+  Category,
+  User,
+  Profile,
+  Video,
+  Post,
+  Comment,
+  Tariff,
+  TariffOption,
+  Tag
+} from "./mock-data";
 import { Model } from "@vuex-orm/core";
 import { clone, matches, singularize } from "../../src/support/utils";
 
@@ -22,6 +32,8 @@ export const typeDefs = `
     tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
     category(id: ID!): Category!
     categories: CategoryTypeConnection!
+    tag(id: ID!): Tag!
+    tags: TagTypeConnection!
     
     unpublishedPosts(authorId: ID!): PostTypeConnection
     status: Status
@@ -139,6 +151,7 @@ export const typeDefs = `
     published: Boolean
     author: User
     comments: CommentTypeConnection
+    tags: TagTypeConnection
   }
 
 
@@ -177,6 +190,7 @@ export const typeDefs = `
     otherId: ID
     author: User
     comments: CommentTypeConnection
+    tags: TagTypeConnection
   }
 
 
@@ -286,7 +300,7 @@ export const typeDefs = `
   }
 
 
-   input TariffInput {
+  input TariffInput {
     id: ID
     name: String
     displayName: String
@@ -349,6 +363,35 @@ export const typeDefs = `
   type CategoryTypeConnection {
     nodes: [Category!]!
   }
+  
+  
+  type Tag {
+    id: ID
+    name: String
+    subjectId: ID
+    subjectType: String
+  }
+
+
+  input TagFilter {
+    id: ID
+    name: String
+    subjectId: ID
+    subjectType: String
+  }
+
+
+   input TagInput {
+    id: ID
+    name: String
+    subjectId: ID
+    subjectType: String
+  }
+
+
+  type TagTypeConnection {
+    nodes: [Tag!]!
+  }
 `;
 
 const users = [
@@ -400,7 +443,8 @@ const videos = [
     content: "Foo",
     title: "Example Video 1",
     otherId: 42,
-    authorId: 1
+    authorId: 1,
+    tags: [4]
   },
 
   {
@@ -408,7 +452,8 @@ const videos = [
     content: "Bar",
     title: "Example Video 2",
     otherId: 67,
-    authorId: 2
+    authorId: 2,
+    tags: [1]
   },
 
   {
@@ -416,7 +461,8 @@ const videos = [
     content: "FooBar",
     title: "Example Video 3",
     otherId: 491,
-    authorId: 2
+    authorId: 2,
+    tags: [1, 3]
   }
 ];
 
@@ -427,7 +473,8 @@ const posts = [
     title: "GraphQL",
     otherId: 123,
     published: true,
-    authorId: 1
+    authorId: 1,
+    tags: [1, 2]
   },
 
   {
@@ -436,7 +483,8 @@ const posts = [
     title: "Vue.js",
     otherId: 435,
     published: true,
-    authorId: 3
+    authorId: 3,
+    tags: [3, 4]
   },
 
   {
@@ -445,7 +493,8 @@ const posts = [
     title: "Vuex-ORM",
     otherId: 987,
     published: false,
-    authorId: 3
+    authorId: 3,
+    tags: [4, 1]
   }
 ];
 
@@ -571,6 +620,28 @@ const categories = [
   }
 ];
 
+const tags = [
+  {
+    id: 1,
+    name: "GraphQL"
+  },
+
+  {
+    id: 2,
+    name: "Ruby"
+  },
+
+  {
+    id: 3,
+    name: "JavaScript"
+  },
+
+  {
+    id: 4,
+    name: "Vue"
+  }
+];
+
 function addRelations(model: typeof Model, record: any, path: Array<string> = []) {
   if (!record) return record;
 
@@ -618,6 +689,14 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
           path
         );
       }
+      if (
+        !ignoreRelation(Tag, path) &&
+        record.tags &&
+        record.tags.length > 0 &&
+        typeof record.tags[0] === "number"
+      ) {
+        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
+      }
       break;
 
     case Post:
@@ -629,6 +708,14 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
           r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "post",
           path
         );
+      }
+      if (
+        !ignoreRelation(Tag, path) &&
+        record.tags &&
+        record.tags.length > 0 &&
+        typeof record.tags[0] === "number"
+      ) {
+        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
       }
       break;
 
@@ -729,6 +816,8 @@ export const resolvers = {
     tariffOptions: (parent: any, { filter }: any) => findMany(TariffOption, tariffOptions, filter),
     category: (parent: any, { id }: any) => findOne(Category, categories, id),
     categories: (parent: any, { filter }: any) => findMany(Category, categories),
+    tag: (parent: any, { id }: any) => findOne(Tag, tags, id),
+    tags: (parent: any, { filter }: any) => findMany(Tag, tags),
 
     // @ts-ignore
     unpublishedPosts: (parent: any, { authorId }: any) => findMany(Post, posts, { authorId }),

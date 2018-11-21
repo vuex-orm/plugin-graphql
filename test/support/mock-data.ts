@@ -38,7 +38,7 @@ export class Profile extends ORMModel {
 
 export class Video extends ORMModel {
   static entity = "videos";
-  static eagerLoad = ["comments"];
+  static eagerLoad = ["comments", "tags"];
 
   static fields(): Fields {
     return {
@@ -49,14 +49,15 @@ export class Video extends ORMModel {
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       ignoreMe: this.string(""),
       author: this.belongsTo(User, "authorId"),
-      comments: this.morphMany(Comment, "subjectId", "subjectType")
+      comments: this.morphMany(Comment, "subjectId", "subjectType"),
+      tags: this.morphToMany(Tag, Taggable, "tagId", "subjectId", "subjectType")
     };
   }
 }
 
 export class Post extends ORMModel {
   static entity = "posts";
-  static eagerLoad = ["comments"];
+  static eagerLoad = ["comments", "tags"];
 
   static fields(): Fields {
     return {
@@ -67,7 +68,8 @@ export class Post extends ORMModel {
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       published: this.boolean(true),
       author: this.belongsTo(User, "authorId"),
-      comments: this.morphMany(Comment, "subjectId", "subjectType")
+      comments: this.morphMany(Comment, "subjectId", "subjectType"),
+      tags: this.morphToMany(Tag, Taggable, "tagId", "subjectId", "subjectType")
     };
   }
 }
@@ -152,6 +154,30 @@ export class Category extends ORMModel {
   }
 }
 
+export class Taggable extends ORMModel {
+  static entity = "taggables";
+
+  static fields(): Fields {
+    return {
+      id: this.increment(),
+      tagId: this.number(0),
+      subjectId: this.number(0),
+      subjectType: this.string("")
+    };
+  }
+}
+
+export class Tag extends ORMModel {
+  static entity = "tags";
+
+  static fields(): Fields {
+    return {
+      id: this.increment(),
+      name: this.string("")
+    };
+  }
+}
+
 export async function setupMockData() {
   let store;
   let vuexOrmGraphQL;
@@ -165,7 +191,9 @@ export async function setupMockData() {
     { model: TariffOption },
     { model: Tariff },
     { model: TariffTariffOption },
-    { model: Category }
+    { model: Category },
+    { model: Taggable },
+    { model: Tag }
   ]);
 
   setupTestUtils(VuexORMGraphQLPlugin);

@@ -1,4 +1,4 @@
-import { setupMockData, User, Profile, Post, Tariff, Category } from "../support/mock-data";
+import { setupMockData, User, Profile, Post, Tariff, Category, Tag } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { recordGraphQLRequest } from "../support/helpers";
 
@@ -70,6 +70,12 @@ query Post($id: ID!) {
             sex
           }
         }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
       }
     }
   }
@@ -362,6 +368,12 @@ mutation CreatePost($post: PostInput!) {
         }
       }
     }
+    tags {
+      nodes {
+        id
+        name
+      }
+    }
   }
 }
       `.trim() + "\n"
@@ -448,6 +460,12 @@ mutation DeletePost($id: ID!) {
         }
       }
     }
+    tags {
+      nodes {
+        id
+        name
+      }
+    }
   }
 }
       `.trim() + "\n"
@@ -499,6 +517,12 @@ query UnpublishedPosts($authorId: ID!) {
               sex
             }
           }
+        }
+      }
+      tags {
+        nodes {
+          id
+          name
         }
       }
     }
@@ -557,6 +581,12 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
           }
         }
       }
+      tags {
+        nodes {
+          id
+          name
+        }
+      }
     }
   }
 }
@@ -613,6 +643,12 @@ mutation UpvotePost($captchaToken: String!, $postId: ID!) {
             sex
           }
         }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
       }
     }
   }
@@ -793,7 +829,21 @@ query Status {
 
     describe("Polymorphic Many To Many", async () => {
       test("works", async () => {
-        // TODO
+        // @ts-ignore
+        await Tag.fetch();
+
+        // @ts-ignore
+        await Post.fetch(1);
+
+        const tag = Tag.query()
+          .withAllRecursive()
+          .find(1)!;
+
+        const post = Post.query()
+          .withAllRecursive()
+          .find(1);
+
+        expect(post!.tags).toContain(tag);
       });
     });
   });
