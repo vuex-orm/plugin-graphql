@@ -1,5 +1,6 @@
 import { parse } from "graphql/language/parser";
 import { print } from "graphql/language/printer";
+import { DocumentNode } from "graphql/language/ast";
 
 // @ts-ignore
 import lodashIsEqual from "lodash.isequal";
@@ -37,14 +38,34 @@ export function downcaseFirstLetter(input: string) {
  * @param {string} query
  * @returns {string}
  */
-export function prettify(query: string): string {
-  return print(parse(query));
+export function prettify(query: string | DocumentNode): string {
+  return print(parseQuery(query));
+}
+
+/**
+ * Returns a parsed query as GraphQL AST DocumentNode.
+ *
+ * @param {string | DocumentNode} query - Query as string or GraphQL AST DocumentNode.
+ *
+ * @returns {DocumentNode} Query as GraphQL AST DocumentNode.
+ */
+export function parseQuery(query: string | DocumentNode): DocumentNode {
+  return typeof query === "string" ? parse(query) : query;
+}
+
+/**
+ * @param {DocumentNode} query - The GraphQL AST DocumentNode.
+ *
+ * @returns {string} the GraphQL query within a DocumentNode as a plain string.
+ */
+export function graphQlDocumentToString(query: DocumentNode): string {
+  return query.loc!.source.body;
 }
 
 /**
  * Tells if a object is just a simple object.
  *
- * @param {any} value - Value to check.
+ * @param {any} obj - Value to check.
  */
 export function isPlainObject(obj: any): boolean {
   // Basic check for Type object that's not null

@@ -2,6 +2,7 @@
 import { Database, Model as ORMModel } from "@vuex-orm/core";
 import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import { ApolloLink } from "apollo-link";
+import { DocumentNode } from "graphql/language/ast";
 
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
 
@@ -29,7 +30,7 @@ export interface ActionParams {
   args?: Arguments;
   variables?: Arguments;
   bypassCache?: boolean;
-  query?: string;
+  query?: string | DocumentNode;
   multiple?: boolean;
   name?: string;
 }

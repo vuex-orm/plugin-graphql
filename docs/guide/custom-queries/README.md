@@ -117,6 +117,10 @@ Following fields are allowed:
 - `variables`: Variables to pass
 - `bypassCache`: Whether to bypass the caching.
 
+::: tip
+As `query` you can also pass a GraphQL AST DocumentNode like it's returned by the `gql` function or
+the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag). 
+:::
 
 ## Model related custom mutation
 
@@ -215,6 +219,11 @@ Following fields are allowed:
 
 - `query`: Required. The GraphQL mutation query.
 - `variables`: Hash map with variables to pass.
+
+::: tip
+As `query` you can also pass a GraphQL AST DocumentNode like it's returned by the `gql` function or
+the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag). 
+:::
 
 
 ## Multiple or single record

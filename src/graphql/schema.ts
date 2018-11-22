@@ -56,8 +56,9 @@ export default class Schema {
     name = upcaseFirstLetter(name);
     const type = this.types.get(name);
 
-    if (!allowNull && !type)
+    if (!allowNull && !type) {
       throw new Error(`Couldn't find Type of name ${name} in the GraphQL Schema.`);
+    }
 
     return type || null;
   }
@@ -66,8 +67,9 @@ export default class Schema {
     const mutation = this.mutations.get(name);
 
     /* istanbul ignore next */
-    if (!allowNull && !mutation)
+    if (!allowNull && !mutation) {
       throw new Error(`Couldn't find Mutation of name ${name} in the GraphQL Schema.`);
+    }
 
     return mutation || null;
   }
@@ -76,8 +78,9 @@ export default class Schema {
     const query = this.queries.get(name);
 
     /* istanbul ignore next */
-    if (!allowNull && !query)
+    if (!allowNull && !query) {
       throw new Error(`Couldn't find Query of name ${name} in the GraphQL Schema.`);
+    }
 
     return query || null;
   }
