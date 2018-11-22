@@ -1,8 +1,7 @@
 import { ActionParams } from "../support/interfaces";
 import Action from "./action";
 import Context from "../common/context";
-import { parse } from "graphql/language/parser";
-import { clone, removeSymbols } from "../support/utils";
+import { clone, graphQlDocumentToString, parseQuery, removeSymbols } from "../support/utils";
 
 /**
  * SimpleQuery action for sending a model unrelated simple query.
@@ -22,7 +21,8 @@ export default class SimpleQuery extends Action {
     const context: Context = Context.getInstance();
 
     if (query) {
-      const parsedQuery = parse(query);
+      const parsedQuery = parseQuery(query);
+
       const mockReturnValue = context.globalMockHook("simpleQuery", {
         name: parsedQuery.definitions[0]["name"].value,
         variables
@@ -34,7 +34,11 @@ export default class SimpleQuery extends Action {
 
       variables = this.prepareArgs(variables);
 
-      const result = await context.apollo.simpleQuery(query, variables, bypassCache);
+      const result = await context.apollo.simpleQuery(
+        graphQlDocumentToString(parsedQuery),
+        variables,
+        bypassCache
+      );
 
       // remove the symbols
       return removeSymbols(clone(result.data));

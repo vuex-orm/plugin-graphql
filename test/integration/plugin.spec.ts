@@ -1,6 +1,7 @@
 import { setupMockData, User, Profile, Post, Tariff, Category, Tag } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { recordGraphQLRequest } from "../support/helpers";
+import gql from "graphql-tag";
 
 let store: any;
 let vuexOrmGraphQL;
@@ -819,6 +820,42 @@ mutation SendSms($to: String!, $text: String!) {
       `.trim() + "\n"
       );
     });
+
+    test("also accepts GraphQL AST DocumentNode", async () => {
+      let result;
+
+      const query = gql`
+        mutation SendSms($to: String!, $text: String!) {
+          sendSms(to: $to, text: $text) {
+            delivered
+          }
+        }
+      `;
+
+      const request = await recordGraphQLRequest(async () => {
+        result = await store.dispatch("entities/simpleMutation", {
+          query,
+          variables: { to: "+4912345678", text: "GraphQL is awesome!" }
+        });
+      });
+
+      expect(request!.variables).toEqual({ to: "+4912345678", text: "GraphQL is awesome!" });
+      expect(result).toEqual({
+        sendSms: {
+          __typename: "SmsStatus", // TODO: this could removed by Vuex-ORM-GraphQL IMHO
+          delivered: true
+        }
+      });
+      expect(request!.query).toEqual(
+        `
+mutation SendSms($to: String!, $text: String!) {
+  sendSms(to: $to, text: $text) {
+    delivered
+  }
+}
+      `.trim() + "\n"
+      );
+    });
   });
 
   describe("simple query", () => {
@@ -833,6 +870,44 @@ query Status {
     paypalIntegration
   }
 }`;
+
+      const request = await recordGraphQLRequest(async () => {
+        result = await store.dispatch("entities/simpleQuery", { query, variables: {} });
+      });
+
+      expect(result).toEqual({
+        status: {
+          __typename: "Status",
+          backend: true,
+          paypalIntegration: true,
+          smsGateway: false
+        }
+      });
+
+      expect(request!.query).toEqual(
+        `
+query Status {
+  status {
+    backend
+    smsGateway
+    paypalIntegration
+  }
+}
+      `.trim() + "\n"
+      );
+    });
+    test("also accepts GraphQL AST DocumentNode", async () => {
+      let result;
+
+      const query = gql`
+        query Status {
+          status {
+            backend
+            smsGateway
+            paypalIntegration
+          }
+        }
+      `;
 
       const request = await recordGraphQLRequest(async () => {
         result = await store.dispatch("entities/simpleQuery", { query, variables: {} });
