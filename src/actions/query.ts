@@ -60,6 +60,7 @@ export default class Query extends Action {
       // Insert incoming data into the store
       return Store.insertData(data, dispatch!);
     } else {
+      /* istanbul ignore next */
       throw new Error("The customQuery action requires the query name ('name') to be set");
     }
   }

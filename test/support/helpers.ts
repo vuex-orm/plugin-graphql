@@ -22,7 +22,7 @@ export interface Entity {
 /**
  * Create a new Vuex Store.
  */
-export function createStore(entities: Array<Entity>) {
+export function createStore(entities: Array<Entity>, headers?: any) {
   const database = new Database();
 
   entities.forEach(entity => {
@@ -39,7 +39,8 @@ export function createStore(entities: Array<Entity>) {
 
   VuexORM.use(VuexORMGraphQLPlugin, {
     database: database,
-    link
+    link,
+    headers
   });
 
   const store = new Vuex.Store({

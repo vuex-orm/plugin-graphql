@@ -33,6 +33,7 @@ export default class Destroy extends Action {
       await Action.mutation(mutationName, args, dispatch!, model);
       return true;
     } else {
+      /* istanbul ignore next */
       throw new Error("The destroy action requires the 'id' to be set");
     }
   }

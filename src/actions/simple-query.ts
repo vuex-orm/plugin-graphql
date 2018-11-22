@@ -39,6 +39,7 @@ export default class SimpleQuery extends Action {
       // remove the symbols
       return removeSymbols(clone(result.data));
     } else {
+      /* istanbul ignore next */
       throw new Error("The simpleQuery action requires the 'query' to be set");
     }
   }

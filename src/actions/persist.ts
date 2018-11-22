@@ -47,6 +47,7 @@ export default class Persist extends Action {
 
       return newRecord;
     } else {
+      /* istanbul ignore next */
       throw new Error("The persist action requires the 'id' to be set");
     }
   }

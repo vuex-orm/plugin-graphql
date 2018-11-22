@@ -38,6 +38,7 @@ export default class Push extends Action {
       // Send the mutation
       return Action.mutation(mutationName, args, dispatch!, model);
     } else {
+      /* istanbul ignore next */
       throw new Error("The persist action requires the 'data' to be set");
     }
   }
