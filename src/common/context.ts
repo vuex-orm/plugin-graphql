@@ -183,6 +183,7 @@ export default class Context {
     this.debugMode = Boolean(options.debug);
     this.logger = new Logger(this.debugMode);
 
+    /* istanbul ignore next */
     if (!options.database) {
       throw new Error("database param is required to initialize vuex-orm-graphql!");
     }

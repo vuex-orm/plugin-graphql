@@ -2,6 +2,7 @@ import { Model as ORMModel, Attribute } from "@vuex-orm/core";
 import { createStore } from "./helpers";
 import { setupTestUtils } from "../../src/test-utils";
 import VuexORMGraphQLPlugin from "../../src";
+import { ApolloLink } from "apollo-link";
 
 export interface Fields {
   [key: string]: Attribute;
@@ -178,23 +179,26 @@ export class Tag extends ORMModel {
   }
 }
 
-export async function setupMockData() {
+export async function setupMockData(headers?: any) {
   let store;
   let vuexOrmGraphQL;
 
-  [store, vuexOrmGraphQL] = createStore([
-    { model: User },
-    { model: Profile },
-    { model: Post },
-    { model: Video },
-    { model: Comment },
-    { model: TariffOption },
-    { model: Tariff },
-    { model: TariffTariffOption },
-    { model: Category },
-    { model: Taggable },
-    { model: Tag }
-  ]);
+  [store, vuexOrmGraphQL] = createStore(
+    [
+      { model: User },
+      { model: Profile },
+      { model: Post },
+      { model: Video },
+      { model: Comment },
+      { model: TariffOption },
+      { model: Tariff },
+      { model: TariffTariffOption },
+      { model: Category },
+      { model: Taggable },
+      { model: Tag }
+    ],
+    headers
+  );
 
   setupTestUtils(VuexORMGraphQLPlugin);
 

@@ -107,13 +107,8 @@ export default class QueryBuilder {
   ) {
     const context = Context.getInstance();
 
-    // model
     model = context.getModel(model);
-    if (!model) throw new Error("No model provided to build the query!");
-
-    // args
-    args = args ? clone(args) : {};
-    if (!args) throw new Error("args is undefined");
+    args = (args ? clone(args) : {}) as Arguments;
 
     Object.keys(args).forEach((key: string) => {
       if (args && args[key] && isPlainObject(args[key])) {
@@ -211,6 +206,8 @@ export default class QueryBuilder {
               typeOrValue = value.__type + "Input!";
             } else if (Array.isArray(value) && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
+
+              /* istanbul ignore next */
               if (!arg) {
                 throw new Error(
                   `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${
@@ -375,6 +372,8 @@ export default class QueryBuilder {
         relatedModel = context.getModel(fieldAsRelation.parent.entity);
       } else if (fieldAsRelation instanceof context.components.MorphTo) {
         relatedModel = context.getModel(fieldAsRelation.type);
+
+        /* istanbul ignore next */
       } else {
         relatedModel = context.getModel(name);
 

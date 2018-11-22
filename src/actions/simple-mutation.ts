@@ -37,6 +37,7 @@ export default class SimpleMutation extends Action {
       // remove the symbols
       return clone(result.data);
     } else {
+      /* istanbul ignore next */
       throw new Error("The simpleMutation action requires the 'query' to be set");
     }
   }
