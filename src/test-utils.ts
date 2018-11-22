@@ -6,6 +6,7 @@ import VuexORMGraphQLPlugin from "./index";
 let context: Context | null = null;
 
 export function setupTestUtils(plugin: typeof VuexORMGraphQLPlugin): void {
+  /* istanbul ignore next */
   if (!plugin.instance) {
     throw new Error("Please call this function after setting up the store!");
   }
@@ -57,6 +58,7 @@ export class Mock {
 }
 
 export async function clearORMStore() {
+  /* istanbul ignore next */
   if (!context) {
     throw new Error("Please call setupTestUtils() before!");
   }
@@ -65,6 +67,7 @@ export async function clearORMStore() {
 }
 
 export function mock(action: string, options?: MockOptions): Mock {
+  /* istanbul ignore next */
   if (!context) {
     throw new Error("Please call setupTestUtils() before!");
   }

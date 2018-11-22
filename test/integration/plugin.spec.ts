@@ -473,6 +473,69 @@ mutation DeletePost($id: ID!) {
     });
   });
 
+  describe("deleteAndDestroy", () => {
+    test("sends the correct query to the API and deletes the record", async () => {
+      // @ts-ignore
+      await Post.fetch(1);
+      const post = Post.find(1)!;
+
+      const request = await recordGraphQLRequest(async () => {
+        await post.$deleteAndDestroy();
+      });
+
+      expect(request!.variables).toEqual({ id: 1 });
+      expect(request!.query).toEqual(
+        `
+mutation DeletePost($id: ID!) {
+  deletePost(id: $id) {
+    id
+    content
+    title
+    otherId
+    published
+    author {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        author {
+          id
+          name
+          profile {
+            id
+            email
+            age
+            sex
+          }
+        }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
+      }
+    }
+  }
+}
+      `.trim() + "\n"
+      );
+
+      expect(await Post.find(1)).toEqual(null);
+    });
+  });
+
   describe("custom query", () => {
     test("via Model method sends the correct query to the API", async () => {
       const request = await recordGraphQLRequest(async () => {
@@ -595,7 +658,7 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
     });
   });
 
-  describe("custom mutation", () => {
+  describe("custom mutation via Model.mutate", () => {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
       await Post.fetch(1);
@@ -603,15 +666,78 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
 
       const request = await recordGraphQLRequest(async () => {
         // @ts-ignore
-        await Post.mutate({ name: "upvotePost", args: { captchaToken: "15", postId: post.id } });
+        await Post.mutate({ name: "upvotePost", args: { captchaToken: "15", id: post.id } });
       });
 
       expect(request!.variables.captchaToken).toEqual("15");
-      expect(request!.variables.postId).toEqual(post.id);
+      expect(request!.variables.id).toEqual(post.id);
       expect(request!.query).toEqual(
         `
-mutation UpvotePost($captchaToken: String!, $postId: ID!) {
-  upvotePost(captchaToken: $captchaToken, postId: $postId) {
+mutation UpvotePost($captchaToken: String!, $id: ID!) {
+  upvotePost(captchaToken: $captchaToken, id: $id) {
+    id
+    content
+    title
+    otherId
+    published
+    author {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        author {
+          id
+          name
+          profile {
+            id
+            email
+            age
+            sex
+          }
+        }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
+      }
+    }
+  }
+}
+      `.trim() + "\n"
+      );
+    });
+  });
+
+  describe("custom mutation via post.$mutate", () => {
+    test("sends the correct query to the API", async () => {
+      // @ts-ignore
+      await Post.fetch(1);
+      const post = Post.find(1)!;
+
+      const request = await recordGraphQLRequest(async () => {
+        // @ts-ignore
+        await post.$mutate({ name: "upvotePost", args: { captchaToken: "15" } });
+      });
+
+      expect(request!.variables.captchaToken).toEqual("15");
+      expect(request!.variables.id).toEqual(post.id);
+      expect(request!.query).toEqual(
+        `
+mutation UpvotePost($captchaToken: String!, $id: ID!) {
+  upvotePost(captchaToken: $captchaToken, id: $id) {
     id
     content
     title
