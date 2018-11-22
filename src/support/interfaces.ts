@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { Database, Model as ORMModel } from "@vuex-orm/core";
 import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import { ApolloLink } from "apollo-link";

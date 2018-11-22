@@ -1,4 +1,4 @@
-import { prettify, downcaseFirstLetter, upcaseFirstLetter } from "../../src/support/utils";
+import { prettify, downcaseFirstLetter, upcaseFirstLetter, pick } from "../../src/support/utils";
 
 describe("capitalizeFirstLetter", () => {
   test("capitalizes the first letter of a string", () => {
@@ -35,5 +35,25 @@ query Posts($deleted: Boolean!) {
   `.trim() + "\n";
 
     expect(prettify(query)).toEqual(formattedQuery);
+  });
+});
+
+describe("pick", () => {
+  test("picks stuff", () => {
+    const input = {
+      foo: 1,
+      bar: 2,
+      test: 3,
+      hello: 4,
+      world: 5
+    };
+
+    const expectedOutput = {
+      bar: 2,
+      hello: 4
+    };
+
+    expect(pick(input, ["bar", "hello"])).toEqual(expectedOutput);
+    expect(pick(0, ["bar", "hello"])).toEqual({});
   });
 });
