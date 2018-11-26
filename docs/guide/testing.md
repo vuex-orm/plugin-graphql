@@ -11,7 +11,7 @@ First we have to import the mock method from the test utils via
 
 ```js
 import VuexORMGraphQL from '@vuex-orm/plugin-graphql';
-import { setupTestUtils, mock } from '@vuex-orm/plugin-graphql/lib/test-utils';
+import { setupTestUtils, mock } from '@vuex-orm/plugin-graphql';
 ```
 
 After that we have to setup the test utils, this is very easy, just pass the imported VuexORMGraphQL

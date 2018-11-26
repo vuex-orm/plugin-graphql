@@ -1,7 +1,6 @@
 import { setupMockData, User, Post } from "../support/mock-data";
-import { clearORMStore, mock, setupTestUtils } from "../../src/test-utils";
+import { clearORMStore, mock } from "../../src";
 import { recordGraphQLRequest } from "../support/helpers";
-import VuexORMGraphQLPlugin from "../../src";
 
 // @ts-ignore
 let store;
