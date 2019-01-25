@@ -46,9 +46,14 @@ export default class Transformer {
             ? context.getModel(singularize(relations.get(key)!.parent!.entity), true)
             : null;
         if (value instanceof Array) {
-          // Iterate over all fields and transform them if value is an array
-          const arrayModel = context.getModel(singularize(key));
-          returnValue[key] = value.map(v => this.transformOutgoingData(arrayModel || model, v));
+          // Either this is a hasMany field or a .attr() field which contains an array.
+          const arrayModel = context.getModel(singularize(key), true);
+
+          if (arrayModel) {
+            returnValue[key] = value.map(v => this.transformOutgoingData(arrayModel || model, v));
+          } else {
+            returnValue[key] = value;
+          }
         } else if (typeof value === "object" && value.$id !== undefined) {
           if (!relatedModel) {
             relatedModel = context.getModel((value as ORMModel).$self().entity);
