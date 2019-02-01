@@ -107,9 +107,9 @@ export default class Apollo {
   private static getHeaders() {
     const context = Context.getInstance();
 
-    let headers: Object | Function = context.options.headers ? context.options.headers : {};
+    let headers: any = context.options.headers ? context.options.headers : {};
 
-    if (headers instanceof Function) {
+    if (typeof headers === "function") {
       headers = headers(context);
     }
 
