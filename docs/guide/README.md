@@ -100,7 +100,7 @@ Vuex-ORM-GraphQL works with the [Apollo Dev Tools](https://chrome.google.com/web
 It seems that there are several standards within the GraphQL community how connections (fields that returns multiple
 records) are designed. Some do this via a `nodes` field, some via a `edges { nodes }` query and some do neither of them.
 Vuex-ORM-GraphQL tries to be flexible and supports all of them, but the example queries in the documentation work with
-the `nodes` query, don't be irritated. You'll find [more details here](/plugin-graphql/guide/connection-mode).
+the `nodes` query, don't be irritated. You'll find [more details here](/guide/connection-mode).
 
 
 ## License
