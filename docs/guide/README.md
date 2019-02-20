@@ -25,7 +25,7 @@ You should have basic knowledge of [GraphQL](http://graphql.org/), [Vue](https:/
 
 ## Actions
 
-While using Vuex-ORM with the GraphQL plugin you have to distinct between two types of Vuex actions:
+While using Vuex-ORM with the GraphQL plugin you have to distinguish between two types of Vuex actions:
 
 - Vuex-ORM actions: Retrieve data from or save data to Vuex (`Vue Component <--> Vuex Store`)
 - Persistence actions: Load data from or persist data to the GraphQL API (`Vuex Store <--> GraphQL Server`)
@@ -73,7 +73,7 @@ After [installing](/guide/setup) this plugin you can load data in your component
 
 
     async mounted() {
-      // Load all users form the server
+      // Load all users from the server
       await User.fetch();
     },
     
@@ -100,7 +100,7 @@ Vuex-ORM-GraphQL works with the [Apollo Dev Tools](https://chrome.google.com/web
 It seems that there are several standards within the GraphQL community how connections (fields that returns multiple
 records) are designed. Some do this via a `nodes` field, some via a `edges { nodes }` query and some do neither of them.
 Vuex-ORM-GraphQL tries to be flexible and supports all of them, but the example queries in the documentation work with
-the `nodes` query, don't be irritated. You'll find [more details here](/guide/connection-mode).
+the `nodes` query, don't be irritated. You'll find [more details here](/plugin-graphql/guide/connection-mode).
 
 
 ## License
