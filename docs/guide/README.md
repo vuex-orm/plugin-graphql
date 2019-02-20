@@ -34,10 +34,10 @@ The following table lists all actions and what they do:
 
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
-**R**EAD | [`find()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-single-data), [`all()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-all-data), [`query()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#query-builder) | [`fetch()`](fetch.md)
-**C**REATE | [`create()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) or [`insert()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) | [`$persist()`](persist.md)
-**U**PDATE | [`$update()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#updates) | [`$push()`](push.md)
-**D**ELETE | [`$delete()`](https://vuex-orm.github.io/vuex-orm/store/deleting-data.html) | [`$destroy()`](destroy.md)
+**R**EAD | [`find()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#get-single-data), [`all()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#get-all-data), [`query()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#query-builder) | [`fetch()`](fetch.md)
+**C**REATE | [`create()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#inserts) or [`insert()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#inserts) | [`$persist()`](persist.md)
+**U**PDATE | [`$update()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#updates) | [`$push()`](push.md)
+**D**ELETE | [`$delete()`](https://vuex-orm.github.io/vuex-orm/guide/store/deleting-data.html) | [`$destroy()`](destroy.md)
 
 See the example below to get an idea of how this plugin interacts with Vuex-ORM.
 

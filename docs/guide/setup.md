@@ -18,7 +18,7 @@ $ npm install --save @vuex-orm/plugin-graphql
 ```
 
 
-After that we setup the plugin. Add this after [registering your models to the database](https://vuex-orm.github.io/vuex-orm/prologue/getting-started.html#register-models-and-modules-to-the-vuex-store):
+After that we setup the plugin. Add this after [registering your models to the database](https://vuex-orm.github.io/vuex-orm/guide/prologue/getting-started.html#register-models-and-modules-to-the-vuex-store):
 
 ```javascript
 import VuexORMGraphQL from '@vuex-orm/plugin-graphql';
