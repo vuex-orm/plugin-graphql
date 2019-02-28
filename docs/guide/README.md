@@ -25,7 +25,7 @@ You should have basic knowledge of [GraphQL](http://graphql.org/), [Vue](https:/
 
 ## Actions
 
-While using Vuex-ORM with the GraphQL plugin you have to distinct between two types of Vuex actions:
+While using Vuex-ORM with the GraphQL plugin you have to distinguish between two types of Vuex actions:
 
 - Vuex-ORM actions: Retrieve data from or save data to Vuex (`Vue Component <--> Vuex Store`)
 - Persistence actions: Load data from or persist data to the GraphQL API (`Vuex Store <--> GraphQL Server`)
@@ -73,7 +73,7 @@ After [installing](setup.md) this plugin you can load data in your component:
 
 
     async mounted() {
-      // Load all users form the server
+      // Load all users from the server
       await User.fetch();
     },
 
