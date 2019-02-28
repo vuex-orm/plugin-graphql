@@ -34,10 +34,10 @@ The following table lists all actions and what they do:
 
 CRUD | Vuex Only | Persist to GraphQL API
 --| -- | --
-**R**EAD | [`find()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-single-data), [`all()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#get-all-data), [`query()`](https://vuex-orm.github.io/vuex-orm/store/retrieving-data.html#query-builder) | [`fetch()`](/guide/fetch)
-**C**REATE | [`create()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) or [`insert()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#inserts) | [`$persist()`](/guide/persist)
-**U**PDATE | [`$update()`](https://vuex-orm.github.io/vuex-orm/store/inserting-and-updating-data.html#updates) | [`$push()`](/guide/push)
-**D**ELETE | [`$delete()`](https://vuex-orm.github.io/vuex-orm/store/deleting-data.html) | [`$destroy()`](/guide/destroy)
+**R**EAD | [`find()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#get-single-data), [`all()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#get-all-data), [`query()`](https://vuex-orm.github.io/vuex-orm/guide/store/retrieving-data.html#query-builder) | [`fetch()`](fetch.md)
+**C**REATE | [`create()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#inserts) or [`insert()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#inserts) | [`$persist()`](persist.md)
+**U**PDATE | [`$update()`](https://vuex-orm.github.io/vuex-orm/guide/store/inserting-and-updating-data.html#updates) | [`$push()`](push.md)
+**D**ELETE | [`$delete()`](https://vuex-orm.github.io/vuex-orm/guide/store/deleting-data.html) | [`$destroy()`](destroy.md)
 
 See the example below to get an idea of how this plugin interacts with Vuex-ORM.
 
@@ -46,14 +46,14 @@ See the example below to get an idea of how this plugin interacts with Vuex-ORM.
 
 ## Example usage
 
-After [installing](/guide/setup) this plugin you can load data in your component:
+After [installing](setup.md) this plugin you can load data in your component:
 
 ```vue
 <template>
   <ul>
     <li v-for="user in users" :key="user.id">
       {{user.name}}
-      
+
       <a href="#" @click.prevent="destroy(user)">x</a>
     </li>
   </ul>
@@ -62,12 +62,12 @@ After [installing](/guide/setup) this plugin you can load data in your component
 
 <script>
   import User from 'data/models/user';
-  
+
   export default {
     computed: {
       /**
        * Returns all users with reactivity.
-       */ 
+       */
       users: () => User.query().withAll().all()
     },
 
@@ -76,11 +76,11 @@ After [installing](/guide/setup) this plugin you can load data in your component
       // Load all users form the server
       await User.fetch();
     },
-    
-    
+
+
     methods: {
       /**
-      * Deletes the user from Vuex Store and from the server. 
+      * Deletes the user from Vuex Store and from the server.
       */
       async destroy(user) {
         await user.$deleteAndDestroy();
@@ -100,7 +100,7 @@ Vuex-ORM-GraphQL works with the [Apollo Dev Tools](https://chrome.google.com/web
 It seems that there are several standards within the GraphQL community how connections (fields that returns multiple
 records) are designed. Some do this via a `nodes` field, some via a `edges { nodes }` query and some do neither of them.
 Vuex-ORM-GraphQL tries to be flexible and supports all of them, but the example queries in the documentation work with
-the `nodes` query, don't be irritated. You'll find [more details here](/guide/connection-mode).
+the `nodes` query, don't be irritated. You'll find [more details here](connection-mode.md).
 
 
 ## License

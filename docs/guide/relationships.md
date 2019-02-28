@@ -3,15 +3,15 @@
 [[toc]]
 
 This chapter describes how the GraphQL-Plugin interacts with relationships. All relationships work out of the box.
-We take the examples from the [Vuex-ORM documentation for definition relationships](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html)
+We take the examples from the [Vuex-ORM documentation for definition relationships](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html)
 and show what GraphQL queries will be generated.
 
 
 ## One To One
 
 ::: tip
-See the [One To One section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#one-to-one) in the Vuex-ORM documentation.
-::: 
+See the [One To One section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#one-to-one) in the Vuex-ORM documentation.
+:::
 
 Is eager loaded automatically.
 
@@ -52,7 +52,7 @@ query Users {
     nodes {
       id
       name
-    
+
       profile {
         id
         age
@@ -73,7 +73,7 @@ query Profiles {
       age
       sex
       userId
-      
+
       user {
         id
         name
@@ -86,10 +86,10 @@ query Profiles {
 ## One To Many
 
 ::: tip
-See the [One To Many section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#one-to-many) in the Vuex-ORM documentation.
-::: 
+See the [One To Many section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#one-to-many) in the Vuex-ORM documentation.
+:::
 
-BelongsTo is eager loaded automatically while HasMany is not eager loaded. 
+BelongsTo is eager loaded automatically while HasMany is not eager loaded.
 
 **Models:**
 ```javascript
@@ -128,7 +128,7 @@ query Comments {
       id
       postId
       content
-    
+
       post {
         id
         content
@@ -160,8 +160,8 @@ As you can see the comments are not eager loaded.
 ## Many To Many
 
 ::: tip
-See the [Many To Many section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#many-to-many) in the Vuex-ORM documentation.
-::: 
+See the [Many To Many section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#many-to-many) in the Vuex-ORM documentation.
+:::
 
 Is NOT eager loaded automatically, so we add a eagerLoad field to User.
 
@@ -213,7 +213,7 @@ query Users {
     nodes {
       id
       email
-      
+
       roles {
         nodes {
           id
@@ -244,13 +244,13 @@ query Roles {
 ## Has Many Through
 
 ::: tip
-See the [Has Any Through section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#has-many-through) in the Vuex-ORM documentation.
-::: 
+See the [Has Any Through section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#has-many-through) in the Vuex-ORM documentation.
+:::
 
 Is NOT eager loaded automatically.
 
 In this example we have a Product which can belong to many ProductGroups. And a ProductGroup can have many Products.
-This is a classical n:m relation type, which we setup via HasManyThrough and a Pivot Model (ProductsProductGroup) 
+This is a classical n:m relation type, which we setup via HasManyThrough and a Pivot Model (ProductsProductGroup)
 
 **Models:**
 ```javascript
@@ -316,7 +316,7 @@ query Users {
       id
       email
       countryId
-      
+
       country {
         id
         name
@@ -334,12 +334,12 @@ query Posts {
       id
       title
       content
-      
+
       user {
         id
         email
         countryId
-        
+
         country {
           id
           name
@@ -354,8 +354,8 @@ query Posts {
 ## Polymorphic Relations
 
 ::: tip
-See the [Polymorphic Relations section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#polymorphic-relations) in the Vuex-ORM documentation.
-::: 
+See the [Polymorphic Relations section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#polymorphic-relations) in the Vuex-ORM documentation.
+:::
 
 Eager loading behaves like in a normal One To Many or One to One. So we add a `eagerLoad` field to make sure the
 comments are loaded automatically with the post or video.
@@ -412,7 +412,7 @@ query Posts {
       id
       title
       content
-      
+
       comments {
         nodes {
           id
@@ -430,8 +430,8 @@ query Posts {
 ## Many To Many Polymorphic Relations
 
 ::: tip
-See the [Many To Many Polymorphic Relations section](https://vuex-orm.github.io/vuex-orm/relationships/defining-relationships.html#many-to-many-polymorphic-relations) in the Vuex-ORM documentation.
-::: 
+See the [Many To Many Polymorphic Relations section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#many-to-many-polymorphic-relations) in the Vuex-ORM documentation.
+:::
 
 Eager loading behaves the same as in a normal Many To Many: Nothing is eager loaded automatically. So we add a
 `eagerLoad` field to make sure the tags are loaded automatically with the post or video.
@@ -499,7 +499,7 @@ query Posts {
       id
       title
       content
-      
+
       tags {
         nodes {
           id
