@@ -69,13 +69,7 @@ export function graphQlDocumentToString(query: DocumentNode): string {
  */
 export function isPlainObject(obj: any): boolean {
   // Basic check for Type object that's not null
-  if (typeof obj === "object" && obj !== null) {
-    const proto = Object.getPrototypeOf(obj);
-    return proto === Object.prototype || proto === null;
-  }
-
-  // Not an object
-  return false;
+  return obj !== null && typeof obj === "object";
 }
 
 /**

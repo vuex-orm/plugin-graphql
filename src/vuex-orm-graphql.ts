@@ -59,7 +59,9 @@ export default class VuexORMGraphQL {
       bypassCache = false
     ) {
       let filterObj = filter;
-      if (!isPlainObject(filterObj)) filterObj = { id: filter };
+      if (!isPlainObject(filterObj)) {
+        filterObj = { id: filter };
+      }
       return this.dispatch("fetch", { filter: filterObj, bypassCache });
     };
 
