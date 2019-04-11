@@ -9,7 +9,7 @@ Via calling
 
 ```javascript
 const post = Post.query().first();
-await await post.$push();
+await post.$push();
 // or
 await post.$dispatch('push', { data: post });
 ```
