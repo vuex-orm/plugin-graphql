@@ -12,7 +12,7 @@ export default class DefaultAdapter implements Adapter {
   }
 
   getFilterTypeName(model: Model): string {
-    return "";
+    return `${upcaseFirstLetter(model.singularName)}FilterType`;
   }
 
   getNameForDestroy(model: Model): string {

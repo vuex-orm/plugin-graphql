@@ -1,16 +1,8 @@
 import DefaultAdapter from "../../../../src/adapters/builtin/default-adapter";
-import {
-  setupMockData,
-  User,
-  Video,
-  Post,
-  Comment,
-  TariffTariffOption,
-  Tariff,
-  TariffOption
-} from "../../../support/mock-data";
+import { setupMockData } from "../../../support/mock-data";
 import Context from "../../../../src/common/context";
 import Model from "../../../../src/orm/model";
+import { ConnectionMode } from "../../../../src/adapters/adapter";
 
 let model: Model;
 let store;
@@ -47,6 +39,18 @@ describe("DefaultAdapter", () => {
     test("returns a correct fetch query name", () => {
       expect(Context.getInstance().adapter.getNameForFetch(model, true)).toEqual("posts");
       expect(Context.getInstance().adapter.getNameForFetch(model, false)).toEqual("post");
+    });
+  });
+
+  describe(".getFilterTypeName", () => {
+    test("returns a correct filter type name", () => {
+      expect(Context.getInstance().adapter.getFilterTypeName(model)).toEqual("PostFilterType");
+    });
+  });
+
+  describe(".getConnectionMode", () => {
+    test("returns a correct connection mode", () => {
+      expect(Context.getInstance().adapter.getConnectionMode()).toEqual(ConnectionMode.NODES);
     });
   });
 });
