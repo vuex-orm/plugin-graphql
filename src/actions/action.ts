@@ -5,7 +5,6 @@ import { Arguments, Data, DispatchFunction } from "../support/interfaces";
 import Model from "../orm/model";
 import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import Transformer from "../graphql/transformer";
-import NameGenerator from "../graphql/name-generator";
 import Schema from "../graphql/schema";
 import { singularize } from "../support/utils";
 
@@ -37,10 +36,10 @@ export default class Action {
       const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
 
       // Send GraphQL Mutation
-      let newData = await Context.getInstance().apollo.request(model, query, variables, true);
+      let newData = await context.apollo.request(model, query, variables, true);
 
       // When this was not a destroy action, we get new data, which we should insert in the store
-      if (name !== NameGenerator.getNameForDestroy(model)) {
+      if (name !== context.adapter.getNameForDestroy(model)) {
         newData = newData[Object.keys(newData)[0]];
 
         // IDs as String cause terrible issues, so we convert them to integers.

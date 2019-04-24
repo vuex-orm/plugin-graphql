@@ -4,7 +4,6 @@ import { Store } from "../orm/store";
 import Transformer from "../graphql/transformer";
 import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
 
 /**
  * Fetch action for sending a query. Will be used for Model.fetch().
@@ -43,7 +42,7 @@ export default class Fetch extends Action {
 
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter["id"];
-    const name: string = NameGenerator.getNameForFetch(model, multiple);
+    const name: string = context.adapter.getNameForFetch(model, multiple);
     const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API

@@ -5,6 +5,7 @@ import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/u
 import gql from "graphql-tag";
 import Context from "../common/context";
 import Schema from "./schema";
+import { ConnectionMode } from "../adapters/adapter";
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -52,7 +53,7 @@ export default class QueryBuilder {
     if (multiple) {
       const header: string = `${name}${params}`;
 
-      if (context.connectionQueryMode === "nodes") {
+      if (context.connectionMode === ConnectionMode.NODES) {
         return `
           ${header} {
             nodes {
@@ -60,7 +61,7 @@ export default class QueryBuilder {
             }
           }
         `;
-      } else if (context.connectionQueryMode === "edges") {
+      } else if (context.connectionMode === ConnectionMode.EDGES) {
         return `
           ${header} {
             edges {

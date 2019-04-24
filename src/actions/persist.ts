@@ -1,7 +1,6 @@
 import Context from "../common/context";
 import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
 import Model from "../orm/model";
 import { Store } from "../orm/store";
 
@@ -21,7 +20,7 @@ export default class Persist extends Action {
   ): Promise<Data> {
     if (id) {
       const model = this.getModelFromState(state!);
-      const mutationName = NameGenerator.getNameForPersist(model);
+      const mutationName = Context.getInstance().adapter.getNameForPersist(model);
       const oldRecord = model.getRecordWithId(id);
 
       const mockReturnValue = model.$mockHook("persist", {

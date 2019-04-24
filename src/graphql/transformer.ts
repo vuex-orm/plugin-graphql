@@ -3,12 +3,13 @@ import Model from "../orm/model";
 import { Model as ORMModel } from "@vuex-orm/core";
 import Context from "../common/context";
 import {
-  pluralize,
-  singularize,
   clone,
   downcaseFirstLetter,
-  isPlainObject
+  isPlainObject,
+  pluralize,
+  singularize
 } from "../support/utils";
+import { ConnectionMode } from "../adapters/adapter";
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -102,21 +103,21 @@ export default class Transformer {
           if (isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 
-            if (data[key].nodes && context.connectionQueryMode === "nodes") {
+            if (data[key].nodes && context.connectionMode === ConnectionMode.NODES) {
               result[pluralize(key)] = this.transformIncomingData(
                 data[key].nodes,
                 localModel,
                 mutation,
                 true
               );
-            } else if (data[key].edges && context.connectionQueryMode === "edges") {
+            } else if (data[key].edges && context.connectionMode === ConnectionMode.EDGES) {
               result[pluralize(key)] = this.transformIncomingData(
                 data[key].edges,
                 localModel,
                 mutation,
                 true
               );
-            } else if (data["node"] && context.connectionQueryMode === "edges") {
+            } else if (data["node"] && context.connectionMode === ConnectionMode.EDGES) {
               result = this.transformIncomingData(data["node"], localModel, mutation, true);
             } else {
               let newKey = key;

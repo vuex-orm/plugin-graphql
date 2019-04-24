@@ -4,7 +4,6 @@ import { Store } from "../orm/store";
 import Transformer from "../graphql/transformer";
 import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
 import Schema from "../graphql/schema";
 
 /**

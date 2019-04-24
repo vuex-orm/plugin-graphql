@@ -1,7 +1,7 @@
 import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
-import NameGenerator from "../graphql/name-generator";
 import { Store } from "../orm/store";
+import Context from "../common/context";
 
 /**
  * Push action for sending a update mutation. Will be used for record.$push().
@@ -20,7 +20,7 @@ export default class Push extends Action {
   ): Promise<Data> {
     if (data) {
       const model = this.getModelFromState(state!);
-      const mutationName = NameGenerator.getNameForPush(model);
+      const mutationName = Context.getInstance().adapter.getNameForPush(model);
 
       const mockReturnValue = model.$mockHook("push", {
         data,

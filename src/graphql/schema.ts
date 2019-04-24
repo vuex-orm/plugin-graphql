@@ -5,6 +5,7 @@ import {
   GraphQLTypeDefinition
 } from "../support/interfaces";
 import { upcaseFirstLetter } from "../support/utils";
+import { ConnectionMode } from "../adapters/adapter";
 
 export default class Schema {
   private schema: GraphQLSchema;
@@ -24,7 +25,7 @@ export default class Schema {
     this.getType("Mutation")!.fields!.forEach(f => this.mutations.set(f.name, f));
   }
 
-  public determineQueryMode(): string {
+  public determineQueryMode(): ConnectionMode {
     let connection: GraphQLType | null = null;
 
     this.queries.forEach(query => {
@@ -39,16 +40,16 @@ export default class Schema {
     /* istanbul ignore next */
     if (!connection) {
       throw new Error(
-        "Can't determine the connection mode due to the fact that here are no connection types in the schema. Please set the connectionQueryMode via Vuex-ORM-GraphQL options!"
+        "Can't determine the connection mode due to the fact that here are no connection types in the schema. Please set the connectionMode via Vuex-ORM-GraphQL options!"
       );
     }
 
     if (connection!.fields!.find(f => f.name === "nodes")) {
-      return "nodes";
+      return ConnectionMode.NODES;
     } else if (connection!.fields!.find(f => f.name === "edges")) {
-      return "edges";
+      return ConnectionMode.EDGES;
     } else {
-      return "plain";
+      return ConnectionMode.PLAIN;
     }
   }
 
