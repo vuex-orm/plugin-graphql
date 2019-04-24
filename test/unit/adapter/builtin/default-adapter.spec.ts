@@ -53,4 +53,16 @@ describe("DefaultAdapter", () => {
       expect(Context.getInstance().adapter.getConnectionMode()).toEqual(ConnectionMode.NODES);
     });
   });
+
+  describe(".getRootMutationName", () => {
+    test("returns a correct name", () => {
+      expect(Context.getInstance().adapter.getRootMutationName()).toEqual("Mutation");
+    });
+  });
+
+  describe(".getRootQueryName", () => {
+    test("returns a correct name", () => {
+      expect(Context.getInstance().adapter.getRootQueryName()).toEqual("Query");
+    });
+  });
 });

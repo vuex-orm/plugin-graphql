@@ -13,6 +13,9 @@ export enum FilterMode {
 }
 
 export default interface Adapter {
+  getRootQueryName(): string;
+  getRootMutationName(): string;
+
   getNameForPersist(model: Model): string;
   getNameForPush(model: Model): string;
   getNameForDestroy(model: Model): string;

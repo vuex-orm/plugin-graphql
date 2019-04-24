@@ -6,6 +6,7 @@ import {
 } from "../support/interfaces";
 import { upcaseFirstLetter } from "../support/utils";
 import { ConnectionMode } from "../adapters/adapter";
+import Context from "../common/context";
 
 export default class Schema {
   private schema: GraphQLSchema;
@@ -14,6 +15,8 @@ export default class Schema {
   private queries: Map<string, GraphQLField>;
 
   public constructor(schema: GraphQLSchema) {
+    const context = Context.getInstance();
+
     this.schema = schema;
     this.types = new Map<string, GraphQLType>();
     this.mutations = new Map<string, GraphQLField>();
@@ -21,8 +24,12 @@ export default class Schema {
 
     this.schema.types.forEach((t: GraphQLType) => this.types.set(t.name, t));
 
-    this.getType("Query")!.fields!.forEach(f => this.queries.set(f.name, f));
-    this.getType("Mutation")!.fields!.forEach(f => this.mutations.set(f.name, f));
+    this.getType(context.adapter.getRootQueryName())!.fields!.forEach(f =>
+      this.queries.set(f.name, f)
+    );
+    this.getType(context.adapter.getRootMutationName())!.fields!.forEach(f =>
+      this.mutations.set(f.name, f)
+    );
   }
 
   public determineQueryMode(): ConnectionMode {

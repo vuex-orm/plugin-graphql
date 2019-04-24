@@ -3,6 +3,14 @@ import Model from "../../orm/model";
 import { upcaseFirstLetter } from "../../support/utils";
 
 export default class DefaultAdapter implements Adapter {
+  getRootMutationName(): string {
+    return "Mutation";
+  }
+
+  getRootQueryName(): string {
+    return "Query";
+  }
+
   getConnectionMode(): ConnectionMode {
     return ConnectionMode.NODES;
   }
