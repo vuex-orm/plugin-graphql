@@ -25,4 +25,5 @@ export default interface Adapter {
 
   getFilterMode(): FilterMode;
   getFilterTypeName(model: Model): string;
+  getInputTypeName(model: Model, action?: string): string;
 }

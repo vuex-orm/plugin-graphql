@@ -175,6 +175,7 @@ export default class QueryBuilder {
     allowIdFields: boolean = true,
     field: GraphQLField | null = null
   ): string {
+    const context = Context.getInstance();
     if (args === undefined) return "";
 
     let returnValue: string = "";
@@ -204,7 +205,7 @@ export default class QueryBuilder {
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = value.__type + "Input!";
+              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
             } else if (Array.isArray(value) && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 

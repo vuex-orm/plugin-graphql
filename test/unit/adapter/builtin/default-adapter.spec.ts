@@ -65,4 +65,10 @@ describe("DefaultAdapter", () => {
       expect(Context.getInstance().adapter.getRootQueryName()).toEqual("Query");
     });
   });
+
+  describe(".getInputTypeName", () => {
+    test("returns a correct name", () => {
+      expect(Context.getInstance().adapter.getInputTypeName(model)).toEqual("PostInput");
+    });
+  });
 });
