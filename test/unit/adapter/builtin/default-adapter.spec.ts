@@ -44,7 +44,7 @@ describe("DefaultAdapter", () => {
 
   describe(".getFilterTypeName", () => {
     test("returns a correct filter type name", () => {
-      expect(Context.getInstance().adapter.getFilterTypeName(model)).toEqual("PostFilterType");
+      expect(Context.getInstance().adapter.getFilterTypeName(model)).toEqual("PostFilter");
     });
   });
 

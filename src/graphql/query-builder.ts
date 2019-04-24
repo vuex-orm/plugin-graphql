@@ -1,6 +1,6 @@
 import { Relation } from "@vuex-orm/core";
 import Model from "../orm/model";
-import { Arguments, Field, GraphQLField } from "../support/interfaces";
+import { Arguments, Field, GraphQLField, GraphQLType } from "../support/interfaces";
 import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/utils";
 import gql from "graphql-tag";
 import Context from "../common/context";
@@ -310,7 +310,8 @@ export default class QueryBuilder {
     model: Model,
     isFilter: boolean
   ): GraphQLField | undefined {
-    const schema = Context.getInstance().schema!;
+    const context = Context.getInstance();
+    const schema = context.schema!;
     let schemaField: GraphQLField | undefined;
 
     if (field) {
@@ -319,7 +320,10 @@ export default class QueryBuilder {
     }
 
     // We try to find the FilterType or at least the Type this query belongs to.
-    const type = schema.getType(model.singularName + (isFilter ? "Filter" : ""), true);
+    const type: GraphQLType | null = schema.getType(
+      isFilter ? context.adapter.getFilterTypeName(model) : model.singularName,
+      true
+    );
 
     // Next we try to find the field from the type
     schemaField = type
