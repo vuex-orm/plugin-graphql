@@ -8,6 +8,9 @@ generate GraphQL queries, has to parse the schema and de-/serialize the data. Th
 to customize how this plugin should behave and communicate with the API. For this we implemented an
 adapter pattern, which allows you to setup your own adapter and customize it.
 
+
+## Basics
+
 Every adapter has to implement the `Adapter` interface (when your're working with TypeScript).
 However it's easier to just inherit from the DefaultAdapter:
 
@@ -37,6 +40,8 @@ VuexORM.use(VuexORMGraphQL, {
 
 That's it. In the next sections you can read what and how you can customize the adapter.
 
+
+## Methods
 
 Each Adapter has to implement a bunch of methods. Here is the list of the currently supported
 method signatures and their value in the default adapter:
@@ -74,14 +79,10 @@ method signatures and their value in the default adapter:
     - Returns the [ConnectionMode](connection-mode.md).
     - Default adapter value: `AUTO`
 
-- `getFilterMode(): ArgumentMode;`
-    - Returns the [ArgumentMode](argument-mode.md) for filtering.
+- `getArgumentMode(): ArgumentMode;`
+    - Returns the ArgumentMode for filtering and inputs (push, persist).
     - Default adapter value: `TYPE`
 
-- `getInputMode(): ArgumentMode;`
-   - Returns the [ArgumentMode](argument-mode.md) for inputs (persist and push).
-   - Default adapter value: `TYPE`
-   
 - `getFilterTypeName(model: Model): string;`
     - Returns the name of the filter type for a model.
     - `model` is a instance of [Model](https://github.com/vuex-orm/plugin-graphql/blob/master/src/orm/model.ts)
@@ -91,3 +92,55 @@ method signatures and their value in the default adapter:
     - Returns the name of the input type for a model.
     - `model` is a instance of [Model](https://github.com/vuex-orm/plugin-graphql/blob/master/src/orm/model.ts)
     - Default adapter value example: `PostInput`
+
+
+## ArgumentMode
+
+The `getArgumentMode()` methods determines the ArgumentMode, which knows to options: `LIST` and `TYPE`.
+It tells the plugin how arguments should be passed to queries and mutations.
+
+
+### `TYPE`
+
+`TYPE` is the value in the default adapter and causes the plugin to use a `Input` or `Filter` type:
+
+For `$persist()`:
+```
+mutation CreatePost($post: PostInput!) {
+  createPost(post: $post) {
+    ...
+  }
+}
+```
+
+For `fetch()`:
+```
+query Posts($title: String!) {
+  posts(filter: {title: $title}) {
+    ...
+  }
+}
+```
+
+
+### `LIST`
+
+`LIST` causes the plugin to use plain lists:
+
+For `$persist()`:
+```
+mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!) {
+  createPost(id: $id, authorId: $authorId, title: $title, content: $content) {
+    ...
+  }
+}
+```
+
+For `fetch()`:
+```
+query Posts($title: String!) {
+  posts(title: $title) {
+    ...
+  }
+}
+```
