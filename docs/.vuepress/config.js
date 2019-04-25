@@ -20,7 +20,6 @@ module.exports = {
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
       { text: 'Vuex-ORM', link: 'https://vuex-orm.github.io/vuex-orm/' },
-      { text: 'GitHub', link: 'https://github.com/vuex-orm/plugin-graphql' },
     ],
 
     sidebar: [
