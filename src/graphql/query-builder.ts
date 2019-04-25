@@ -5,7 +5,7 @@ import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/u
 import gql from "graphql-tag";
 import Context from "../common/context";
 import Schema from "./schema";
-import { ConnectionMode, FilterMode } from "../adapters/adapter";
+import { ConnectionMode, ArgumentMode } from "../adapters/adapter";
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -420,7 +420,7 @@ export default class QueryBuilder {
       const value = args![key];
 
       if (value && isPlainObject(value)) {
-        if (Context.getInstance().adapter.getFilterMode() === FilterMode.LIST) {
+        if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
           Object.keys(value).forEach((k: string) => {
             args![k] = value[k];
           });

@@ -7,7 +7,7 @@ export enum ConnectionMode {
   EDGES
 }
 
-export enum FilterMode {
+export enum ArgumentMode {
   TYPE,
   LIST
 }
@@ -23,7 +23,8 @@ export default interface Adapter {
 
   getConnectionMode(): ConnectionMode;
 
-  getFilterMode(): FilterMode;
+  getArgumentMode(): ArgumentMode;
+
   getFilterTypeName(model: Model): string;
   getInputTypeName(model: Model, action?: string): string;
 }

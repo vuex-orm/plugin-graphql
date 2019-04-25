@@ -75,11 +75,11 @@ method signatures and their value in the default adapter:
     - Default adapter value: `AUTO`
 
 - `getFilterMode(): ArgumentMode;`
-    - Returns the [FilterMode](filter-mode.md).
+    - Returns the [ArgumentMode](argument-mode.md) for filtering.
     - Default adapter value: `TYPE`
 
-- `getArgumentMode(): ArgumentMode;`
-   - Returns the [ArgumentMode](argument-mode.md).
+- `getInputMode(): ArgumentMode;`
+   - Returns the [ArgumentMode](argument-mode.md) for inputs (persist and push).
    - Default adapter value: `TYPE`
    
 - `getFilterTypeName(model: Model): string;`

@@ -2,7 +2,7 @@ import QueryBuilder from "../../src/graphql/query-builder";
 import { setupMockData } from "../support/mock-data";
 import { prettify } from "../../src/support/utils";
 import Context from "../../src/common/context";
-import { ConnectionMode, FilterMode } from "../../src/adapters/adapter";
+import { ConnectionMode, ArgumentMode } from "../../src/adapters/adapter";
 import TestAdapter from "../support/test-adapter";
 
 let context: Context;
@@ -526,7 +526,7 @@ mutation DeleteUser($id: ID!) {
     });
 
     test("generates a complete create mutation query for a model with variable list", () => {
-      (context.adapter as TestAdapter).filterMode = FilterMode.LIST;
+      (context.adapter as TestAdapter).argumentMode = ArgumentMode.LIST;
 
       const variables = { post: { id: 15, authorId: 2, title: "test", content: "even more test" } };
       let post = context.getModel("post");

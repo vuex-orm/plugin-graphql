@@ -1,4 +1,4 @@
-import Adapter, { ConnectionMode, FilterMode } from "../adapter";
+import Adapter, { ConnectionMode, ArgumentMode } from "../adapter";
 import Model from "../../orm/model";
 import { upcaseFirstLetter } from "../../support/utils";
 
@@ -15,8 +15,8 @@ export default class DefaultAdapter implements Adapter {
     return ConnectionMode.NODES;
   }
 
-  getFilterMode(): FilterMode {
-    return FilterMode.TYPE;
+  getArgumentMode(): ArgumentMode {
+    return ArgumentMode.TYPE;
   }
 
   getFilterTypeName(model: Model): string {
