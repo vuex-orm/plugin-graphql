@@ -14,7 +14,6 @@ export interface Options {
   credentials?: string;
   useGETForQueries?: boolean;
   debug?: boolean;
-  connectionQueryMode?: string;
   link?: ApolloLink;
   adapter?: Adapter;
 }

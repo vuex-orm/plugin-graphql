@@ -30,7 +30,6 @@ module.exports = {
         collapsable: false,
         children: [
           '/guide/setup',
-          '/guide/graphql',
           '/guide/fetch',
           '/guide/persist',
           '/guide/push',
@@ -43,6 +42,7 @@ module.exports = {
         title: 'Advanced Topics',
         collapsable: false,
         children: [
+          '/guide/adapters',
           '/guide/connection-mode',
           '/guide/custom-queries',
           '/guide/eager-loading',
