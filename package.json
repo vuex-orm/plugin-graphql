@@ -51,8 +51,8 @@
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
   },
   "dependencies": {
-    "app": "latest",
-    "apollo-cache-inmemory": "^1.1.7"
+    "apollo-cache-inmemory": "^1.1.7",
+    "app": "latest"
   },
   "peerDependencies": {
     "@vuex-orm/core": "^0.30.0"
@@ -142,7 +142,11 @@
       }
     },
     "collectCoverage": true,
-    "coverageReporters": ["json", "lcov", "html"],
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "html"
+    ],
     "collectCoverageFrom": [
       "src/**/*.{js,ts}"
     ]
