@@ -2,7 +2,8 @@ import QueryBuilder from "../../src/graphql/query-builder";
 import { setupMockData } from "../support/mock-data";
 import { prettify } from "../../src/support/utils";
 import Context from "../../src/common/context";
-import { ConnectionMode } from "../../src/adapters/adapter";
+import { ConnectionMode, FilterMode } from "../../src/adapters/adapter";
+import TestAdapter from "../support/test-adapter";
 
 let context: Context;
 let store;
@@ -517,6 +518,63 @@ mutation DeleteUser($id: ID!) {
       email
       age
       sex
+    }
+  }
+}
+      `.trim() + "\n"
+      );
+    });
+
+    test("generates a complete create mutation query for a model with variable list", () => {
+      (context.adapter as TestAdapter).filterMode = FilterMode.LIST;
+
+      const variables = { post: { id: 15, authorId: 2, title: "test", content: "even more test" } };
+      let post = context.getModel("post");
+      let query = QueryBuilder.buildQuery("mutation", post, "createPost", variables, false);
+      query = prettify(query.loc.source.body);
+
+      expect(query).toEqual(
+        `
+mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!) {
+  createPost(id: $id, authorId: $authorId, title: $title, content: $content) {
+    id
+    content
+    title
+    otherId
+    published
+    author {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        author {
+          id
+          name
+          profile {
+            id
+            email
+            age
+            sex
+          }
+        }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
+      }
     }
   }
 }

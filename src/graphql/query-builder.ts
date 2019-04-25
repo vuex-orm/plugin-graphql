@@ -5,7 +5,7 @@ import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/u
 import gql from "graphql-tag";
 import Context from "../common/context";
 import Schema from "./schema";
-import { ConnectionMode } from "../adapters/adapter";
+import { ConnectionMode, FilterMode } from "../adapters/adapter";
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -108,14 +108,11 @@ export default class QueryBuilder {
   ) {
     const context = Context.getInstance();
 
+    // model
     model = context.getModel(model);
-    args = (args ? clone(args) : {}) as Arguments;
 
-    Object.keys(args).forEach((key: string) => {
-      if (args && args[key] && isPlainObject(args[key])) {
-        args[key] = { __type: upcaseFirstLetter(key) };
-      }
-    });
+    // arguments
+    args = this.prepareArguments(args);
 
     // multiple
     multiple = multiple === undefined ? !args["id"] : multiple;
@@ -414,5 +411,26 @@ export default class QueryBuilder {
     });
 
     return relationQueries.join("\n");
+  }
+
+  private static prepareArguments(args?: Arguments): Arguments {
+    args = (args ? clone(args) : {}) as Arguments;
+
+    Object.keys(args).forEach((key: string) => {
+      const value = args![key];
+
+      if (value && isPlainObject(value)) {
+        if (Context.getInstance().adapter.getFilterMode() === FilterMode.LIST) {
+          Object.keys(value).forEach((k: string) => {
+            args![k] = value[k];
+          });
+          delete args![key];
+        } else {
+          args![key] = { __type: upcaseFirstLetter(key) };
+        }
+      }
+    });
+
+    return args;
   }
 }
