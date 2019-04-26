@@ -26,7 +26,7 @@ export const typeDefs = `
     comments(filter: CommentFilter): CommentTypeConnection!
     tariffOption(id: ID!): TariffOption!
     tariffOptions(filter: TariffOptionFilter): TariffOptionTypeConnection!
-    tariff(id: ID!): Tariff!
+    tariff(uuid: String!): Tariff!
     tariffs(filter: TariffFilter): TariffTypeConnection!
     tariffTariffOption(id: ID!): TariffTariffOption!
     tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
@@ -46,7 +46,7 @@ export const typeDefs = `
     deleteVideo(id: ID!): Video!
     deleteComment(id: ID!): Comment!
     deleteTariffOption(id: ID!): TariffOption!
-    deleteTariff(id: ID!): Tariff!
+    deleteTariff(uuid: String!): Tariff!
     
     createUser(user: UserInput!): User!
     createProfile(profile: ProfileInput!): Profile!
@@ -62,7 +62,7 @@ export const typeDefs = `
     updateVideo(id: ID!, video: VideoInput!): Video!
     updateComment(id: ID!, comment: CommentInput!): Comment!
     updateTariffOption(id: ID!, tariffOption: TariffOptionInput!): TariffOption!
-    updateTariff(id: ID!, tariff: TariffInput!): Tariff!
+    updateTariff(uuid: String!, tariff: TariffInput!): Tariff!
     
     upvotePost(captchaToken: String!, id: ID!): Post!
     sendSms(to: String!, text: String!): SmsStatus!
@@ -282,7 +282,7 @@ export const typeDefs = `
 
 
   type Tariff {
-    id: ID
+    uuid: String
     name: String!
     displayName: String
     tariffType: String
@@ -292,7 +292,7 @@ export const typeDefs = `
 
 
   input TariffFilter {
-    id: ID
+    uuid: String
     name: String
     displayName: String
     tariffType: String
@@ -301,7 +301,7 @@ export const typeDefs = `
 
 
   input TariffInput {
-    id: ID
+    uuid: String
     name: String
     displayName: String
     tariffType: String
@@ -315,19 +315,19 @@ export const typeDefs = `
 
 
   type TariffTariffOption {
-    tariffId: ID
+    tariffUuid: String
     tariffOptionId: ID
   }
 
 
   input TariffTariffOptionFilter {
-    tariffId: ID
+    tariffUuid: String
     tariffOptionId: ID
   }
 
 
    input TariffTariffOptionInput {
-    tariffId: ID
+    tariffUuid: String
     tariffOptionId: ID
   }
 
@@ -526,7 +526,7 @@ const comments = [
 
 const tariffs = [
   {
-    id: 1,
+    uuid: "ED5F2379-6A8B-4E1D-A4E3-A2C03057C2FC",
     name: "Super DSL S",
     displayName: "super-dsl-s",
     tariffType: "dsl",
@@ -534,7 +534,7 @@ const tariffs = [
   },
 
   {
-    id: 2,
+    uuid: "0D32575B-B15A-4949-95A0-73E6BDD75F8F",
     name: "Super DSL M",
     displayName: "super-dsl-m",
     tariffType: "dsl",
@@ -542,7 +542,7 @@ const tariffs = [
   },
 
   {
-    id: 3,
+    uuid: "8E54BEB8-05F3-48A7-A917-405A13865B89",
     name: "Super DSL L",
     displayName: "super-dsl-l",
     tariffType: "dsl",
