@@ -2,94 +2,15 @@ import Logger from "./logger";
 import Model from "../orm/model";
 import { Model as ORMModel } from "@vuex-orm/core";
 import { Components } from "@vuex-orm/core/lib/plugins/use";
-import { singularize, downcaseFirstLetter, isEqual, pick } from "../support/utils";
+import { downcaseFirstLetter, isEqual, pick, singularize } from "../support/utils";
 import Apollo from "../graphql/apollo";
 import Database from "@vuex-orm/core/lib/database/Database";
 import { Field, GraphQLType, Options } from "../support/interfaces";
 import Schema from "../graphql/schema";
 import { Mock, MockOptions } from "../test-utils";
-
-const introspectionQuery = `
-query Introspection {
-  __schema {
-    types {
-      name
-      description
-      fields(includeDeprecated: true) {
-        name
-        description
-        args {
-          name
-          description
-          type {
-            name
-            kind
-
-            ofType {
-              kind
-
-              name
-              ofType {
-                kind
-                name
-
-                ofType {
-                  kind
-                  name
-                }
-              }
-            }
-          }
-        }
-
-        type {
-          name
-          kind
-
-          ofType {
-            kind
-
-            name
-            ofType {
-              kind
-              name
-
-              ofType {
-                kind
-                name
-              }
-            }
-          }
-        }
-      }
-
-      inputFields {
-        name
-        description
-        type {
-          name
-          kind
-
-          ofType {
-            kind
-
-            name
-            ofType {
-              kind
-              name
-
-              ofType {
-                kind
-                name
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-`;
+import Adapter, { ConnectionMode } from "../adapters/adapter";
+import DefaultAdapter from "../adapters/builtin/default-adapter";
+import introspectionQuery from "../graphql/introspection-query";
 
 /**
  * Internal context of the plugin. This class contains all information, the models, database, logger and so on.
@@ -114,6 +35,12 @@ export default class Context {
    * @type {Options}
    */
   public readonly options: Options;
+
+  /**
+   * GraphQL Adapter.
+   * @type {Adapter}
+   */
+  public readonly adapter: Adapter;
 
   /**
    * The Vuex-ORM database
@@ -160,7 +87,7 @@ export default class Context {
   /**
    * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
    */
-  public connectionQueryMode: string = "auto";
+  public connectionMode: ConnectionMode = ConnectionMode.AUTO;
 
   /**
    * Container for the global mocks.
@@ -182,6 +109,7 @@ export default class Context {
     this.database = options.database;
     this.debugMode = Boolean(options.debug);
     this.logger = new Logger(this.debugMode);
+    this.adapter = options.adapter || new DefaultAdapter();
 
     /* istanbul ignore next */
     if (!options.database) {
@@ -224,11 +152,7 @@ export default class Context {
       this.schemaWillBeLoaded = new Promise(async (resolve, reject) => {
         this.logger.log("Fetching GraphQL Schema initially ...");
 
-        if (this.options.connectionQueryMode) {
-          this.connectionQueryMode = this.options.connectionQueryMode;
-        } else {
-          this.connectionQueryMode = "auto";
-        }
+        this.connectionMode = this.adapter.getConnectionMode();
 
         // We send a custom header along with the request. This is required for our test suite to mock the schema request.
         const context = {
@@ -277,13 +201,11 @@ export default class Context {
       });
     });
 
-    if (this.connectionQueryMode === "auto") {
-      this.connectionQueryMode = this.schema!.determineQueryMode();
-      this.logger.log(
-        `Connection Query Mode is ${this.connectionQueryMode} by automatic detection`
-      );
+    if (this.connectionMode === ConnectionMode.AUTO) {
+      this.connectionMode = this.schema!.determineQueryMode();
+      this.logger.log(`Connection Query Mode is ${this.connectionMode} by automatic detection`);
     } else {
-      this.logger.log(`Connection Query Mode is ${this.connectionQueryMode} by config`);
+      this.logger.log(`Connection Query Mode is ${this.connectionMode} by config`);
     }
   }
 

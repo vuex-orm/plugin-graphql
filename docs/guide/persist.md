@@ -65,3 +65,9 @@ Like when pushing, all records which are returned replace the respective existin
 
 You can pass a object like this: `$perist({ captchaToken: 'asdfasdf' })`. All fields in the object will be passed as
 variables to the mutation.
+
+
+## Relationships
+
+When persisting a record, all `belongsTo` relations are sent to the server too. `hasMany`/`hasOne`
+relations on the other hand are filtered out and have to be persisted on their own.

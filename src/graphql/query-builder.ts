@@ -1,10 +1,11 @@
 import { Relation } from "@vuex-orm/core";
 import Model from "../orm/model";
-import { Arguments, Field, GraphQLField } from "../support/interfaces";
+import { Arguments, Field, GraphQLField, GraphQLType } from "../support/interfaces";
 import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/utils";
 import gql from "graphql-tag";
 import Context from "../common/context";
 import Schema from "./schema";
+import { ConnectionMode, ArgumentMode } from "../adapters/adapter";
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -52,7 +53,7 @@ export default class QueryBuilder {
     if (multiple) {
       const header: string = `${name}${params}`;
 
-      if (context.connectionQueryMode === "nodes") {
+      if (context.connectionMode === ConnectionMode.NODES) {
         return `
           ${header} {
             nodes {
@@ -60,7 +61,7 @@ export default class QueryBuilder {
             }
           }
         `;
-      } else if (context.connectionQueryMode === "edges") {
+      } else if (context.connectionMode === ConnectionMode.EDGES) {
         return `
           ${header} {
             edges {
@@ -107,14 +108,11 @@ export default class QueryBuilder {
   ) {
     const context = Context.getInstance();
 
+    // model
     model = context.getModel(model);
-    args = (args ? clone(args) : {}) as Arguments;
 
-    Object.keys(args).forEach((key: string) => {
-      if (args && args[key] && isPlainObject(args[key])) {
-        args[key] = { __type: upcaseFirstLetter(key) };
-      }
-    });
+    // arguments
+    args = this.prepareArguments(args);
 
     // multiple
     multiple = multiple === undefined ? !args["id"] : multiple;
@@ -174,6 +172,7 @@ export default class QueryBuilder {
     allowIdFields: boolean = true,
     field: GraphQLField | null = null
   ): string {
+    const context = Context.getInstance();
     if (args === undefined) return "";
 
     let returnValue: string = "";
@@ -203,7 +202,7 @@ export default class QueryBuilder {
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = value.__type + "Input!";
+              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
             } else if (Array.isArray(value) && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
@@ -309,7 +308,8 @@ export default class QueryBuilder {
     model: Model,
     isFilter: boolean
   ): GraphQLField | undefined {
-    const schema = Context.getInstance().schema!;
+    const context = Context.getInstance();
+    const schema = context.schema!;
     let schemaField: GraphQLField | undefined;
 
     if (field) {
@@ -318,7 +318,10 @@ export default class QueryBuilder {
     }
 
     // We try to find the FilterType or at least the Type this query belongs to.
-    const type = schema.getType(model.singularName + (isFilter ? "Filter" : ""), true);
+    const type: GraphQLType | null = schema.getType(
+      isFilter ? context.adapter.getFilterTypeName(model) : model.singularName,
+      true
+    );
 
     // Next we try to find the field from the type
     schemaField = type
@@ -408,5 +411,26 @@ export default class QueryBuilder {
     });
 
     return relationQueries.join("\n");
+  }
+
+  private static prepareArguments(args?: Arguments): Arguments {
+    args = (args ? clone(args) : {}) as Arguments;
+
+    Object.keys(args).forEach((key: string) => {
+      const value = args![key];
+
+      if (value && isPlainObject(value)) {
+        if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
+          Object.keys(value).forEach((k: string) => {
+            args![k] = value[k];
+          });
+          delete args![key];
+        } else {
+          args![key] = { __type: upcaseFirstLetter(key) };
+        }
+      }
+    });
+
+    return args;
   }
 }

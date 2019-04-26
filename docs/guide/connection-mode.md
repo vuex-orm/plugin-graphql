@@ -4,20 +4,22 @@
 
 It seems that there are several standards within the GraphQL community how connections (fields that returns multiple
 records) are designed. Some do this via a `nodes` field, some via a `edges { nodes }` query and some do neither of them.
-Vuex-ORM-GraphQL tries to be flexible and supports all of them, but the example queries in the documentation work with
-the `nodes` query, don't be irritated.
+Vuex-ORM-GraphQL tries to be flexible and supports all of them.
+
+There are four possible modes: `AUTO`, `NODES`, `EDGES`, `PLAIN`. The Adapter you use will tell the
+plugin which ConnectionMode to use. In the DefaultAdapter this is `AUTO`.
 
 
 ## Automatic detection
 
-The plugin will try to detect automatically which mode should be used by analyzing the GraphQL Schema. In the best
-case you don't have to bother with this at all.
+The plugin will try to detect automatically which mode should be used by analyzing the GraphQL
+Schema. In the best case you don't have to bother with this at all.
 
 
 ## Manual setting
 
-In rare cases the automatic detection might fail or report the wrong mode. In this case, you can manually set the
-`connectionQueryMode` config param to either `auto` (default), `nodes`, `edges`, `plain`. The modes and the resulting
+In rare cases the automatic detection might fail or report the wrong mode. In this case, you can
+manually set the connection mode via a custom adapter. The modes and the resulting
 queries are explained in the next sections.
 
 

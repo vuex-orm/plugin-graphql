@@ -1,6 +1,7 @@
 import Transformer from "../../src/graphql/transformer";
 import { setupMockData, Video } from "../support/mock-data";
 import Context from "../../src/common/context";
+import { ConnectionMode } from "../../src/adapters/adapter";
 
 let store;
 let vuexOrmGraphQL;
@@ -450,7 +451,7 @@ describe("Transformer", () => {
       const tariff = context.getModel("tariff");
       const post = context.getModel("post");
 
-      context.connectionQueryMode = "edges";
+      context.connectionMode = ConnectionMode.EDGES;
 
       expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(
         expectedData1

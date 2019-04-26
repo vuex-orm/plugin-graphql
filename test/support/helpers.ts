@@ -8,6 +8,7 @@ import { makeExecutableSchema } from "graphql-tools";
 import { prettify } from "../../src/support/utils";
 import { typeDefs, resolvers } from "./mock-schema";
 import sinon from "sinon";
+import Adapter from "../../src/adapters/adapter";
 
 // @ts-ignore
 Vue.use(Vuex);
@@ -22,7 +23,7 @@ export interface Entity {
 /**
  * Create a new Vuex Store.
  */
-export function createStore(entities: Array<Entity>, headers?: any) {
+export function createStore(entities: Array<Entity>, headers?: any, adapter?: Adapter) {
   const database = new Database();
 
   entities.forEach(entity => {
@@ -40,7 +41,8 @@ export function createStore(entities: Array<Entity>, headers?: any) {
   VuexORM.use(VuexORMGraphQLPlugin, {
     database: database,
     link,
-    headers
+    headers,
+    adapter
   });
 
   const store = new Vuex.Store({

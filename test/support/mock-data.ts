@@ -2,7 +2,8 @@ import { Model as ORMModel, Attribute } from "@vuex-orm/core";
 import { createStore } from "./helpers";
 import { setupTestUtils } from "../../src/test-utils";
 import VuexORMGraphQLPlugin from "../../src";
-import { ApolloLink } from "apollo-link";
+import Adapter from "../../src/adapters/adapter";
+import TestAdapter from "./test-adapter";
 
 export interface Fields {
   [key: string]: Attribute;
@@ -179,9 +180,11 @@ export class Tag extends ORMModel {
   }
 }
 
-export async function setupMockData(headers?: any) {
+export async function setupMockData(headers?: any, adapter?: Adapter) {
   let store;
   let vuexOrmGraphQL;
+
+  if (!adapter) adapter = new TestAdapter();
 
   [store, vuexOrmGraphQL] = createStore(
     [
@@ -197,7 +200,8 @@ export async function setupMockData(headers?: any) {
       { model: Taggable },
       { model: Tag }
     ],
-    headers
+    headers,
+    adapter
   );
 
   setupTestUtils(VuexORMGraphQLPlugin);
