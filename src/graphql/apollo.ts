@@ -41,12 +41,15 @@ export default class Apollo {
         useGETForQueries: Boolean(context.options.useGETForQueries)
       });
     }
-
-    this.apolloClient = new ApolloClient({
-      link: this.httpLink,
-      cache: new InMemoryCache(),
-      connectToDevTools: context.debugMode
-    });
+    if (context.options.apolloClient) {
+      this.apolloClient = context.options.apolloClient;
+    } else {
+      this.apolloClient = new ApolloClient({
+        link: this.httpLink,
+        cache: new InMemoryCache(),
+        connectToDevTools: context.debugMode
+      });
+    }
   }
 
   /**

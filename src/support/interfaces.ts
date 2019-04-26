@@ -8,6 +8,7 @@ import Adapter from "../adapters/adapter";
 export type DispatchFunction = (action: string, data: Data) => Promise<any>;
 
 export interface Options {
+  apolloClient: any;
   database: Database;
   url?: string;
   headers?: { [index: string]: any };

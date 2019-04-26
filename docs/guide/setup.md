@@ -28,7 +28,7 @@ VuexORM.use(VuexORMGraphQL, { database });
 ## Possible options
 
 These are the possible options to pass when calling `VuexORM.use()`:
-
+- `apolloClient` (optional): Provide a preconfigured instance of the Apollo client.
 - `database` (required): The Vuex-ORM database.
 - `debug` (optional, default: `false`): Set to true to activate the debug logging.
 - `url` (optional, default: `/graphql`): The URL to the graphql api. Will be passed to apollo-client.
