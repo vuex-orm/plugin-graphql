@@ -42,7 +42,9 @@ export default class Apollo {
       });
     }
     if (context.options.apolloClient) {
-      this.apolloClient = context.options.apolloClient;
+      this.apolloClient = context => {
+        return context.options.apolloClient;
+      };
     } else {
       this.apolloClient = new ApolloClient({
         link: this.httpLink,
