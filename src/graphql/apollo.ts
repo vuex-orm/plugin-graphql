@@ -31,7 +31,7 @@ export default class Apollo {
     const context = Context.getInstance();
 
     // This allows the test suite to pass a custom link
-    if (context.options.link) {
+    if (!this.context.apolloClient && context.options.link) {
       this.httpLink = context.options.link;
     } else {
       /* istanbul ignore next */
