@@ -42,6 +42,7 @@ module.exports = {
         title: 'Advanced Topics',
         collapsable: false,
         children: [
+          '/guide/nuxt',
           '/guide/adapters',
           '/guide/connection-mode',
           '/guide/custom-queries',
