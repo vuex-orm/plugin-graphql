@@ -5,7 +5,7 @@
 
 ## Eager Loading
 
-All `belongsTo` and `hasOne` related records are eager loaded when `fetch` is called.
+All `belongsTo`, `hasOne` and `morphOne` related records are eager loaded when `fetch` is called.
 All other related records have to be added to a static field in the model called `eagerLoad` to
 have them eagerly loaded with fetch.
 

@@ -1,6 +1,6 @@
 import { Data, Field } from "../support/interfaces";
 import Model from "../orm/model";
-import { Model as ORMModel } from "@vuex-orm/core";
+import { Model as ORMModel, Relation } from "@vuex-orm/core";
 import Context from "../common/context";
 import {
   clone,
@@ -28,24 +28,15 @@ export default class Transformer {
    */
   public static transformOutgoingData(model: Model, data: Data, whitelist?: Array<String>): Data {
     const context = Context.getInstance();
-    const relations: Map<string, Field> = model.getRelations();
+    const relations: Map<string, Relation> = model.getRelations();
     const returnValue: Data = {} as Data;
 
     Object.keys(data).forEach(key => {
       const value = data[key];
 
-      // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
-      if (
-        (whitelist && whitelist.includes(key)) ||
-        ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
-          !key.startsWith("$") &&
-          value !== null &&
-          value !== undefined)
-      ) {
-        let relatedModel =
-          relations.get(key) && relations.get(key)!.parent
-            ? context.getModel(singularize(relations.get(key)!.parent!.entity), true)
-            : null;
+      if (this.shouldIncludeOutgoingField(key, value, model, whitelist)) {
+        let relatedModel = Model.getRelatedModel(relations.get(key)!);
+
         if (value instanceof Array) {
           // Either this is a hasMany field or a .attr() field which contains an array.
           const arrayModel = context.getModel(singularize(key), true);
@@ -149,5 +140,42 @@ export default class Transformer {
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
     return clone(result);
+  }
+
+  /**
+   * Tells if a field should be included in the outgoing data.
+   * @param {string} fieldName Name of the field to check.
+   * @param {any} value Value of the field.
+   * @param {Model} model Model class which contains the field.
+   * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
+   * @returns {boolean}
+   */
+  private static shouldIncludeOutgoingField(
+    fieldName: string,
+    value: any,
+    model: Model,
+    whitelist?: Array<String>
+  ): boolean {
+    // Always add fields on the whitelist.
+    if (whitelist && whitelist.includes(fieldName)) return true;
+
+    // Ignore internal fields
+    if (fieldName.startsWith("$")) return false;
+
+    // Ignore empty fields
+    if (value === null || value === undefined) return false;
+
+    // Include all eager save connections
+    if (model.getRelations().has(fieldName)) {
+      const relation: Relation = model.getRelations().get(fieldName)!;
+      const related: Model | null = Model.getRelatedModel(relation);
+      if (related && model.shouldEagerSaveRelation(fieldName, relation, related)) return true;
+
+      // All other relations are skipped
+      return false;
+    }
+
+    // Everything else is ok
+    return true;
   }
 }

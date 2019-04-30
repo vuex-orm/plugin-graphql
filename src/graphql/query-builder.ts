@@ -353,38 +353,8 @@ export default class QueryBuilder {
     const context = Context.getInstance();
     const relationQueries: Array<string> = [];
 
-    model.getRelations().forEach((field: Field, name: string) => {
-      let relatedModel: Model;
-      let fieldAsRelation: Relation = field as Relation;
-
-      if (
-        fieldAsRelation instanceof context.components.BelongsToMany ||
-        fieldAsRelation instanceof context.components.HasMany ||
-        fieldAsRelation instanceof context.components.HasManyThrough ||
-        fieldAsRelation instanceof context.components.MorphedByMany ||
-        fieldAsRelation instanceof context.components.MorphMany ||
-        fieldAsRelation instanceof context.components.MorphOne ||
-        fieldAsRelation instanceof context.components.MorphToMany ||
-        fieldAsRelation instanceof context.components.HasOne
-      ) {
-        relatedModel = context.getModel(fieldAsRelation.related.entity);
-      } else if (
-        fieldAsRelation instanceof context.components.BelongsTo ||
-        fieldAsRelation instanceof context.components.HasManyBy
-      ) {
-        relatedModel = context.getModel(fieldAsRelation.parent.entity);
-      } else if (fieldAsRelation instanceof context.components.MorphTo) {
-        relatedModel = context.getModel(fieldAsRelation.type);
-
-        /* istanbul ignore next */
-      } else {
-        relatedModel = context.getModel(name);
-
-        context.logger.log(
-          "WARNING: unknown field type. Fallback to attribute name",
-          fieldAsRelation
-        );
-      }
+    model.getRelations().forEach((field: Relation, name: string) => {
+      let relatedModel: Model = Model.getRelatedModel(field)!;
 
       // We will ignore the field, when it's already in the path. Means: When it's already queried. However there are
       // cases where the model will have a relationship to itself. For example a nested category strucure where the
@@ -405,7 +375,14 @@ export default class QueryBuilder {
         newPath.push(relatedModel.singularName);
 
         relationQueries.push(
-          this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false)
+          this.buildField(
+            relatedModel,
+            Model.isConnection(field as Field),
+            undefined,
+            newPath,
+            name,
+            false
+          )
         );
       }
     });
