@@ -150,7 +150,7 @@ export default class Transformer {
    * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
    * @returns {boolean}
    */
-  private static shouldIncludeOutgoingField(
+  public static shouldIncludeOutgoingField(
     fieldName: string,
     value: any,
     model: Model,

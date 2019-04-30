@@ -1,5 +1,5 @@
 import Transformer from "../../src/graphql/transformer";
-import { setupMockData, Video } from "../support/mock-data";
+import { Comment, setupMockData, Tag, Taggable, User, Video } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { ConnectionMode } from "../../src/adapters/adapter";
 import { Data } from "../../src/support/interfaces";
@@ -466,6 +466,27 @@ describe("Transformer", () => {
       expect(
         Transformer.transformIncomingData((incomingData2 as unknown) as Data, post, false)
       ).toEqual(expectedData2);
+    });
+  });
+
+  describe(".shouldIncludeOutgoingField", () => {
+    test("works", () => {
+      const user = context.getModel("user");
+      const post = context.getModel("post");
+
+      expect(Transformer.shouldIncludeOutgoingField("posts", 15, user, ["posts"])).toEqual(true);
+
+      expect(Transformer.shouldIncludeOutgoingField("id", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField("name", "test", user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField("profileId", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField("posts", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField("comments", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField("profile", {}, user)).toEqual(true);
+
+      expect(Transformer.shouldIncludeOutgoingField("otherId", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField("author", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField("comments", {}, post)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField("tags", {}, post)).toEqual(true);
     });
   });
 });

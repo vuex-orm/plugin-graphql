@@ -26,6 +26,7 @@ export class User extends ORMModel {
 
 export class Profile extends ORMModel {
   static entity = "profiles";
+  static eagerSave = ["user"];
 
   static fields(): Fields {
     return {
@@ -59,7 +60,8 @@ export class Video extends ORMModel {
 
 export class Post extends ORMModel {
   static entity = "posts";
-  static eagerLoad = ["comments", "tags"];
+  static eagerLoad = ["comments"];
+  static eagerSync = ["tags"];
 
   static fields(): Fields {
     return {
