@@ -56,6 +56,7 @@ describe("Action", () => {
             },
             profileId: 1
           },
+          tags: [{ id: 1, name: "GraphQL" }, { id: 2, name: "Ruby" }],
           authorId: 1
         },
 

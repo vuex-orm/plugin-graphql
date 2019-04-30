@@ -137,37 +137,64 @@ describe("Model", () => {
   });
 
   describe(".shouldEagerLoadRelation", () => {
-    test("returns true if field is a belongsTo or hasOne relation", () => {
-      const model = context.getModel("post");
+    test("returns the correct value", () => {
+      const user = context.getModel("user");
+      const profile = context.getModel("profile");
+      const post = context.getModel("post");
+      const tariff = context.getModel("tariff");
+
       expect(
-        model.shouldEagerLoadRelation(
-          "author",
-          model.fields.get("author")! as Relation,
-          context.getModel("user")
+        post.shouldEagerLoadRelation("author", post.fields.get("author")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        post.shouldEagerLoadRelation("comments", post.fields.get("comments")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        post.shouldEagerLoadRelation("tags", post.fields.get("tags")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        profile.shouldEagerLoadRelation("user", profile.fields.get("user")! as Relation, profile)
+      ).toEqual(true);
+      expect(
+        user.shouldEagerLoadRelation("posts", user.fields.get("posts")! as Relation, user)
+      ).toEqual(false);
+      expect(
+        tariff.shouldEagerLoadRelation(
+          "tariffOptions",
+          tariff.fields.get("tariffOptions")! as Relation,
+          tariff
         )
       ).toEqual(true);
-
-      // TODO test hasOne
     });
+  });
 
-    test("returns true if field is in the eagerLoad array", () => {
-      const model = context.getModel("post");
+  describe(".shouldEagerSaveRelation", () => {
+    test("returns the correct value", () => {
+      const user = context.getModel("user");
+      const profile = context.getModel("profile");
+      const post = context.getModel("post");
+      const tariff = context.getModel("tariff");
+
       expect(
-        model.shouldEagerLoadRelation(
-          "post",
-          model.fields.get("comments")! as Relation,
-          context.getModel("comment")
-        )
+        post.shouldEagerSaveRelation("author", post.fields.get("author")! as Relation, post)
       ).toEqual(true);
-    });
-
-    test("returns false if field neither belongsTo/hasOne nor in the eagerLoad array", () => {
-      const model = context.getModel("user");
       expect(
-        model.shouldEagerLoadRelation(
-          "user",
-          model.fields.get("comments")! as Relation,
-          context.getModel("comment")
+        post.shouldEagerSaveRelation("comments", post.fields.get("comments")! as Relation, post)
+      ).toEqual(false);
+      expect(
+        post.shouldEagerSaveRelation("tags", post.fields.get("tags")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        profile.shouldEagerSaveRelation("user", profile.fields.get("user")! as Relation, profile)
+      ).toEqual(true);
+      expect(
+        user.shouldEagerSaveRelation("posts", user.fields.get("posts")! as Relation, user)
+      ).toEqual(false);
+      expect(
+        tariff.shouldEagerSaveRelation(
+          "tariffOptions",
+          tariff.fields.get("tariffOptions")! as Relation,
+          tariff
         )
       ).toEqual(false);
     });

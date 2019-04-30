@@ -20,7 +20,11 @@ describe("Transformer", () => {
       // @ts-ignore
       await Video.fetch(1);
       const video = context.getModel("video").getRecordWithId(1)!;
-      const transformedData = Transformer.transformOutgoingData(context.getModel("video"), video);
+      const transformedData = Transformer.transformOutgoingData(
+        context.getModel("video"),
+        video,
+        false
+      );
       expect(transformedData).toEqual({
         id: 1,
         ignoreMe: "",
@@ -474,19 +478,22 @@ describe("Transformer", () => {
       const user = context.getModel("user");
       const post = context.getModel("post");
 
-      expect(Transformer.shouldIncludeOutgoingField("posts", 15, user, ["posts"])).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "posts", 15, user, ["posts"])).toEqual(
+        true
+      );
+      expect(Transformer.shouldIncludeOutgoingField(true, "profile", {}, user)).toEqual(false);
 
-      expect(Transformer.shouldIncludeOutgoingField("id", 15, user)).toEqual(true);
-      expect(Transformer.shouldIncludeOutgoingField("name", "test", user)).toEqual(true);
-      expect(Transformer.shouldIncludeOutgoingField("profileId", 15, user)).toEqual(true);
-      expect(Transformer.shouldIncludeOutgoingField("posts", [], user)).toEqual(false);
-      expect(Transformer.shouldIncludeOutgoingField("comments", [], user)).toEqual(false);
-      expect(Transformer.shouldIncludeOutgoingField("profile", {}, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "id", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "name", "test", user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "profileId", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "posts", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "comments", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "profile", {}, user)).toEqual(true);
 
-      expect(Transformer.shouldIncludeOutgoingField("otherId", {}, post)).toEqual(true);
-      expect(Transformer.shouldIncludeOutgoingField("author", {}, post)).toEqual(true);
-      expect(Transformer.shouldIncludeOutgoingField("comments", {}, post)).toEqual(false);
-      expect(Transformer.shouldIncludeOutgoingField("tags", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "otherId", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "author", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "comments", {}, post)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "tags", {}, post)).toEqual(true);
     });
   });
 });
