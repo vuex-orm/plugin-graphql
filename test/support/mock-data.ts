@@ -16,9 +16,12 @@ export class User extends ORMModel {
     return {
       id: this.increment(),
       name: this.string(""),
-      profileId: this.number(0),
       posts: this.hasMany(Post, "authorId"),
       comments: this.hasMany(Comment, "authorId"),
+
+      // In the schema we don't have the profileId field to test if the plugin can handle this by
+      // reading the id directly from the associated record.
+      profileId: this.number(0),
       profile: this.belongsTo(Profile, "profileId")
     };
   }

@@ -82,7 +82,6 @@ export const typeDefs = `
   type User {
     id: ID
     name: String
-    profileId: ID
     posts: PostTypeConnection
     comments: CommentTypeConnection
     profile: Profile
@@ -92,7 +91,6 @@ export const typeDefs = `
   input UserFilter {
     id: ID
     name: String
-    profileId: ID
     profile: ProfileInput
   }
 
@@ -100,7 +98,6 @@ export const typeDefs = `
    input UserInput {
     id: ID
     name: String
-    profileId: ID
     profile: ProfileInput
   }
 
@@ -649,6 +646,8 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
     case User:
       if (!ignoreRelation(Profile, path)) {
         record.profile = findOne(Profile, profiles, record.profileId, path);
+        // Special for user. There is no profileId to check if the plugin can handle this.
+        delete record.profileId;
       }
       if (!ignoreRelation(Comment, path)) {
         record.comments = findMany(
