@@ -140,6 +140,8 @@ export default class Transformer {
       });
     }
 
+    this.gatherIds(result, model);
+
     if (!recursiveCall) {
       context.logger.log("Transformed data:", result);
       context.logger.groupEnd();
@@ -149,5 +151,28 @@ export default class Transformer {
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
     return clone(result);
+  }
+
+  /**
+   * For the case that the schema doesn't have the foreignKeys of a relation, we have to make sure
+   * these are copied from the related record.
+   *
+   * TODO: Add support for composite primary keys
+   *
+   * @param {Data} result
+   */
+  public static gatherIds(result: Data, model: Model): void {
+    const context: Context = Context.getInstance();
+
+    model.getRelations().forEach((relation: Field, field: string) => {
+      if (
+        relation instanceof context.components.BelongsTo ||
+        relation instanceof context.components.MorphTo
+      ) {
+        if (relation.foreignKey && !result[relation.foreignKey] && result[field]) {
+          result[relation.foreignKey] = result[field]["id"]; // FIXME this could something else then "id"
+        }
+      }
+    });
   }
 }
