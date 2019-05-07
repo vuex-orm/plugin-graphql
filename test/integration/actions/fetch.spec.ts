@@ -123,18 +123,45 @@ query User($id: ID!) {
     });
   });
 
-  describe("without ID but with filter with ID", () => {
-    test("sends the correct query to the API", async () => {
-      const request = await recordGraphQLRequest(async () => {
+  describe("without ID but with filter with array", () => {
+      test("sends the correct query to the API", async () => {
         // @ts-ignore
-        await User.fetch({ profileId: 2 });
-      });
+        await User.fetch(1);
 
-      expect(request!.variables).toEqual({ profileId: 2 });
-      expect(request!.query).toEqual(
-        `
-query Users($profileId: ID!) {
-  users(filter: {profileId: $profileId}) {
+        const insertedData = await Post.insert({
+          data: {
+            title: "It works!",
+            content: "This is a test!",
+            published: false,
+            otherId: 15,
+            author: User.find(1)
+          }
+        });
+
+        const post = insertedData.posts[0];
+
+        const request = await recordGraphQLRequest(async () => {
+          // @ts-ignore
+          await User.fetch({ profileId: 2, posts: [post] });
+        });
+
+        expect(request!.variables).toEqual({
+          profileId: 2,
+          posts: [
+            {
+              id: 1,
+              authorId: 1,
+              content: "This is a test!",
+              otherId: 15,
+              published: false,
+              title: "It works!"
+            }
+          ]
+        });
+        expect(request!.query).toEqual(
+          `
+query Users($profileId: ID!, $posts: [PostFilter]!) {
+  users(filter: {profileId: $profileId, posts: $posts}) {
     nodes {
       id
       name
@@ -148,9 +175,9 @@ query Users($profileId: ID!) {
   }
 }
           `.trim() + "\n"
-      );
+        );
+      });
     });
-  });
 
   describe("without ID but with filter with object", () => {
     test("sends the correct query to the API", async () => {

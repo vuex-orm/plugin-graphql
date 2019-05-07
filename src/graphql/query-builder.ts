@@ -203,7 +203,7 @@ export default class QueryBuilder {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
               typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
-            } else if (Array.isArray(value) && field) {
+            } else if (value instanceof Array && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
               /* istanbul ignore next */

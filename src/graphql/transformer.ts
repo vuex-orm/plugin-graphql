@@ -46,10 +46,13 @@ export default class Transformer {
       const value = data[key];
 
       const isRelation = model.getRelations().has(key);
+      let isRecursion = false;
 
-      // TODO: This ignores arrays - is that ok?
-      const isRecursion =
-        isRelation && !(value instanceof Array) && this.isRecursion(outgoingRecords!, value);
+      if (value instanceof Array) {
+        isRecursion = isRelation && this.isRecursion(outgoingRecords!, value[0]);
+      } else {
+        isRecursion = isRelation && this.isRecursion(outgoingRecords!, value);
+      }
 
       // shouldIncludeOutgoingField and the read param is tricky. In the initial call of this method
       // we want to include any relation, so we have to make sure it's false. In the recursive calls
@@ -71,8 +74,8 @@ export default class Transformer {
           const arrayModel = context.getModel(singularize(key), true);
 
           if (arrayModel) {
+            this.addRecordForRecursionDetection(outgoingRecords!, value[0]);
             returnValue[key] = value.map(v => {
-              this.addRecordForRecursionDetection(outgoingRecords!, v);
               return this.transformOutgoingData(
                 arrayModel || model,
                 v,

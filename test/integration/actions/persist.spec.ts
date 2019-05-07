@@ -20,7 +20,8 @@ describe("persist", () => {
         content: "This is a test!",
         published: false,
         otherId: 15,
-        author: User.find(1)
+        author: User.find(1),
+        tags: [{ name: "Foo" }, { name: "Bar" }]
       }
     });
 
@@ -40,6 +41,7 @@ describe("persist", () => {
         published: false,
         title: "It works!",
         authorId: 1,
+        tags: [{ name: "Foo" }, { name: "Bar" }],
         author: {
           id: 1,
           name: "Charlie Brown",

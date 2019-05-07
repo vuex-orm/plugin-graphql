@@ -93,7 +93,8 @@ export const typeDefs = `
     id: ID
     name: String
     profileId: ID
-    profile: ProfileInput
+    profile: ProfileInput,
+    posts: [PostFilter!]
   }
 
 
