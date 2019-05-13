@@ -245,7 +245,14 @@ export default class Transformer {
     records: Map<string, Array<string>>,
     record: ORMModel
   ): void {
-    const model: Model = Context.getInstance().getModel(record.$self().entity);
+    const context: Context = Context.getInstance();
+
+    if (!record) {
+      context.logger.warn("Trying to add invalid record", record, "to recursion detection");
+      return;
+    }
+
+    const model: Model = context.getModel(record.$self().entity);
     const ids = records.get(model.singularName) || [];
     ids.push(record.$id!);
     records.set(model.singularName, ids);
