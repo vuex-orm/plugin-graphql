@@ -2,34 +2,61 @@
 
 [[toc]]
 
-Since Version 1.0.0.RC.21 there is support for SSR. You will need
-[node-fetch](https://www.npmjs.com/package/node-fetch) in order to make it work and you have to
-construct your own HttpLink instance.
+Since Version 1.0.0.RC.21 there is support for SSR. The following example shows how to setup
+Vuex-ORM and Plugin GraphQL with Nuxt.
 
-Example store setup for nuxt.js:
+`/store/index.js`:
 
-```javascript{13,14,15}
-import Vuex from 'vuex';
+```javascript
+import installVuexOrm from '~/plugins/vuex-orm';
+import '~/plugins/graphql';
+
+export default { plugins: [installVuexOrm] };
+```
+
+
+`/plugins/vuex-orm.js`:
+
+```javascript
+import VuexORM from '@vuex-orm/core';
+import database from '~/data/database';
+
+export default (store) => {
+  VuexORM.install(database)(store);
+};
+
+```
+
+`/data/database.js`:
+
+```javascript
+import { Database } from '@vuex-orm/core';
+import User from '~/data/models/user';
+// ...
+
+const database = new Database();
+database.register(User);
+// ...
+
+export default database;
+
+```
+
+
+`/plugins/graphql.js`:
+
+```javascript
 import VuexORM from '@vuex-orm/core';
 import VuexORMGraphQL from '@vuex-orm/plugin-graphql';
 import { HttpLink } from 'apollo-link-http';
-import database from './database';
 import fetch from 'node-fetch';
+import database from '~/data/database';
 
-const options = {
-  database,
-  url: process.env.BACKEND_URL + '/api/v2',
-};
+const options = { database, url: '...' };
 
 if (process.server) {
   options.link = new HttpLink({ uri: options.url, fetch });
 }
 
 VuexORM.use(VuexORMGraphQL, options);
-
-
-export default function createStore () {
-  const plugins = [VuexORM.install(database)];
-  return new Vuex.Store({ plugins });
-}
 ```
