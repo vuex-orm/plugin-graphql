@@ -142,7 +142,7 @@ export default class Transformer {
       result = data.map((d: any) => this.transformIncomingData(d, model, mutation, true));
     } else {
       Object.keys(data).forEach(key => {
-        if (key in data) {
+        if (data[key] !== undefined && data[key] !== null && key in data) {
           if (isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 

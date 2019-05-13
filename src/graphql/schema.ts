@@ -109,10 +109,10 @@ export default class Schema {
     let type = this.getRealType(field.type);
 
     if (type.kind === "LIST") {
-      while (type.name === null) type = type.ofType;
+      while (!type.name) type = type.ofType;
       return `[${type.name}]`;
     } else {
-      while (type.name === null) type = type.ofType;
+      while (!type.name) type = type.ofType;
 
       /* istanbul ignore next */
       if (!type.name) throw new Error(`Can't find type name for field ${field.name}`);
