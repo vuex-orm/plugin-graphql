@@ -16,6 +16,12 @@ export default {
 };
 ```
 
+`/store/index.js`:
+
+```javascript
+export const state = () => ({});
+```
+
 
 `/plugins/vuex-orm.js`:
 
