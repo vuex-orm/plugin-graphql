@@ -17,12 +17,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:prod": "npm run lint && npm run test -- --coverage --no-cache",
+    "test:full": "npm lint && npm test && npm build",
     "docs:deploy": "npm run build:docs && ./deploy-docs.sh",
     "docs:dev": "vuepress dev docs",
     "report-coverage": "cat ./coverage/lcov.info | coveralls",
     "commit": "git-cz",
-    "precommit": "lint-staged",
-    "check": "npm lint && npm test && npm build"
+    "precommit": "lint-staged"
   },
   "lint-staged": {
     "{src,test}/**/*.ts": [
