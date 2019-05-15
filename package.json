@@ -21,7 +21,8 @@
     "docs:dev": "vuepress dev docs",
     "report-coverage": "cat ./coverage/lcov.info | coveralls",
     "commit": "git-cz",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "check": "npm lint && npm test && npm build"
   },
   "lint-staged": {
     "{src,test}/**/*.ts": [
