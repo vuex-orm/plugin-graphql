@@ -149,14 +149,7 @@
     ],
     "collectCoverageFrom": [
       "src/**/*.{js,ts}"
-    ],
-    "globals": {
-      "ts-jest": {
-        "diagnostics": {
-          "ignoreCodes": [2339, 2576]
-        }
-      }
-    }
+    ]
   },
   "commitlint": {
     "extends": [

@@ -41,7 +41,7 @@ export default class Mutate extends Action {
       this.transformArgs(args);
 
       // Send the mutation
-      return Action.mutation(name, args, dispatch!, model);
+      return Action.mutation(name, args as Data, dispatch!, model);
     } else {
       /* istanbul ignore next */
       throw new Error("The mutate action requires the mutation name ('mutation') to be set");

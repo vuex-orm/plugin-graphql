@@ -46,7 +46,7 @@ export default class Action {
         newData.id = parseInt(newData.id, 10);
 
         const insertedData: Data = await Store.insertData(
-          { [model.pluralName]: newData },
+          { [model.pluralName]: newData } as Data,
           dispatch
         );
 
@@ -117,7 +117,7 @@ export default class Action {
     const context = Context.getInstance();
 
     Object.keys(args).forEach((key: string) => {
-      const value: any = args[key];
+      const value: Data = args[key];
 
       if (value instanceof context.components.Model) {
         const model = context.getModel(singularize(value.$self().entity));

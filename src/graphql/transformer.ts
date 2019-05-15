@@ -29,7 +29,7 @@ export default class Transformer {
   public static transformOutgoingData(model: Model, data: Data, whitelist?: Array<String>): Data {
     const context = Context.getInstance();
     const relations: Map<string, Field> = model.getRelations();
-    const returnValue: Data = {};
+    const returnValue: Data = {} as Data;
 
     Object.keys(data).forEach(key => {
       const value = data[key];
@@ -87,7 +87,7 @@ export default class Transformer {
     mutation: boolean = false,
     recursiveCall: boolean = false
   ): Data {
-    let result: Data = {};
+    let result: Data | Array<Data> = {} as Data;
     const context = Context.getInstance();
 
     if (!recursiveCall) {

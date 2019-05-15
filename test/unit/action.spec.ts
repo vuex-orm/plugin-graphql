@@ -36,7 +36,7 @@ describe("Action", () => {
       // @ts-ignore
       await Post.fetch(1);
 
-      const record = model.getRecordWithId(1);
+      const record = model.getRecordWithId(1)!;
 
       expect(Action.addRecordToArgs({ test: 2 }, model, record)).toEqual({
         post: {

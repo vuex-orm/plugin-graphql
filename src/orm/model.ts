@@ -1,5 +1,5 @@
 import { Model as ORMModel } from "@vuex-orm/core";
-import { Field } from "../support/interfaces";
+import { Field, PatchedModel } from "../support/interfaces";
 import Context from "../common/context";
 import { Mock, MockOptions } from "../test-utils";
 import { pluralize, singularize, pick, isEqual } from "../support/utils";
@@ -25,7 +25,7 @@ export default class Model {
   /**
    * The original Vuex-ORM model
    */
-  public readonly baseModel: ORMModel;
+  public readonly baseModel: typeof PatchedModel;
 
   /**
    * The fields of the model
@@ -43,8 +43,8 @@ export default class Model {
    * @constructor
    * @param {Model} baseModel The original Vuex-ORM model
    */
-  public constructor(baseModel: ORMModel) {
-    this.baseModel = baseModel;
+  public constructor(baseModel: typeof ORMModel) {
+    this.baseModel = baseModel as typeof PatchedModel;
 
     // Generate name variants
     this.singularName = singularize(this.baseModel.entity);
@@ -53,7 +53,7 @@ export default class Model {
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
     Object.keys(fields).forEach((name: string) => {
-      this.fields.set(name, fields[name]);
+      this.fields.set(name, fields[name] as Field);
     });
   }
 

@@ -2,6 +2,7 @@ import { setupMockData, User, Profile, Post, Tariff, Category, Tag } from "../su
 import Context from "../../src/common/context";
 import { recordGraphQLRequest } from "../support/helpers";
 import gql from "graphql-tag";
+import { Data, PatchedModel } from "../../src/support/interfaces";
 
 let store: any;
 let vuexOrmGraphQL;
@@ -84,10 +85,10 @@ query Post($id: ID!) {
         `.trim() + "\n"
       );
 
-      const post = Post.query()
+      const post: Data = Post.query()
         .withAll()
         .where("id", 1)
-        .first()!;
+        .first()! as Data;
 
       expect(post.title).toEqual("GraphQL");
       expect(post.content).toEqual("GraphQL is so nice!");
@@ -175,9 +176,9 @@ query Users($profileId: ID!) {
       test("sends the correct query to the API", async () => {
         // @ts-ignore
         await Profile.fetch(2);
-        const profile = Context.getInstance()
+        const profile: Data = Context.getInstance()
           .getModel("profile")
-          .getRecordWithId(2);
+          .getRecordWithId(2)! as Data;
 
         const request = await recordGraphQLRequest(async () => {
           // @ts-ignore
@@ -302,7 +303,7 @@ query Categories {
         }
       });
 
-      let post = insertedData.posts[0];
+      let post: Data = insertedData.posts[0] as Data;
 
       const request = await recordGraphQLRequest(async () => {
         post = await post.$persist();
@@ -386,7 +387,7 @@ mutation CreatePost($post: PostInput!) {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
       await User.fetch(1);
-      const user = User.find(1)!;
+      const user: Data = User.find(1)! as Data;
       user.name = "Snoopy";
 
       const request = await recordGraphQLRequest(async () => {
@@ -417,7 +418,7 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
       await Post.fetch(1);
-      const post = Post.find(1)!;
+      const post: Data = Post.find(1)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         await post.$destroy();
@@ -478,7 +479,7 @@ mutation DeletePost($id: ID!) {
     test("sends the correct query to the API and deletes the record", async () => {
       // @ts-ignore
       await Post.fetch(1);
-      const post = Post.find(1)!;
+      const post: Data = Post.find(1)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         await post.$deleteAndDestroy();
@@ -599,7 +600,7 @@ query UnpublishedPosts($authorId: ID!) {
     test("via record method sends the correct query to the API", async () => {
       // @ts-ignore
       await Post.fetch(1);
-      const post = Post.find(1)!;
+      const post: Data = Post.find(1)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         await post.$customQuery({ name: "unpublishedPosts", filter: { authorId: 2 } });
@@ -663,7 +664,7 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
       await Post.fetch(1);
-      const post = Post.find(1)!;
+      const post: Data = Post.find(1)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         // @ts-ignore
@@ -726,7 +727,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
       await Post.fetch(1);
-      const post = Post.find(1)!;
+      const post: Data = Post.find(1)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         // @ts-ignore
@@ -939,21 +940,21 @@ query Status {
   describe("$isPersisted", () => {
     test("is false for newly created records", async () => {
       const insertedData = await User.insert({ data: { name: "Snoopy" } });
-      let user = insertedData.users[0];
+      let user: Data = insertedData.users[0] as Data;
       expect(user.$isPersisted).toBeFalsy();
 
-      user = User.find(user.id)!;
+      user = User.find(user.id)! as Data;
       expect(user.$isPersisted).toBeFalsy();
     });
 
     test("is true for persisted records", async () => {
       const insertedData = await User.insert({ data: { name: "Snoopy" } });
-      let user = insertedData.users[0];
+      let user: Data = insertedData.users[0] as Data;
 
       expect(user.$isPersisted).toBeFalsy();
 
       const result = await user.$persist();
-      user = User.find(4)!;
+      user = User.find(4)! as Data;
 
       expect(user.$isPersisted).toBeTruthy();
     });
@@ -962,7 +963,7 @@ query Status {
       // @ts-ignore
       await User.fetch(1);
 
-      const user = User.find(1)!;
+      const user: Data = User.find(1)! as Data;
       expect(user.$isPersisted).toBeTruthy();
     });
   });
@@ -973,9 +974,9 @@ query Status {
         // @ts-ignore
         await User.fetch(1, true);
 
-        const user = User.query()
+        const user: Data = User.query()
           .withAllRecursive()
-          .find(1)!;
+          .find(1)! as Data;
         expect(user.name).toEqual("Charlie Brown");
         expect(user.profile).not.toEqual(null);
         expect(user.profile.sex).toEqual(true);
@@ -994,9 +995,9 @@ query Status {
         // @ts-ignore
         await Tariff.fetch();
 
-        const tariff = Tariff.query()
+        const tariff: Data = Tariff.query()
           .withAllRecursive()
-          .find(1)!;
+          .find(1)! as Data;
         expect(tariff.name).toEqual("Super DSL S");
         expect(tariff.tariffOptions).not.toEqual(null);
         expect(tariff.tariffOptions.length).not.toEqual(0);
@@ -1017,9 +1018,9 @@ query Status {
         // @ts-ignore
         const result = await Post.fetch(1, true);
 
-        const post = Post.query()
+        const post: Data = Post.query()
           .withAllRecursive()
-          .find(1)!;
+          .find(1)! as Data;
         expect(post.author).not.toEqual(null);
         expect(post.comments).not.toEqual(null);
         expect(post.comments.length).not.toEqual(0);
@@ -1036,13 +1037,13 @@ query Status {
         // @ts-ignore
         await Post.fetch(1);
 
-        const tag = Tag.query()
+        const tag: Data = Tag.query()
           .withAllRecursive()
-          .find(1)!;
+          .find(1)! as Data;
 
-        const post = Post.query()
+        const post: Data = Post.query()
           .withAllRecursive()
-          .find(1);
+          .find(1)! as Data;
 
         expect(post!.tags).toContain(tag);
       });

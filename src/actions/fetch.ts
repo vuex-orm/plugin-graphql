@@ -2,7 +2,7 @@ import QueryBuilder from "../graphql/query-builder";
 import Context from "../common/context";
 import { Store } from "../orm/store";
 import Transformer from "../graphql/transformer";
-import { ActionParams, Data } from "../support/interfaces";
+import { ActionParams, Arguments, Data } from "../support/interfaces";
 import Action from "./action";
 
 /**
@@ -33,10 +33,15 @@ export default class Fetch extends Action {
     await context.loadSchema();
 
     // Filter
-    const filter =
-      params && params.filter
-        ? Transformer.transformOutgoingData(model, params.filter, Object.keys(params.filter))
-        : {};
+    let filter = {};
+
+    if (params && params.filter) {
+      filter = Transformer.transformOutgoingData(
+        model,
+        params.filter as Data,
+        Object.keys(params.filter)
+      );
+    }
 
     const bypassCache = params && params.bypassCache;
 

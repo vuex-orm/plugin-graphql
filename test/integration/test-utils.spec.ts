@@ -1,6 +1,7 @@
 import { setupMockData, User, Post } from "../support/mock-data";
 import { clearORMStore, mock } from "../../src";
 import { recordGraphQLRequest } from "../support/helpers";
+import { Data } from "../../src/support/interfaces";
 
 // @ts-ignore
 let store;
@@ -174,10 +175,10 @@ describe("TestUtils", () => {
 
     let result;
     await User.create({ data: userData });
-    const user = User.query().last();
+    const user: Data = User.query().last()! as Data;
 
     const request = await recordGraphQLRequest(async () => {
-      result = await user!.$destroy();
+      result = await user.$destroy();
     }, true);
 
     expect(request).toEqual(null);
@@ -229,10 +230,10 @@ describe("TestUtils", () => {
 
     let result;
     await User.create({ data: userData });
-    const user = User.query().last();
+    const user: Data = User.query().last()! as Data;
 
     const request = await recordGraphQLRequest(async () => {
-      result = await user!.$persist();
+      result = await user.$persist();
     }, true);
 
     expect(request).toEqual(null);
@@ -246,10 +247,10 @@ describe("TestUtils", () => {
 
     let result;
     await User.create({ data: userData });
-    const user = User.query().last();
+    const user: Data = User.query().last()! as Data;
 
     const request = await recordGraphQLRequest(async () => {
-      result = await user!.$push();
+      result = await user.$push();
     }, true);
 
     expect(request).toEqual(null);

@@ -2,6 +2,7 @@ import Transformer from "../../src/graphql/transformer";
 import { setupMockData, Video } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { ConnectionMode } from "../../src/adapters/adapter";
+import { Data } from "../../src/support/interfaces";
 
 let store;
 let vuexOrmGraphQL;
@@ -18,7 +19,7 @@ describe("Transformer", () => {
     test("transforms models to a useful data hashmap", async () => {
       // @ts-ignore
       await Video.fetch(1);
-      const video = context.getModel("video").getRecordWithId(1);
+      const video = context.getModel("video").getRecordWithId(1)!;
       const transformedData = Transformer.transformOutgoingData(context.getModel("video"), video);
       expect(transformedData).toEqual({
         id: 1,
@@ -215,10 +216,12 @@ describe("Transformer", () => {
 
       const tariff = context.getModel("tariff");
       const post = context.getModel("post");
-      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(
-        expectedData1
-      );
-      expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
+      expect(
+        Transformer.transformIncomingData((incomingData1 as unknown) as Data, tariff, false)
+      ).toEqual(expectedData1);
+      expect(
+        Transformer.transformIncomingData((incomingData2 as unknown) as Data, post, false)
+      ).toEqual(expectedData2);
     });
 
     test("transforms incoming data after a mutation into a Vuex-ORM readable structure", () => {
@@ -258,7 +261,11 @@ describe("Transformer", () => {
       };
 
       const model = context.getModel("tariff");
-      const transformedData = Transformer.transformIncomingData(incomingData, model, true);
+      const transformedData = Transformer.transformIncomingData(
+        (incomingData as unknown) as Data,
+        model,
+        true
+      );
 
       expect(transformedData).toEqual(expectedData);
     });
@@ -453,10 +460,12 @@ describe("Transformer", () => {
 
       context.connectionMode = ConnectionMode.EDGES;
 
-      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(
-        expectedData1
-      );
-      expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
+      expect(
+        Transformer.transformIncomingData((incomingData1 as unknown) as Data, tariff, false)
+      ).toEqual(expectedData1);
+      expect(
+        Transformer.transformIncomingData((incomingData2 as unknown) as Data, post, false)
+      ).toEqual(expectedData2);
     });
   });
 });
