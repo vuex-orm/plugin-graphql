@@ -89,4 +89,28 @@ export class PatchedModel extends ORMModel {
   static async customQuery(params: ActionParams): Promise<any> {
     return undefined;
   }
+
+  async $mutate(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+
+  async $customQuery(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+
+  async $persist(args: any): Promise<any> {
+    return undefined;
+  }
+
+  async $push(args: any): Promise<any> {
+    return undefined;
+  }
+
+  async $destroy(): Promise<any> {
+    return undefined;
+  }
+
+  async $deleteAndDestroy(): Promise<any> {
+    return undefined;
+  }
 }
