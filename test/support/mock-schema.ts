@@ -786,7 +786,7 @@ function findOne(
     filterFn = idOrFn;
   } else {
     filterFn = (r: any) => {
-      return parseInt(r.id, 10) === parseInt(idOrFn, 10);
+      return r.id.toString() === idOrFn.toString();
     };
   }
 
@@ -810,7 +810,7 @@ export const resolvers = {
     posts: (parent: any, { filter }: any) => findMany(Post, posts, filter),
     comment: (parent: any, { id }: any) => findOne(Comment, comments, id),
     comments: (parent: any, { filter }: any) => findMany(Comment, comments, filter),
-    tariff: (parent: any, { id }: any) => findOne(Tariff, tariffs, id),
+    tariff: (parent: any, { uuid }: any) => findOne(Tariff, tariffs, uuid),
     tariffs: (parent: any, { filter }: any) => findMany(Tariff, tariffs, filter),
     tariffOption: (parent: any, { id }: any) => findOne(TariffOption, tariffOptions, id),
     tariffOptions: (parent: any, { filter }: any) => findMany(TariffOption, tariffOptions, filter),
