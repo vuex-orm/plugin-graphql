@@ -5,13 +5,21 @@
 Since Version 1.0.0.RC.21 there is support for SSR. The following example shows how to setup
 Vuex-ORM and Plugin GraphQL with Nuxt.
 
+`nuxt.config.js`:
+
+```javascript
+export default { 
+  plugins: [
+    '~/plugins/vuex-orm',
+    '~/plugins/graphql'
+  ] 
+};
+```
+
 `/store/index.js`:
 
 ```javascript
-import installVuexOrm from '~/plugins/vuex-orm';
-import '~/plugins/graphql';
-
-export default { plugins: [installVuexOrm] };
+export const state = () => ({});
 ```
 
 
@@ -21,7 +29,7 @@ export default { plugins: [installVuexOrm] };
 import VuexORM from '@vuex-orm/core';
 import database from '~/data/database';
 
-export default (store) => {
+export default ({ store }) => {
   VuexORM.install(database)(store);
 };
 
