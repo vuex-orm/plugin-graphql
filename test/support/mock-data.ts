@@ -1,4 +1,4 @@
-import { Model as ORMModel, Attribute } from "@vuex-orm/core";
+import { Attribute, Model as ORMModel } from "@vuex-orm/core";
 import { createStore } from "./helpers";
 import { setupTestUtils } from "../../src/test-utils";
 import VuexORMGraphQLPlugin from "../../src";
