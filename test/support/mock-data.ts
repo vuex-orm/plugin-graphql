@@ -118,12 +118,7 @@ export class Tariff extends ORMModel {
       tariffType: this.string(""),
       slug: this.string(""),
 
-      tariffOptions: this.belongsToMany(
-        TariffOption,
-        TariffTariffOption,
-        "tariffUuid",
-        "tariffOptionId"
-      )
+      tariffOptions: this.belongsToMany(TariffOption, TariffTariffOption, "uuid", "tariffOptionId")
     };
   }
 }
@@ -138,7 +133,7 @@ export class TariffOption extends ORMModel {
       name: this.string(""),
       description: this.string(""),
 
-      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "tariffUuid")
+      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "uuid")
     };
   }
 }
