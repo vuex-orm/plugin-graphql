@@ -6,7 +6,7 @@ import { Data } from "../../src/support/interfaces";
 let store: any;
 let vuexOrmGraphQL;
 
-describe("Plugin GrpahQL", () => {
+describe("Plugin GraphQL", () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
   });

@@ -50,7 +50,7 @@ describe("Transformer", () => {
         tariffs: {
           nodes: [
             {
-              id: "1",
+              uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
               name: "Tariff S",
               displayName: "Tariff S",
               slug: "tariff-s",
@@ -66,7 +66,7 @@ describe("Transformer", () => {
               }
             },
             {
-              id: "2",
+              uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
               name: "Tariff M",
               displayName: "Tariff M",
               slug: "tariff-m",
@@ -82,7 +82,7 @@ describe("Transformer", () => {
               }
             },
             {
-              id: "3",
+              uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
               name: "Tariff L",
               displayName: "Tariff L",
               slug: "tariff-l",
@@ -114,7 +114,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff S",
-            id: 1,
+            uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
             name: "Tariff S",
             slug: "tariff-s"
           },
@@ -130,7 +130,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff M",
-            id: 2,
+            uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
             name: "Tariff M",
             slug: "tariff-m"
           },
@@ -146,7 +146,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff L",
-            id: 3,
+            uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
             name: "Tariff L",
             slug: "tariff-l"
           }
@@ -227,7 +227,7 @@ describe("Transformer", () => {
     test("transforms incoming data after a mutation into a Vuex-ORM readable structure", () => {
       const incomingData = {
         createTariff: {
-          id: "1",
+          uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
           name: "Tariff S",
           displayName: "Tariff S",
           slug: "tariff-s",
@@ -254,7 +254,7 @@ describe("Transformer", () => {
             }
           ],
           displayName: "Tariff S",
-          id: 1,
+          uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
           name: "Tariff S",
           slug: "tariff-s"
         }
@@ -276,7 +276,7 @@ describe("Transformer", () => {
           edges: [
             {
               node: {
-                id: "1",
+                uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
                 name: "Tariff S",
                 displayName: "Tariff S",
                 slug: "tariff-s",
@@ -296,7 +296,7 @@ describe("Transformer", () => {
             },
             {
               node: {
-                id: "2",
+                uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
                 name: "Tariff M",
                 displayName: "Tariff M",
                 slug: "tariff-m",
@@ -316,7 +316,7 @@ describe("Transformer", () => {
             },
             {
               node: {
-                id: "3",
+                uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
                 name: "Tariff L",
                 displayName: "Tariff L",
                 slug: "tariff-l",
@@ -351,7 +351,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff S",
-            id: 1,
+            uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
             name: "Tariff S",
             slug: "tariff-s"
           },
@@ -367,7 +367,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff M",
-            id: 2,
+            uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
             name: "Tariff M",
             slug: "tariff-m"
           },
@@ -383,7 +383,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff L",
-            id: 3,
+            uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
             name: "Tariff L",
             slug: "tariff-l"
           }

@@ -95,11 +95,11 @@ export class Comment extends ORMModel {
 export class TariffTariffOption extends ORMModel {
   static entity = "tariffTariffOptions";
 
-  static primaryKey = ["tariffId", "tariffOptionId"];
+  static primaryKey = ["tariffUuid", "tariffOptionId"];
 
   static fields(): Fields {
     return {
-      tariffId: this.number(0),
+      tariffUuid: this.string(""),
       tariffOptionId: this.number(0)
     };
   }
@@ -108,21 +108,17 @@ export class TariffTariffOption extends ORMModel {
 export class Tariff extends ORMModel {
   static entity = "tariffs";
   static eagerLoad = ["tariffOptions"];
+  static primaryKey = ["uuid"];
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      uuid: this.string(""),
       name: this.string(""),
       displayName: this.string(""),
       tariffType: this.string(""),
       slug: this.string(""),
 
-      tariffOptions: this.belongsToMany(
-        TariffOption,
-        TariffTariffOption,
-        "tariffId",
-        "tariffOptionId"
-      )
+      tariffOptions: this.belongsToMany(TariffOption, TariffTariffOption, "uuid", "tariffOptionId")
     };
   }
 }
@@ -137,7 +133,7 @@ export class TariffOption extends ORMModel {
       name: this.string(""),
       description: this.string(""),
 
-      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "tariffId")
+      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "uuid")
     };
   }
 }

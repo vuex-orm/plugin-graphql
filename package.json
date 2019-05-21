@@ -17,6 +17,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:prod": "npm run lint && npm run test -- --coverage --no-cache",
+    "test:full": "npm lint && npm test && npm build",
     "docs:deploy": "npm run build:docs && ./deploy-docs.sh",
     "docs:dev": "vuepress dev docs",
     "report-coverage": "cat ./coverage/lcov.info | coveralls",
@@ -149,7 +150,14 @@
     ],
     "collectCoverageFrom": [
       "src/**/*.{js,ts}"
-    ]
+    ],
+    "globals": {
+      "ts-jest": {
+        "diagnostics": {
+          "ignoreCodes": [2339, 2576]
+        }
+      }
+    }
   },
   "commitlint": {
     "extends": [
