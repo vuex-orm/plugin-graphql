@@ -10,7 +10,8 @@ describe("persist", () => {
     [store, vuexOrmGraphQL] = await setupMockData();
   });
 
-  test("sends the correct query to the API", async () => {
+  // Skipped due to https://github.com/vuex-orm/vuex-orm/issues/367
+  test.skip("sends the correct query to the API", async () => {
     // @ts-ignore
     await User.fetch(1);
 
@@ -26,6 +27,8 @@ describe("persist", () => {
     });
 
     let post: Data = insertedData.posts[0] as Data;
+
+    expect(post.tags.length).toEqual(2);
 
     const request = await recordGraphQLRequest(async () => {
       post = await post.$persist();

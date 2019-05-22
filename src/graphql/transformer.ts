@@ -252,6 +252,13 @@ export default class Transformer {
       return;
     }
 
+    if (!record.$self) {
+      context.logger.warn(
+        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+      );
+      return;
+    }
+
     const model: Model = context.getModel(record.$self().entity);
     const ids = records.get(model.singularName) || [];
     ids.push(record.$id!);
@@ -266,6 +273,13 @@ export default class Transformer {
    */
   private static isRecursion(records: Map<string, Array<string>>, record: ORMModel): boolean {
     if (!record) return false;
+
+    if (!record.$self) {
+      Context.getInstance().logger.warn(
+        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+      );
+      return false;
+    }
 
     const model: Model = Context.getInstance().getModel(record.$self().entity);
     const ids = records.get(model.singularName) || [];
