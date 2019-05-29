@@ -39,7 +39,7 @@ export default class Query extends Action {
       const schema: Schema = await context.loadSchema();
 
       // Filter
-      filter = filter ? Transformer.transformOutgoingData(model, filter) : {};
+      filter = filter ? Transformer.transformOutgoingData(model, filter as Data, true) : {};
 
       // Multiple?
       const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);

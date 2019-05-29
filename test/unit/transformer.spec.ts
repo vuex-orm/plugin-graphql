@@ -1,7 +1,8 @@
 import Transformer from "../../src/graphql/transformer";
-import { setupMockData, Video } from "../support/mock-data";
+import { Comment, setupMockData, Tag, Taggable, User, Video } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { ConnectionMode } from "../../src/adapters/adapter";
+import { Data } from "../../src/support/interfaces";
 
 let store;
 let vuexOrmGraphQL;
@@ -18,8 +19,12 @@ describe("Transformer", () => {
     test("transforms models to a useful data hashmap", async () => {
       // @ts-ignore
       await Video.fetch(1);
-      const video = context.getModel("video").getRecordWithId(1);
-      const transformedData = Transformer.transformOutgoingData(context.getModel("video"), video);
+      const video = context.getModel("video").getRecordWithId(1)!;
+      const transformedData = Transformer.transformOutgoingData(
+        context.getModel("video"),
+        video,
+        false
+      );
       expect(transformedData).toEqual({
         id: 1,
         ignoreMe: "",
@@ -49,7 +54,7 @@ describe("Transformer", () => {
         tariffs: {
           nodes: [
             {
-              id: "1",
+              uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
               name: "Tariff S",
               displayName: "Tariff S",
               slug: "tariff-s",
@@ -65,7 +70,7 @@ describe("Transformer", () => {
               }
             },
             {
-              id: "2",
+              uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
               name: "Tariff M",
               displayName: "Tariff M",
               slug: "tariff-m",
@@ -81,7 +86,7 @@ describe("Transformer", () => {
               }
             },
             {
-              id: "3",
+              uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
               name: "Tariff L",
               displayName: "Tariff L",
               slug: "tariff-l",
@@ -113,7 +118,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff S",
-            id: 1,
+            uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
             name: "Tariff S",
             slug: "tariff-s"
           },
@@ -129,7 +134,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff M",
-            id: 2,
+            uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
             name: "Tariff M",
             slug: "tariff-m"
           },
@@ -145,7 +150,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff L",
-            id: 3,
+            uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
             name: "Tariff L",
             slug: "tariff-l"
           }
@@ -215,16 +220,18 @@ describe("Transformer", () => {
 
       const tariff = context.getModel("tariff");
       const post = context.getModel("post");
-      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(
-        expectedData1
-      );
-      expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
+      expect(
+        Transformer.transformIncomingData((incomingData1 as unknown) as Data, tariff, false)
+      ).toEqual(expectedData1);
+      expect(
+        Transformer.transformIncomingData((incomingData2 as unknown) as Data, post, false)
+      ).toEqual(expectedData2);
     });
 
     test("transforms incoming data after a mutation into a Vuex-ORM readable structure", () => {
       const incomingData = {
         createTariff: {
-          id: "1",
+          uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
           name: "Tariff S",
           displayName: "Tariff S",
           slug: "tariff-s",
@@ -251,14 +258,18 @@ describe("Transformer", () => {
             }
           ],
           displayName: "Tariff S",
-          id: 1,
+          uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
           name: "Tariff S",
           slug: "tariff-s"
         }
       };
 
       const model = context.getModel("tariff");
-      const transformedData = Transformer.transformIncomingData(incomingData, model, true);
+      const transformedData = Transformer.transformIncomingData(
+        (incomingData as unknown) as Data,
+        model,
+        true
+      );
 
       expect(transformedData).toEqual(expectedData);
     });
@@ -269,7 +280,7 @@ describe("Transformer", () => {
           edges: [
             {
               node: {
-                id: "1",
+                uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
                 name: "Tariff S",
                 displayName: "Tariff S",
                 slug: "tariff-s",
@@ -289,7 +300,7 @@ describe("Transformer", () => {
             },
             {
               node: {
-                id: "2",
+                uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
                 name: "Tariff M",
                 displayName: "Tariff M",
                 slug: "tariff-m",
@@ -309,7 +320,7 @@ describe("Transformer", () => {
             },
             {
               node: {
-                id: "3",
+                uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
                 name: "Tariff L",
                 displayName: "Tariff L",
                 slug: "tariff-l",
@@ -344,7 +355,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff S",
-            id: 1,
+            uuid: "210306B3-3008-4B91-88E0-8ED1024F5F83",
             name: "Tariff S",
             slug: "tariff-s"
           },
@@ -360,7 +371,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff M",
-            id: 2,
+            uuid: "3F8EC67A-314D-413F-996F-87CB9A28A56C",
             name: "Tariff M",
             slug: "tariff-m"
           },
@@ -376,7 +387,7 @@ describe("Transformer", () => {
               }
             ],
             displayName: "Tariff L",
-            id: 3,
+            uuid: "DDDB5333-DCD7-40AF-A863-DD0E9249155A",
             name: "Tariff L",
             slug: "tariff-l"
           }
@@ -453,10 +464,36 @@ describe("Transformer", () => {
 
       context.connectionMode = ConnectionMode.EDGES;
 
-      expect(Transformer.transformIncomingData(incomingData1, tariff, false)).toEqual(
-        expectedData1
+      expect(
+        Transformer.transformIncomingData((incomingData1 as unknown) as Data, tariff, false)
+      ).toEqual(expectedData1);
+      expect(
+        Transformer.transformIncomingData((incomingData2 as unknown) as Data, post, false)
+      ).toEqual(expectedData2);
+    });
+  });
+
+  describe(".shouldIncludeOutgoingField", () => {
+    test("works", () => {
+      const user = context.getModel("user");
+      const post = context.getModel("post");
+
+      expect(Transformer.shouldIncludeOutgoingField(false, "posts", 15, user, ["posts"])).toEqual(
+        true
       );
-      expect(Transformer.transformIncomingData(incomingData2, post, false)).toEqual(expectedData2);
+      expect(Transformer.shouldIncludeOutgoingField(true, "profile", {}, user)).toEqual(false);
+
+      expect(Transformer.shouldIncludeOutgoingField(false, "id", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "name", "test", user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "profileId", 15, user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "posts", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "comments", [], user)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "profile", {}, user)).toEqual(true);
+
+      expect(Transformer.shouldIncludeOutgoingField(false, "otherId", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "author", {}, post)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "comments", {}, post)).toEqual(false);
+      expect(Transformer.shouldIncludeOutgoingField(false, "tags", {}, post)).toEqual(true);
     });
   });
 });

@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 import { Database, Model as ORMModel } from "@vuex-orm/core";
+import ORMInstance from "@vuex-orm/core/lib/data/Instance";
 import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import { ApolloLink } from "apollo-link";
 import { DocumentNode } from "graphql/language/ast";
@@ -37,7 +38,7 @@ export interface ActionParams {
   name?: string;
 }
 
-export interface Data {
+export interface Data extends ORMInstance<PatchedModel> {
   [index: string]: any;
 }
 
@@ -74,13 +75,20 @@ export interface GraphQLSchema {
 }
 
 export interface Field {
-  related?: ORMModel;
-  parent?: ORMModel;
+  related?: typeof ORMModel;
+  parent?: typeof ORMModel;
   localKey?: string;
   foreignKey?: string;
 }
 
 export class PatchedModel extends ORMModel {
+  static eagerLoad?: Array<String>;
+  static eagerSave?: Array<String>;
+  static eagerSync?: Array<String>;
+  static skipFields?: Array<String>;
+
+  $isPersisted: boolean = false;
+
   static async fetch(filter?: any, bypassCache: boolean = false): Promise<any> {
     return undefined;
   }
@@ -88,6 +96,30 @@ export class PatchedModel extends ORMModel {
     return undefined;
   }
   static async customQuery(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+
+  async $mutate(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+
+  async $customQuery(params: ActionParams): Promise<any> {
+    return undefined;
+  }
+
+  async $persist(args?: any): Promise<any> {
+    return undefined;
+  }
+
+  async $push(args?: any): Promise<any> {
+    return undefined;
+  }
+
+  async $destroy(): Promise<any> {
+    return undefined;
+  }
+
+  async $deleteAndDestroy(): Promise<any> {
     return undefined;
   }
 }

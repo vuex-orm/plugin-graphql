@@ -1,5 +1,5 @@
-import { Model as ORMModel } from "@vuex-orm/core";
-import { Field } from "../support/interfaces";
+import { Model as ORMModel, Relation } from "@vuex-orm/core";
+import { Field, PatchedModel } from "../support/interfaces";
 import Context from "../common/context";
 import { Mock, MockOptions } from "../test-utils";
 import { pluralize, singularize, pick, isEqual } from "../support/utils";
@@ -25,7 +25,7 @@ export default class Model {
   /**
    * The original Vuex-ORM model
    */
-  public readonly baseModel: ORMModel;
+  public readonly baseModel: typeof PatchedModel;
 
   /**
    * The fields of the model
@@ -43,8 +43,8 @@ export default class Model {
    * @constructor
    * @param {Model} baseModel The original Vuex-ORM model
    */
-  public constructor(baseModel: ORMModel) {
-    this.baseModel = baseModel;
+  public constructor(baseModel: typeof ORMModel) {
+    this.baseModel = baseModel as typeof PatchedModel;
 
     // Generate name variants
     this.singularName = singularize(this.baseModel.entity);
@@ -53,7 +53,7 @@ export default class Model {
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
     Object.keys(fields).forEach((name: string) => {
-      this.fields.set(name, fields[name]);
+      this.fields.set(name, fields[name] as Field);
     });
   }
 
@@ -123,6 +123,40 @@ export default class Model {
   }
 
   /**
+   * Returns the related model for a relation.
+   * @param {Field|undefined} relation Relation field.
+   * @returns {Model|null}
+   */
+  public static getRelatedModel(relation?: Relation) {
+    if (relation === undefined) return null;
+
+    const context: Context = Context.getInstance();
+
+    if (
+      relation instanceof context.components.BelongsToMany ||
+      relation instanceof context.components.HasMany ||
+      relation instanceof context.components.HasManyThrough ||
+      relation instanceof context.components.MorphedByMany ||
+      relation instanceof context.components.MorphMany ||
+      relation instanceof context.components.MorphOne ||
+      relation instanceof context.components.MorphToMany ||
+      relation instanceof context.components.HasOne
+    ) {
+      return context.getModel(relation.related.entity, true);
+    } else if (
+      relation instanceof context.components.BelongsTo ||
+      relation instanceof context.components.HasManyBy
+    ) {
+      return context.getModel(relation.parent.entity, true);
+    } else if (relation instanceof context.components.MorphTo) {
+      return context.getModel(relation.type, true);
+    } else {
+      console.warn("Failed relation", typeof relation, relation);
+      throw new Error(`Can't find related model for relation of type ${typeof relation}!`);
+    }
+  }
+
+  /**
    * Returns all fields which should be included in a graphql query: All attributes which are not included in the
    * skipFields array or start with $.
    * @returns {Array<string>} field names which should be queried
@@ -154,7 +188,7 @@ export default class Model {
 
     let shouldSkipField: boolean = false;
 
-    this.getRelations().forEach((relation: Field) => {
+    this.getRelations().forEach((relation: Relation) => {
       if (
         (relation instanceof context.components.BelongsTo ||
           relation instanceof context.components.HasOne) &&
@@ -170,14 +204,14 @@ export default class Model {
   }
 
   /**
-   * @returns {Map<string, Field>} all relations of the model which should be included in a graphql query
+   * @returns {Map<string, Relation>} all relations of the model.
    */
-  public getRelations(): Map<string, Field> {
-    const relations = new Map<string, Field>();
+  public getRelations(): Map<string, Relation> {
+    const relations = new Map<string, Relation>();
 
     this.fields.forEach((field: Field, name: string) => {
       if (!Model.isFieldAttribute(field)) {
-        relations.set(name, field);
+        relations.set(name, field as Relation);
       }
     });
 
@@ -205,13 +239,11 @@ export default class Model {
           relation instanceof context.components.MorphTo ||
           relation instanceof context.components.MorphToMany
         ) {
-          if (
-            relation.type === name &&
-            relation.related &&
-            relation.related.entity === this.baseModel.entity
-          ) {
+          const related = (relation as Field).related;
+
+          if (relation.type === name && related && related.entity === this.baseModel.entity) {
             found = true;
-            return false;
+            return false; // break
           }
         }
 
@@ -238,28 +270,71 @@ export default class Model {
   }
 
   /**
-   * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo or
-   * hasOne related entities are always eager loaded. Others can be added to the `eagerLoad` array of the model.
+   * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo,
+   * hasOne and morphOne related entities are always eager loaded. Others can be added to the `eagerLoad` array
+   * or `eagerSync` of the model.
    *
    * @param {string} fieldName Name of the field
-   * @param {Field} field Relation field
+   * @param {Relation} relation Relation field
    * @param {Model} relatedModel Related model
    * @returns {boolean}
    */
-  public shouldEagerLoadRelation(fieldName: string, field: Field, relatedModel: Model): boolean {
+  public shouldEagerLoadRelation(
+    fieldName: string,
+    relation: Relation,
+    relatedModel: Model
+  ): boolean {
     const context = Context.getInstance();
 
+    // HasOne, BelongsTo and MorphOne are always eager loaded
     if (
-      field instanceof context.components.HasOne ||
-      field instanceof context.components.BelongsTo ||
-      field instanceof context.components.MorphOne
+      relation instanceof context.components.HasOne ||
+      relation instanceof context.components.BelongsTo ||
+      relation instanceof context.components.MorphOne
     ) {
       return true;
     }
 
+    // Create a list of all relations that have to be eager loaded
     const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
+    Array.prototype.push.apply(eagerLoadList, this.baseModel.eagerSync || []);
+
+    // Check if the name of the related model or the fieldName is included in the eagerLoadList.
     return (
       eagerLoadList.find(n => {
+        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+      }) !== undefined
+    );
+  }
+
+  /**
+   * Determines if we should eager save (means: add as a field in the graphql mutation) a related entity. belongsTo
+   * related entities are always eager saved. Others can be added to the `eagerSave` or `eagerSync` array of the model.
+   *
+   * @param {string} fieldName Name of the field
+   * @param {Relation} relation Relation field
+   * @param {Model} relatedModel Related model
+   * @returns {boolean}
+   */
+  public shouldEagerSaveRelation(
+    fieldName: string,
+    relation: Relation,
+    relatedModel: Model
+  ): boolean {
+    const context = Context.getInstance();
+
+    // BelongsTo is always eager saved
+    if (relation instanceof context.components.BelongsTo) {
+      return true;
+    }
+
+    // Create a list of all relations that have to be eager saved
+    const eagerSaveList: Array<String> = this.baseModel.eagerSave || [];
+    Array.prototype.push.apply(eagerSaveList, this.baseModel.eagerSync || []);
+
+    // Check if the name of the related model or the fieldName is included in the eagerSaveList.
+    return (
+      eagerSaveList.find(n => {
         return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
       }) !== undefined
     );

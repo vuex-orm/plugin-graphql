@@ -36,7 +36,7 @@ export default class Push extends Action {
       this.addRecordToArgs(args, model, data);
 
       // Send the mutation
-      return Action.mutation(mutationName, args, dispatch!, model);
+      return Action.mutation(mutationName, args as Data, dispatch!, model);
     } else {
       /* istanbul ignore next */
       throw new Error("The persist action requires the 'data' to be set");

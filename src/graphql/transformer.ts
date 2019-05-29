@@ -1,6 +1,6 @@
 import { Data, Field } from "../support/interfaces";
 import Model from "../orm/model";
-import { Model as ORMModel } from "@vuex-orm/core";
+import { Model as ORMModel, Relation } from "@vuex-orm/core";
 import Context from "../common/context";
 import {
   clone,
@@ -19,40 +19,74 @@ export default class Transformer {
   /**
    * Transforms outgoing data. Use for variables param.
    *
-   * Omits relations and some other fields.
-   *
-   * @param model
-   * @param {Data} data
+   * @param {Model} model Base model of the mutation/query
+   * @param {Data} data Data to transform
+   * @param {boolean} read Tells if this is a write or a read action. read is fetch, write is push and persist.
    * @param {Array<String>} whitelist of fields
+   * @param {Map<string, Array<string>>} outgoingRecords List of record IDs that are already added to the
+   *                                                     outgoing data in order to detect recursion.
+   * @param {boolean} recursiveCall Tells if it's a recursive call.
    * @returns {Data}
    */
-  public static transformOutgoingData(model: Model, data: Data, whitelist?: Array<String>): Data {
+  public static transformOutgoingData(
+    model: Model,
+    data: Data,
+    read: boolean,
+    whitelist?: Array<String>,
+    outgoingRecords?: Map<string, Array<string>>,
+    recursiveCall?: boolean
+  ): Data {
     const context = Context.getInstance();
-    const relations: Map<string, Field> = model.getRelations();
-    const returnValue: Data = {};
+    const relations: Map<string, Relation> = model.getRelations();
+    const returnValue: Data = {} as Data;
+    if (outgoingRecords === undefined) outgoingRecords = new Map<string, Array<string>>();
+    if (recursiveCall === undefined) recursiveCall = false;
 
     Object.keys(data).forEach(key => {
       const value = data[key];
 
-      // Always add fields on the whitelist. Ignore hasMany/One connections, empty fields and internal fields ($)
+      const isRelation = model.getRelations().has(key);
+      let isRecursion = false;
+
+      if (value instanceof Array) {
+        isRecursion = isRelation && this.isRecursion(outgoingRecords!, value[0]);
+      } else {
+        isRecursion = isRelation && this.isRecursion(outgoingRecords!, value);
+      }
+
+      // shouldIncludeOutgoingField and the read param is tricky. In the initial call of this method
+      // we want to include any relation, so we have to make sure it's false. In the recursive calls
+      // it should be true when we transform the outgoing data for fetch (and false for the others)
       if (
-        (whitelist && whitelist.includes(key)) ||
-        ((!relations.has(key) || relations.get(key) instanceof context.components.BelongsTo) &&
-          !key.startsWith("$") &&
-          value !== null &&
-          value !== undefined)
+        !isRecursion &&
+        this.shouldIncludeOutgoingField(
+          (recursiveCall as boolean) && read,
+          key,
+          value,
+          model,
+          whitelist
+        )
       ) {
-        let relatedModel =
-          relations.get(key) && relations.get(key)!.parent
-            ? context.getModel(singularize(relations.get(key)!.parent!.entity), true)
-            : null;
+        let relatedModel = Model.getRelatedModel(relations.get(key)!);
+
         if (value instanceof Array) {
           // Either this is a hasMany field or a .attr() field which contains an array.
           const arrayModel = context.getModel(singularize(key), true);
 
           if (arrayModel) {
-            returnValue[key] = value.map(v => this.transformOutgoingData(arrayModel || model, v));
+            this.addRecordForRecursionDetection(outgoingRecords!, value[0]);
+            returnValue[key] = value.map(v => {
+              return this.transformOutgoingData(
+                arrayModel || model,
+                v,
+                read,
+                undefined,
+                outgoingRecords,
+                true
+              );
+            });
           } else {
+            // Simple field, not a relation
             returnValue[key] = value;
           }
         } else if (typeof value === "object" && value.$id !== undefined) {
@@ -60,8 +94,17 @@ export default class Transformer {
             relatedModel = context.getModel((value as ORMModel).$self().entity);
           }
 
+          this.addRecordForRecursionDetection(outgoingRecords!, value);
+
           // Value is a record, transform that too
-          returnValue[key] = this.transformOutgoingData(relatedModel, value);
+          returnValue[key] = this.transformOutgoingData(
+            relatedModel,
+            value,
+            read,
+            undefined,
+            outgoingRecords,
+            true
+          );
         } else {
           // In any other case just let the value be what ever it is
           returnValue[key] = value;
@@ -87,7 +130,7 @@ export default class Transformer {
     mutation: boolean = false,
     recursiveCall: boolean = false
   ): Data {
-    let result: Data = {};
+    let result: Data | Array<Data> = {} as Data;
     const context = Context.getInstance();
 
     if (!recursiveCall) {
@@ -99,7 +142,7 @@ export default class Transformer {
       result = data.map((d: any) => this.transformIncomingData(d, model, mutation, true));
     } else {
       Object.keys(data).forEach(key => {
-        if (key in data) {
+        if (data[key] !== undefined && data[key] !== null && key in data) {
           if (isPlainObject(data[key])) {
             const localModel: Model = context.getModel(key, true) || model;
 
@@ -149,5 +192,97 @@ export default class Transformer {
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
     return clone(result);
+  }
+
+  /**
+   * Tells if a field should be included in the outgoing data.
+   * @param {boolean} forFilter Tells whether a filter is constructed or not.
+   * @param {string} fieldName Name of the field to check.
+   * @param {any} value Value of the field.
+   * @param {Model} model Model class which contains the field.
+   * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
+   * @returns {boolean}
+   */
+  public static shouldIncludeOutgoingField(
+    forFilter: boolean,
+    fieldName: string,
+    value: any,
+    model: Model,
+    whitelist?: Array<String>
+  ): boolean {
+    // Always add fields on the whitelist.
+    if (whitelist && whitelist.includes(fieldName)) return true;
+
+    // Ignore internal fields
+    if (fieldName.startsWith("$")) return false;
+
+    // Ignore empty fields
+    if (value === null || value === undefined) return false;
+
+    // Include all eager save connections
+    if (model.getRelations().has(fieldName)) {
+      // We never add relations to filters.
+      if (forFilter) return false;
+
+      const relation: Relation = model.getRelations().get(fieldName)!;
+      const related: Model | null = Model.getRelatedModel(relation);
+      if (related && model.shouldEagerSaveRelation(fieldName, relation, related)) return true;
+
+      // All other relations are skipped
+      return false;
+    }
+
+    // Everything else is ok
+    return true;
+  }
+
+  /**
+   * Registers a record for recursion detection.
+   * @param {Map<string, Array<string>>} records Map of IDs.
+   * @param {ORMModel} record The record to register.
+   */
+  private static addRecordForRecursionDetection(
+    records: Map<string, Array<string>>,
+    record: ORMModel
+  ): void {
+    const context: Context = Context.getInstance();
+
+    if (!record) {
+      context.logger.warn("Trying to add invalid record", record, "to recursion detection");
+      return;
+    }
+
+    if (!record.$self) {
+      context.logger.warn(
+        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+      );
+      return;
+    }
+
+    const model: Model = context.getModel(record.$self().entity);
+    const ids = records.get(model.singularName) || [];
+    ids.push(record.$id!);
+    records.set(model.singularName, ids);
+  }
+
+  /**
+   * Detects recursions.
+   * @param {Map<string, Array<string>>} records Map of IDs.
+   * @param {ORMModel} record The record to check.
+   * @return {boolean} true when the record is already included in the records.
+   */
+  private static isRecursion(records: Map<string, Array<string>>, record: ORMModel): boolean {
+    if (!record) return false;
+
+    if (!record.$self) {
+      Context.getInstance().logger.warn(
+        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+      );
+      return false;
+    }
+
+    const model: Model = Context.getInstance().getModel(record.$self().entity);
+    const ids = records.get(model.singularName) || [];
+    return ids.includes(record.$id!);
   }
 }

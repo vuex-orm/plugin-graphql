@@ -1,6 +1,7 @@
 import Model from "../../src/orm/model";
 import { setupMockData, User, Post } from "../support/mock-data";
 import Context from "../../src/common/context";
+import { Relation } from "@vuex-orm/core";
 
 let model: Model;
 let store;
@@ -136,39 +137,105 @@ describe("Model", () => {
   });
 
   describe(".shouldEagerLoadRelation", () => {
-    test("returns true if field is a belongsTo or hasOne relation", () => {
-      const model = context.getModel("post");
+    test("returns the correct value", () => {
+      const user = context.getModel("user");
+      const profile = context.getModel("profile");
+      const post = context.getModel("post");
+      const tariff = context.getModel("tariff");
+
       expect(
-        model.shouldEagerLoadRelation(
-          "author",
-          model.fields.get("author")!,
-          context.getModel("user")
+        post.shouldEagerLoadRelation("author", post.fields.get("author")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        post.shouldEagerLoadRelation("comments", post.fields.get("comments")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        post.shouldEagerLoadRelation("tags", post.fields.get("tags")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        profile.shouldEagerLoadRelation("user", profile.fields.get("user")! as Relation, profile)
+      ).toEqual(true);
+      expect(
+        user.shouldEagerLoadRelation("posts", user.fields.get("posts")! as Relation, user)
+      ).toEqual(false);
+      expect(
+        tariff.shouldEagerLoadRelation(
+          "tariffOptions",
+          tariff.fields.get("tariffOptions")! as Relation,
+          tariff
         )
       ).toEqual(true);
-
-      // TODO test hasOne
     });
+  });
 
-    test("returns true if field is in the eagerLoad array", () => {
-      const model = context.getModel("post");
+  describe(".shouldEagerSaveRelation", () => {
+    test("returns the correct value", () => {
+      const user = context.getModel("user");
+      const profile = context.getModel("profile");
+      const post = context.getModel("post");
+      const tariff = context.getModel("tariff");
+
       expect(
-        model.shouldEagerLoadRelation(
-          "post",
-          model.fields.get("comments")!,
-          context.getModel("comment")
-        )
+        post.shouldEagerSaveRelation("author", post.fields.get("author")! as Relation, post)
       ).toEqual(true);
-    });
-
-    test("returns false if field neither belongsTo/hasOne nor in the eagerLoad array", () => {
-      const model = context.getModel("user");
       expect(
-        model.shouldEagerLoadRelation(
-          "user",
-          model.fields.get("comments")!,
-          context.getModel("comment")
+        post.shouldEagerSaveRelation("comments", post.fields.get("comments")! as Relation, post)
+      ).toEqual(false);
+      expect(
+        post.shouldEagerSaveRelation("tags", post.fields.get("tags")! as Relation, post)
+      ).toEqual(true);
+      expect(
+        profile.shouldEagerSaveRelation("user", profile.fields.get("user")! as Relation, profile)
+      ).toEqual(true);
+      expect(
+        user.shouldEagerSaveRelation("posts", user.fields.get("posts")! as Relation, user)
+      ).toEqual(false);
+      expect(
+        tariff.shouldEagerSaveRelation(
+          "tariffOptions",
+          tariff.fields.get("tariffOptions")! as Relation,
+          tariff
         )
       ).toEqual(false);
+    });
+  });
+
+  describe(".getRelatedModel", () => {
+    test("returns the correct related model", () => {
+      const user = context.getModel("user");
+      const profile = context.getModel("profile");
+      const post = context.getModel("post");
+      const tariff = context.getModel("tariff");
+      const option = context.getModel("tariffOption");
+      const category = context.getModel("category");
+
+      expect(Model.getRelatedModel(user.fields.get("profile") as Relation)!.singularName).toEqual(
+        "profile"
+      );
+      expect(Model.getRelatedModel(profile.fields.get("user") as Relation)!.singularName).toEqual(
+        "user"
+      );
+      expect(Model.getRelatedModel(post.fields.get("author") as Relation)!.singularName).toEqual(
+        "user"
+      );
+      expect(Model.getRelatedModel(post.fields.get("comments") as Relation)!.singularName).toEqual(
+        "comment"
+      );
+      expect(Model.getRelatedModel(post.fields.get("tags") as Relation)!.singularName).toEqual(
+        "tag"
+      );
+      expect(
+        Model.getRelatedModel(tariff.fields.get("tariffOptions") as Relation)!.singularName
+      ).toEqual("tariffOption");
+      expect(Model.getRelatedModel(option.fields.get("tariffs") as Relation)!.singularName).toEqual(
+        "tariff"
+      );
+      expect(
+        Model.getRelatedModel(category.fields.get("parent") as Relation)!.singularName
+      ).toEqual("category");
+      expect(
+        Model.getRelatedModel(category.fields.get("parent") as Relation)!.singularName
+      ).toEqual("category");
     });
   });
 });

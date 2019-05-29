@@ -21,7 +21,7 @@ export default class Persist extends Action {
     if (id) {
       const model = this.getModelFromState(state!);
       const mutationName = Context.getInstance().adapter.getNameForPersist(model);
-      const oldRecord = model.getRecordWithId(id);
+      const oldRecord = model.getRecordWithId(id)!;
 
       const mockReturnValue = model.$mockHook("persist", {
         id,
@@ -29,7 +29,7 @@ export default class Persist extends Action {
       });
 
       if (mockReturnValue) {
-        const newRecord = Store.insertData(mockReturnValue, dispatch!);
+        const newRecord = await Store.insertData(mockReturnValue, dispatch!);
         await this.deleteObsoleteRecord(model, newRecord, oldRecord);
         return newRecord;
       }
@@ -39,7 +39,7 @@ export default class Persist extends Action {
       this.addRecordToArgs(args, model, oldRecord);
 
       // Send mutation
-      const newRecord = await Action.mutation(mutationName, args, dispatch!, model);
+      const newRecord = await Action.mutation(mutationName, args as Data, dispatch!, model);
 
       // Delete the old record if necessary
       await this.deleteObsoleteRecord(model, newRecord, oldRecord);
@@ -64,5 +64,7 @@ export default class Persist extends Action {
       Context.getInstance().logger.log("Dropping deprecated record", oldRecord);
       return oldRecord.$delete();
     }
+
+    return null;
   }
 }

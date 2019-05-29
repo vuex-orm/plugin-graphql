@@ -81,22 +81,22 @@ export default class VuexORMGraphQL {
     };
 
     // Register model convenience methods
-    const model = context.components.Model.prototype;
+    const model: PatchedModel = context.components.Model.prototype as PatchedModel;
 
     model.$mutate = async function({ name, args, multiple }: ActionParams) {
       args = args || {};
-      if (!args["id"]) args["id"] = this.id;
+      if (!args["id"]) args["id"] = this.$id;
       return this.$dispatch("mutate", { name, args, multiple });
     };
 
     model.$customQuery = async function({ name, filter, multiple, bypassCache }: ActionParams) {
       filter = filter || {};
-      if (!filter["id"]) filter["id"] = this.id;
+      if (!filter["id"]) filter["id"] = this.$id;
       return this.$dispatch("query", { name, filter, multiple, bypassCache });
     };
 
     model.$persist = async function(args: any) {
-      return this.$dispatch("persist", { id: this.id, args });
+      return this.$dispatch("persist", { id: this.$id, args });
     };
 
     model.$push = async function(args: any) {
@@ -104,7 +104,7 @@ export default class VuexORMGraphQL {
     };
 
     model.$destroy = async function() {
-      return this.$dispatch("destroy", { id: this.id });
+      return this.$dispatch("destroy", { id: this.$id });
     };
 
     model.$deleteAndDestroy = async function() {

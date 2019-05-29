@@ -1,4 +1,4 @@
-import { ActionParams } from "../support/interfaces";
+import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
 import { Store } from "../orm/store";
 import Context from "../common/context";
@@ -30,7 +30,7 @@ export default class Destroy extends Action {
 
       args = this.prepareArgs(args, id);
 
-      await Action.mutation(mutationName, args, dispatch!, model);
+      await Action.mutation(mutationName, args as Data, dispatch!, model);
       return true;
     } else {
       /* istanbul ignore next */

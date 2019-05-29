@@ -5,7 +5,7 @@ import { Components } from "@vuex-orm/core/lib/plugins/use";
 import { downcaseFirstLetter, isEqual, pick, singularize } from "../support/utils";
 import Apollo from "../graphql/apollo";
 import Database from "@vuex-orm/core/lib/database/Database";
-import { Field, GraphQLType, Options } from "../support/interfaces";
+import { Data, Field, GraphQLType, Options } from "../support/interfaces";
 import Schema from "../graphql/schema";
 import { Mock, MockOptions } from "../test-utils";
 import Adapter, { ConnectionMode } from "../adapters/adapter";
@@ -159,7 +159,13 @@ export default class Context {
           headers: { "X-GraphQL-Introspection-Query": "true" }
         };
 
-        const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
+        const result = await this.apollo.simpleQuery(
+          introspectionQuery,
+          {},
+          true,
+          (context as unknown) as Data
+        );
+
         this.schema = new Schema(result.data.__schema);
 
         this.logger.log("GraphQL Schema successful fetched", result);
@@ -291,7 +297,7 @@ export default class Context {
    */
   private collectModels() {
     this.database.entities.forEach((entity: any) => {
-      const model: Model = new Model(entity.model as ORMModel);
+      const model: Model = new Model(entity.model as typeof ORMModel);
       this.models.set(model.singularName, model);
       Model.augment(model);
     });

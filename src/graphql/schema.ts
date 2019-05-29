@@ -106,17 +106,18 @@ export default class Schema {
   }
 
   static getTypeNameOfField(field: GraphQLField): string {
-    const type = this.getRealType(field.type);
+    let type = this.getRealType(field.type);
 
     if (type.kind === "LIST") {
-      return `[${type.ofType.name}]`;
+      while (!type.name) type = type.ofType;
+      return `[${type.name}]`;
+    } else {
+      while (!type.name) type = type.ofType;
+
+      /* istanbul ignore next */
+      if (!type.name) throw new Error(`Can't find type name for field ${field.name}`);
+
+      return type.name;
     }
-
-    const name = type.name || type.ofType.name || type.ofType.ofType.name;
-
-    /* istanbul ignore next */
-    if (!name) throw new Error(`Can't find type name for field ${field.name}`);
-
-    return name;
   }
 }
