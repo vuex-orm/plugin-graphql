@@ -104,7 +104,7 @@ export default class Action {
    * @returns {Arguments}
    */
   static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments {
-    args[model.singularName] = Transformer.transformOutgoingData(model, data);
+    args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
     return args;
   }
 
@@ -121,7 +121,7 @@ export default class Action {
 
       if (value instanceof context.components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value);
+        const transformedValue = Transformer.transformOutgoingData(model, value, false);
         context.logger.log(
           "A",
           key,

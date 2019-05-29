@@ -39,6 +39,7 @@ export default class Fetch extends Action {
       filter = Transformer.transformOutgoingData(
         model,
         params.filter as Data,
+        true,
         Object.keys(params.filter)
       );
     }

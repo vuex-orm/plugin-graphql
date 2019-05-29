@@ -93,7 +93,8 @@ export const typeDefs = `
     id: ID
     name: String
     profileId: ID
-    profile: ProfileInput
+    profile: ProfileInput,
+    posts: [PostFilter!]
   }
 
 
@@ -174,6 +175,7 @@ export const typeDefs = `
     otherId: ID
     published: Boolean
     author: UserInput
+    tags: [TagInput!]
   }
 
 
