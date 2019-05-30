@@ -14,6 +14,8 @@ export default class Schema {
   private mutations: Map<string, GraphQLField>;
   private queries: Map<string, GraphQLField>;
 
+  private readonly prepareTypeFunc: (type: string) => string;
+
   public constructor(schema: GraphQLSchema) {
     const context = Context.getInstance();
 
@@ -21,6 +23,7 @@ export default class Schema {
     this.types = new Map<string, GraphQLType>();
     this.mutations = new Map<string, GraphQLField>();
     this.queries = new Map<string, GraphQLField>();
+    this.prepareTypeFunc = context.adapter.prepareSchemaTypeName;
 
     this.schema.types.forEach((t: GraphQLType) => this.types.set(t.name, t));
 
@@ -61,7 +64,7 @@ export default class Schema {
   }
 
   public getType(name: string, allowNull: boolean = false): GraphQLType | null {
-    name = upcaseFirstLetter(name);
+    name = this.prepareTypeFunc(name);
     const type = this.types.get(name);
 
     if (!allowNull && !type) {

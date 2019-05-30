@@ -42,4 +42,8 @@ export default class DefaultAdapter implements Adapter {
   getNameForPush(model: Model): string {
     return `update${upcaseFirstLetter(model.singularName)}`;
   }
+
+  prepareSchemaTypeName(type: string): string {
+    return upcaseFirstLetter(type);
+  }
 }
