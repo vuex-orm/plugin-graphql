@@ -31,7 +31,7 @@ export default class Apollo {
     const context = Context.getInstance();
 
     // This allows the test suite to pass a custom link
-    if (context.options.link) {
+    if (!context.options.apolloClient && context.options.link) {
       this.httpLink = context.options.link;
     } else {
       /* istanbul ignore next */
@@ -42,11 +42,17 @@ export default class Apollo {
       });
     }
 
-    this.apolloClient = new ApolloClient({
-      link: this.httpLink,
-      cache: new InMemoryCache(),
-      connectToDevTools: context.debugMode
-    });
+    if (context.options.apolloClient) {
+      this.apolloClient = (context => {
+        return context.options.apolloClient;
+      })(context);
+    } else {
+      this.apolloClient = new ApolloClient({
+        link: this.httpLink,
+        cache: new InMemoryCache(),
+        connectToDevTools: context.debugMode
+      });
+    }
   }
 
   /**
