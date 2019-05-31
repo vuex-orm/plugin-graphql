@@ -43,7 +43,7 @@ export default class DefaultAdapter implements Adapter {
     return `update${upcaseFirstLetter(model.singularName)}`;
   }
 
-  prepareSchemaTypeName(type: string): string {
-    return upcaseFirstLetter(type);
+  prepareSchemaTypeName(name: string): string {
+    return upcaseFirstLetter(name);
   }
 }

@@ -28,5 +28,5 @@ export default interface Adapter {
   getFilterTypeName(model: Model): string;
   getInputTypeName(model: Model, action?: string): string;
 
-  prepareSchemaTypeName(type: string): string;
+  prepareSchemaTypeName(name: string): string;
 }
