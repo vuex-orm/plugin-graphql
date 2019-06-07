@@ -61,7 +61,7 @@ export default class Schema {
   }
 
   public getType(name: string, allowNull: boolean = false): GraphQLType | null {
-    name = upcaseFirstLetter(name);
+    name = Context.getInstance().adapter.prepareSchemaTypeName(name);
     const type = this.types.get(name);
 
     if (!allowNull && !type) {
