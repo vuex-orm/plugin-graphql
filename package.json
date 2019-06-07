@@ -46,7 +46,7 @@
   "author": "Benjamin Klein",
   "license": "MIT",
   "engines": {
-    "node": ">=6.0.0"
+    "node": ">=12.3.1"
   },
   "bugs": {
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
@@ -61,7 +61,7 @@
   "devDependencies": {
     "@commitlint/cli": "^7.1.2",
     "@commitlint/config-conventional": "^7.1.2",
-    "@types/graphql": "^0.12.3",
+    "@types/graphql": "^14.2.0",
     "@types/jest": "^23.3.2",
     "@types/node": "^10.11.0",
     "@types/sinon": "^5.0.1",
@@ -102,7 +102,6 @@
     "rollup-plugin-sourcemaps": "^0.4.2",
     "rollup-plugin-typescript2": "^0.17.0",
     "rollup-plugin-uglify": "^3.0.0",
-    "semantic-release": "^15.9.16",
     "sinon": "^6.0.0",
     "ts-jest": "^23.10.2",
     "ts-node": "^7.0.1",
@@ -155,7 +154,10 @@
     "globals": {
       "ts-jest": {
         "diagnostics": {
-          "ignoreCodes": [2339, 2576]
+          "ignoreCodes": [
+            2339,
+            2576
+          ]
         }
       }
     }
