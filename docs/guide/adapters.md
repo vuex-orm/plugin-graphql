@@ -38,7 +38,7 @@ import CustomAdapter from './custom-adapter.ts';
 
 VuexORM.use(VuexORMGraphQL, {
   database,
-  adapter: new CustomAdapter,
+  adapter: new CustomAdapter(),
 });
 ```
 
