@@ -16,10 +16,15 @@ However it's easier to just inherit from the DefaultAdapter:
 
 `data/custom-adapter.js`:
 ```javascript
-import DefaultAdapter from '@vuex-orm/plugin-graphql';
+import { DefaultAdapter, ConnectionMode } from '@vuex-orm/plugin-graphql';
 
 export default class CustomAdapter extends DefaultAdapter {
   // Your code here
+  
+  // Example
+  getConnectionMode() {
+    return ConnectionMode.PLAIN
+  }
 }
 ``` 
 
@@ -33,7 +38,7 @@ import CustomAdapter from './custom-adapter.ts';
 
 VuexORM.use(VuexORMGraphQL, {
   database,
-  adapter: CustomAdapter,
+  adapter: new CustomAdapter,
 });
 ```
 
