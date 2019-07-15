@@ -46,7 +46,7 @@
   "author": "Benjamin Klein",
   "license": "MIT",
   "engines": {
-    "node": ">=12.3.1"
+    "node": ">=10.0.0"
   },
   "bugs": {
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
