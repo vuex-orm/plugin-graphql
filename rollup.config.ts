@@ -8,14 +8,14 @@ import commonjs from 'rollup-plugin-commonjs';
 import sourceMaps from 'rollup-plugin-sourcemaps';
 
 // @ts-ignore
-import camelCase from 'lodash.camelcase';
+import camelCase from 'lodash/camelcase';
 import typescript from 'rollup-plugin-typescript2';
 
 // @ts-ignore
 import json from 'rollup-plugin-json';
 
 // @ts-ignore
-import uglify from 'rollup-plugin-uglify';
+import { uglify } from 'rollup-plugin-uglify';
 
 // @ts-ignore
 import babel from 'rollup-plugin-babel';
@@ -52,7 +52,7 @@ export default {
       plugins: ['external-helpers']
     }),
 
-    uglify(),
+    uglify,
 
     // Resolve source maps to the original source
     sourceMaps(),

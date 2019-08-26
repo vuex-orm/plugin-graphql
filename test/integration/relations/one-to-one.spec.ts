@@ -4,7 +4,7 @@ import { Data } from "../../../src/support/interfaces";
 let store: any;
 let vuexOrmGraphQL;
 
-describe("One To One Relation", async () => {
+describe("One To One Relation", () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
   });
