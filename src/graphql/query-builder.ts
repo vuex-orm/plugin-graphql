@@ -240,7 +240,7 @@ export default class QueryBuilder {
       });
 
       if (!first) {
-        if (!signature && filter) returnValue = `filter: { ${returnValue} }`;
+        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE) returnValue = `filter: { ${returnValue} }`;
         returnValue = `(${returnValue})`;
       }
     }
