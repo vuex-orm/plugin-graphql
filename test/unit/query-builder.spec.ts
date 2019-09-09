@@ -446,7 +446,7 @@ mutation CreatePost($post: PostInput!) {
     test("generates a complete update mutation query for a model", () => {
       const variables = {
         id: 2,
-        post: { id: 2, authorId: 1, title: "test", content: "Even more test" }
+        post: { id: 2, authorId: 1, title: "test", content: "Even more test", published: false }
       };
       let post = context.getModel("post");
       let query = QueryBuilder.buildQuery("mutation", post, "updatePost", variables, false);
@@ -528,15 +528,77 @@ mutation DeleteUser($id: ID!) {
     test("generates a complete create mutation query for a model with variable list", () => {
       (context.adapter as TestAdapter).argumentMode = ArgumentMode.LIST;
 
-      const variables = { post: { id: 15, authorId: 2, title: "test", content: "even more test" } };
+      const variables = { id: 15, authorId: 2, title: "test", content: "even more test", published: true };
       let post = context.getModel("post");
       let query = QueryBuilder.buildQuery("mutation", post, "createPost", variables, false);
       query = prettify(query.loc.source.body);
 
       expect(query).toEqual(
         `
-mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!) {
-  createPost(id: $id, authorId: $authorId, title: $title, content: $content) {
+mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!, $published: Boolean!) {
+  createPost(id: $id, authorId: $authorId, title: $title, content: $content, published: $published) {
+    id
+    content
+    title
+    otherId
+    published
+    author {
+      id
+      name
+      profile {
+        id
+        email
+        age
+        sex
+      }
+    }
+    comments {
+      nodes {
+        id
+        content
+        subjectId
+        subjectType
+        author {
+          id
+          name
+          profile {
+            id
+            email
+            age
+            sex
+          }
+        }
+      }
+    }
+    tags {
+      nodes {
+        id
+        name
+      }
+    }
+  }
+}
+      `.trim() + "\n"
+      );
+    });
+    test("generates a complete update mutation query for a model with variable list", () => {
+      (context.adapter as TestAdapter).argumentMode = ArgumentMode.LIST;
+
+      const variables = {
+        id: 2,
+        authorId: 1,
+        title: "test",
+        content: "Even more test",
+        published: false
+      };
+      let post = context.getModel("post");
+      let query = QueryBuilder.buildQuery("mutation", post, "updatePost", variables, false);
+      query = prettify(query.loc.source.body);
+
+      expect(query).toEqual(
+        `
+mutation UpdatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!, $published: Boolean!) {
+  updatePost(id: $id, authorId: $authorId, title: $title, content: $content, published: $published) {
     id
     content
     title
