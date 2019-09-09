@@ -7,6 +7,7 @@ import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import Transformer from "../graphql/transformer";
 import Schema from "../graphql/schema";
 import { singularize } from "../support/utils";
+import {ArgumentMode} from "..";
 
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -104,8 +105,13 @@ export default class Action {
    * @returns {Arguments}
    */
   static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments {
-    args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
-    return args;
+    const context = Context.getInstance()
+    if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
+      Object.assign(args, Transformer.transformOutgoingData(model, data, false))
+    } else {
+      args[model.singularName] = Transformer.transformOutgoingData(model, data, false)
+    }
+    return args
   }
 
   /**

@@ -196,7 +196,7 @@ export default class QueryBuilder {
           schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
 
         // Ignore null fields, ids and connections
-        if (value !== null && !skipFieldDueId && !isConnectionField) {
+        if ((value || typeof value === 'boolean') && !skipFieldDueId && !isConnectionField) {
           let typeOrValue: any = "";
 
           if (signature) {
