@@ -1,13 +1,13 @@
-import QueryBuilder from "../graphql/query-builder";
-import Context from "../common/context";
-import { Store } from "../orm/store";
-import { Arguments, Data, DispatchFunction } from "../support/interfaces";
-import Model from "../orm/model";
-import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
-import Transformer from "../graphql/transformer";
-import Schema from "../graphql/schema";
-import { singularize } from "../support/utils";
-import {ArgumentMode} from "..";
+import QueryBuilder from '../graphql/query-builder'
+import Context from '../common/context'
+import { Store } from '../orm/store'
+import { Arguments, Data, DispatchFunction } from '../support/interfaces'
+import Model from '../orm/model'
+import RootState from '@vuex-orm/core/lib/modules/contracts/RootState'
+import Transformer from '../graphql/transformer'
+import Schema from '../graphql/schema'
+import { singularize } from '../support/utils'
+import { ArgumentMode } from '..'
 
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -30,45 +30,42 @@ export default class Action {
     model: Model
   ): Promise<any> {
     if (variables) {
-      const context: Context = Context.getInstance();
-      const schema: Schema = await context.loadSchema();
+      const context: Context = Context.getInstance()
+      const schema: Schema = await context.loadSchema()
 
-      const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!);
-      const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
+      const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!)
+      const query = QueryBuilder.buildQuery('mutation', model, name, variables, multiple)
 
       // Send GraphQL Mutation
-      let newData = await context.apollo.request(model, query, variables, true);
+      let newData = await context.apollo.request(model, query, variables, true)
 
       // When this was not a destroy action, we get new data, which we should insert in the store
       if (name !== context.adapter.getNameForDestroy(model)) {
-        newData = newData[Object.keys(newData)[0]];
+        newData = newData[Object.keys(newData)[0]]
 
         // IDs as String cause terrible issues, so we convert them to integers.
-        newData.id = parseInt(newData.id, 10);
+        newData.id = parseInt(newData.id, 10)
 
-        const insertedData: Data = await Store.insertData(
-          { [model.pluralName]: newData } as Data,
-          dispatch
-        );
+        const insertedData: Data = await Store.insertData({ [model.pluralName]: newData } as Data, dispatch)
 
         // Try to find the record to return
-        const records = insertedData[model.pluralName];
-        const newRecord = records[records.length - 1];
+        const records = insertedData[model.pluralName]
+        const newRecord = records[records.length - 1]
         if (newRecord) {
-          return newRecord;
+          return newRecord
         } else {
           Context.getInstance().logger.log(
             "Couldn't find the record of type '",
             model.pluralName,
             "' within",
             insertedData,
-            ". Falling back to find()"
-          );
-          return model.baseModel.query().last();
+            '. Falling back to find()'
+          )
+          return model.baseModel.query().last()
         }
       }
 
-      return true;
+      return true
     }
   }
 
@@ -78,7 +75,7 @@ export default class Action {
    * @returns {Model}
    */
   static getModelFromState(state: RootState): Model {
-    return Context.getInstance().getModel(state.$name);
+    return Context.getInstance().getModel(state.$name)
   }
 
   /**
@@ -89,10 +86,10 @@ export default class Action {
    * @returns {Arguments}
    */
   static prepareArgs(args?: Arguments, id?: any): Arguments {
-    args = args || {};
-    if (id) args["id"] = id;
+    args = args || {}
+    if (id) args['id'] = id
 
-    return args;
+    return args
   }
 
   /**
@@ -106,7 +103,7 @@ export default class Action {
    */
   static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments {
     const context = Context.getInstance()
-    if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
+    if (context.adapter.getArgumentMode() === ArgumentMode.LIST) {
       Object.assign(args, Transformer.transformOutgoingData(model, data, false))
     } else {
       args[model.singularName] = Transformer.transformOutgoingData(model, data, false)
@@ -120,26 +117,26 @@ export default class Action {
    * @returns {Arguments}
    */
   protected static transformArgs(args: Arguments): Arguments {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
     Object.keys(args).forEach((key: string) => {
-      const value: Data = args[key];
+      const value: Data = args[key]
 
       if (value instanceof context.components.Model) {
-        const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false);
+        const model = context.getModel(singularize(value.$self().entity))
+        const transformedValue = Transformer.transformOutgoingData(model, value, false)
         context.logger.log(
-          "A",
+          'A',
           key,
-          "model was found within the variables and will be transformed from",
+          'model was found within the variables and will be transformed from',
           value,
-          "to",
+          'to',
           transformedValue
-        );
-        args[key] = transformedValue;
+        )
+        args[key] = transformedValue
       }
-    });
+    })
 
-    return args;
+    return args
   }
 }

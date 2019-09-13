@@ -1,8 +1,7 @@
-import { ActionParams, Arguments, Data } from "../support/interfaces";
-import Action from "./action";
-import Context from "../common/context";
-import Schema from "../graphql/schema";
-import { Store } from "../orm/store";
+import { ActionParams, Data } from '../support/interfaces'
+import Action from './action'
+import Context from '../common/context'
+import { Store } from '../orm/store'
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
@@ -16,35 +15,32 @@ export default class Mutate extends Action {
    * @param {Arguments} args Arguments for the mutation. Must contain a 'mutation' field.
    * @returns {Promise<Data>} The new record if any
    */
-  public static async call(
-    { state, dispatch }: ActionParams,
-    { args, name }: ActionParams
-  ): Promise<Data> {
+  public static async call({ state, dispatch }: ActionParams, { args, name }: ActionParams): Promise<Data> {
     if (name) {
-      const context: Context = Context.getInstance();
-      const model = this.getModelFromState(state!);
+      const context: Context = Context.getInstance()
+      const model = this.getModelFromState(state!)
 
-      const mockReturnValue = model.$mockHook("mutate", {
+      const mockReturnValue = model.$mockHook('mutate', {
         name,
-        args: args || {}
-      });
+        args: args || {},
+      })
 
       if (mockReturnValue) {
-        return Store.insertData(mockReturnValue, dispatch!);
+        return Store.insertData(mockReturnValue, dispatch!)
       }
 
-      const schema: Schema = await context.loadSchema();
-      args = this.prepareArgs(args);
+      await context.loadSchema()
+      args = this.prepareArgs(args)
 
       // There could be anything in the args, but we have to be sure that all records are gone through
       // transformOutgoingData()
-      this.transformArgs(args);
+      this.transformArgs(args)
 
       // Send the mutation
-      return Action.mutation(name, args as Data, dispatch!, model);
+      return Action.mutation(name, args as Data, dispatch!, model)
     } else {
       /* istanbul ignore next */
-      throw new Error("The mutate action requires the mutation name ('mutation') to be set");
+      throw new Error("The mutate action requires the mutation name ('mutation') to be set")
     }
   }
 }

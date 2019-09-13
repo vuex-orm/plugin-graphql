@@ -1,11 +1,11 @@
-import { Relation } from "@vuex-orm/core";
-import Model from "../orm/model";
-import { Arguments, Field, GraphQLField, GraphQLType } from "../support/interfaces";
-import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from "../support/utils";
-import gql from "graphql-tag";
-import Context from "../common/context";
-import Schema from "./schema";
-import { ConnectionMode, ArgumentMode } from "../adapters/adapter";
+import { Relation } from '@vuex-orm/core'
+import Model from '../orm/model'
+import { Arguments, Field, GraphQLField, GraphQLType } from '../support/interfaces'
+import { clone, isPlainObject, takeWhile, upcaseFirstLetter } from '../support/utils'
+import gql from 'graphql-tag'
+import Context from '../common/context'
+import Schema from './schema'
+import { ConnectionMode, ArgumentMode } from '../adapters/adapter'
 
 /**
  * Contains all logic to build GraphQL queries/mutations.
@@ -36,23 +36,21 @@ export default class QueryBuilder {
     filter: boolean = false,
     allowIdFields: boolean = false
   ): string {
-    const context = Context.getInstance();
-    model = context.getModel(model);
+    const context = Context.getInstance()
+    model = context.getModel(model)
 
-    name = name ? name : model.pluralName;
-    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
+    name = name ? name : model.pluralName
+    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true)
 
-    let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field);
-    path = path.length === 0 ? [model.singularName] : path;
+    let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field)
+    path = path.length === 0 ? [model.singularName] : path
 
     const fields = `
-      ${model.getQueryFields().join(" ")}
+      ${model.getQueryFields().join(' ')}
       ${this.buildRelationsQuery(model, path)}
-    `;
-
+    `
     if (multiple) {
-      const header: string = `${name}${params}`;
-
+      const header: string = `${name}${params}`
       if (context.connectionMode === ConnectionMode.NODES) {
         return `
           ${header} {
@@ -60,7 +58,7 @@ export default class QueryBuilder {
               ${fields}
             }
           }
-        `;
+        `
       } else if (context.connectionMode === ConnectionMode.EDGES) {
         return `
           ${header} {
@@ -70,20 +68,20 @@ export default class QueryBuilder {
               }
             }
           }
-        `;
+        `
       } else {
         return `
           ${header} {
             ${fields}
           }
-        `;
+        `
       }
     } else {
       return `
         ${name ? name : model.singularName}${params} {
           ${fields}
         }
-      `;
+      `
     }
   }
 
@@ -106,37 +104,30 @@ export default class QueryBuilder {
     multiple?: boolean,
     filter?: boolean
   ) {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
     // model
-    model = context.getModel(model);
+    model = context.getModel(model)
 
     // arguments
-    args = this.prepareArguments(args);
+    args = this.prepareArguments(args)
 
     // multiple
-    multiple = multiple === undefined ? !args["id"] : multiple;
+    multiple = multiple === undefined ? !args['id'] : multiple
 
     // name
-    if (!name) name = multiple ? model.pluralName : model.singularName;
+    if (!name) name = multiple ? model.pluralName : model.singularName
 
     // field
-    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
+    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true)
 
     // build query
     const query: string =
-      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(
-        model,
-        args,
-        true,
-        filter,
-        true,
-        field
-      )} {\n` +
+      `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter, true, field)} {\n` +
       `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
-      `}`;
+      `}`
 
-    return gql(query);
+    return gql(query)
   }
 
   /**
@@ -172,39 +163,33 @@ export default class QueryBuilder {
     allowIdFields: boolean = true,
     field: GraphQLField | null = null
   ): string {
-    const context = Context.getInstance();
-    if (args === undefined) return "";
+    const context = Context.getInstance()
+    if (args === undefined) return ''
 
-    let returnValue: string = "";
-    let first: boolean = true;
+    let returnValue: string = ''
+    let first: boolean = true
 
     if (args) {
       Object.keys(args).forEach((key: string) => {
-        let value: any = args[key];
+        let value: any = args[key]
 
-        const isForeignKey = model.skipField(key);
-        const skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
+        const isForeignKey = model.skipField(key)
+        const skipFieldDueId = (key === 'id' || isForeignKey) && !allowIdFields
 
-        let schemaField: GraphQLField | undefined = this.findSchemaFieldForArgument(
-          key,
-          field,
-          model,
-          filter
-        );
+        let schemaField: GraphQLField | undefined = this.findSchemaFieldForArgument(key, field, model, filter)
 
-        const isConnectionField =
-          schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
+        const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith('TypeConnection')
 
         // Ignore null fields, ids and connections
         if ((value || typeof value === 'boolean') && !skipFieldDueId && !isConnectionField) {
-          let typeOrValue: any = "";
+          let typeOrValue: any = ''
 
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + '!'
             } else if (value instanceof Array && field) {
-              const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
+              const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter)
 
               /* istanbul ignore next */
               if (!arg) {
@@ -212,40 +197,40 @@ export default class QueryBuilder {
                   `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${
                     field.name
                   }`
-                );
+                )
               }
 
-              typeOrValue = Schema.getTypeNameOfField(arg) + "!";
+              typeOrValue = Schema.getTypeNameOfField(arg) + '!'
             } else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
               // Case 1, 3 and 4
-              typeOrValue = Schema.getTypeNameOfField(schemaField) + "!";
-            } else if (key === "id" || isForeignKey) {
+              typeOrValue = Schema.getTypeNameOfField(schemaField) + '!'
+            } else if (key === 'id' || isForeignKey) {
               // Case 1 (ID!)
-              typeOrValue = "ID!";
+              typeOrValue = 'ID!'
             } else {
               // Case 1 (String!)
-              typeOrValue = this.determineAttributeType(model, key, value, field || undefined);
-              typeOrValue = typeOrValue + "!";
+              typeOrValue = this.determineAttributeType(model, key, value, field || undefined)
+              typeOrValue = typeOrValue + '!'
             }
           } else {
             // Case 3 or 4
-            typeOrValue = `$${key}`;
+            typeOrValue = `$${key}`
           }
 
-          returnValue = `${returnValue}${first ? "" : ", "}${(signature ? "$" : "") +
-            key}: ${typeOrValue}`;
+          returnValue = `${returnValue}${first ? '' : ', '}${(signature ? '$' : '') + key}: ${typeOrValue}`
 
-          first = false;
+          first = false
         }
-      });
+      })
 
       if (!first) {
-        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE) returnValue = `filter: { ${returnValue} }`;
-        returnValue = `(${returnValue})`;
+        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE)
+          returnValue = `filter: { ${returnValue} }`
+        returnValue = `(${returnValue})`
       }
     }
 
-    return returnValue;
+    return returnValue
   }
 
   /**
@@ -257,47 +242,40 @@ export default class QueryBuilder {
    * @param {GraphQLField} query Pass when we have to detect the type of an argument
    * @returns {string}
    */
-  public static determineAttributeType(
-    model: Model,
-    key: string,
-    value: any,
-    query?: GraphQLField
-  ): string {
-    const context: Context = Context.getInstance();
-    const field: undefined | Field = model.fields.get(key);
-    let schemaField: undefined | GraphQLField;
+  public static determineAttributeType(model: Model, key: string, value: any, query?: GraphQLField): string {
+    const context: Context = Context.getInstance()
+    const field: undefined | Field = model.fields.get(key)
+    let schemaField: undefined | GraphQLField
 
     if (query) {
-      schemaField = query.args.find(f => f.name === key);
+      schemaField = query.args.find((f) => f.name === key)
 
       if (!schemaField) {
-        const filterField = query.args.find(f => f.name === "filter");
+        const filterField = query.args.find((f) => f.name === 'filter')
 
         if (filterField) {
-          schemaField = this.findSchemaFieldForArgument(key, null, model, true);
+          schemaField = this.findSchemaFieldForArgument(key, null, model, true)
         }
       }
     } else {
-      schemaField = context.schema!.getType(model.singularName)!.fields!.find(f => f.name === key);
+      schemaField = context.schema!.getType(model.singularName)!.fields!.find((f) => f.name === key)
     }
 
     if (schemaField && Schema.getTypeNameOfField(schemaField)) {
-      return Schema.getTypeNameOfField(schemaField);
+      return Schema.getTypeNameOfField(schemaField)
     } else {
       if (field instanceof context.components.String) {
-        return "String";
+        return 'String'
       } else if (field && field instanceof context.components.Number) {
-        return "Int";
+        return 'Int'
       } else if (field && field instanceof context.components.Boolean) {
-        return "Boolean";
+        return 'Boolean'
       } else {
-        if (typeof value === "number") return "Int";
-        if (typeof value === "string") return "String";
-        if (typeof value === "boolean") return "Boolean";
+        if (typeof value === 'number') return 'Int'
+        if (typeof value === 'string') return 'String'
+        if (typeof value === 'boolean') return 'Boolean'
 
-        throw new Error(
-          `Can't find suitable graphql type for field '${model.singularName}.${key}'.`
-        );
+        throw new Error(`Can't find suitable graphql type for field '${model.singularName}.${key}'.`)
       }
     }
   }
@@ -308,36 +286,32 @@ export default class QueryBuilder {
     model: Model,
     isFilter: boolean
   ): GraphQLField | undefined {
-    const context = Context.getInstance();
-    const schema = context.schema!;
-    let schemaField: GraphQLField | undefined;
+    const context = Context.getInstance()
+    const schema = context.schema!
+    let schemaField: GraphQLField | undefined
 
     if (field) {
-      schemaField = field.args.find(f => f.name === name);
-      if (schemaField) return schemaField;
+      schemaField = field.args.find((f) => f.name === name)
+      if (schemaField) return schemaField
     }
 
     // We try to find the FilterType or at least the Type this query belongs to.
     const type: GraphQLType | null = schema.getType(
       isFilter ? context.adapter.getFilterTypeName(model) : model.singularName,
       true
-    );
+    )
 
     // Next we try to find the field from the type
-    schemaField = type
-      ? (isFilter ? type.inputFields! : type.fields!).find(f => f.name === name)
-      : undefined;
+    schemaField = type ? (isFilter ? type.inputFields! : type.fields!).find((f) => f.name === name) : undefined
 
     // Warn before we return null
     if (!schemaField) {
       Context.getInstance().logger.warn(
-        `Couldn't find the argument with name ${name} for the mutation/query ${
-          field ? field.name : "(?)"
-        }`
-      );
+        `Couldn't find the argument with name ${name} for the mutation/query ${field ? field.name : '(?)'}`
+      )
     }
 
-    return schemaField;
+    return schemaField
   }
 
   /**
@@ -348,66 +322,54 @@ export default class QueryBuilder {
    * @returns {string}
    */
   static buildRelationsQuery(model: null | Model, path: Array<string> = []): string {
-    if (model === null) return "";
+    if (model === null) return ''
 
-    const context = Context.getInstance();
-    const relationQueries: Array<string> = [];
+    const context = Context.getInstance()
+    const relationQueries: Array<string> = []
 
     model.getRelations().forEach((field: Relation, name: string) => {
-      let relatedModel: Model = Model.getRelatedModel(field)!;
+      let relatedModel: Model = Model.getRelatedModel(field)!
 
       // We will ignore the field, when it's already in the path. Means: When it's already queried. However there are
       // cases where the model will have a relationship to itself. For example a nested category strucure where the
       // category model has a parent: belongsTo(Category). So we also check if the model references itself. If this is
       // the case, we allow the nesting up to 5 times.
-      const referencesItSelf = takeWhile(
-        path.slice(0).reverse(),
-        (p: string) => p === relatedModel.singularName
-      ).length;
-      const ignore = referencesItSelf
-        ? referencesItSelf > 5
-        : path.includes(relatedModel.singularName);
+      const referencesItSelf = takeWhile(path.slice(0).reverse(), (p: string) => p === relatedModel.singularName).length
+      const ignore = referencesItSelf ? referencesItSelf > 5 : path.includes(relatedModel.singularName)
 
       // console.log(`-----> Will ${ignore ? '' : 'not'} ignore ${model.singularName}.${name}, path: ${path.join('.')}`);
 
       if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
-        const newPath = path.slice(0);
-        newPath.push(relatedModel.singularName);
+        const newPath = path.slice(0)
+        newPath.push(relatedModel.singularName)
 
         relationQueries.push(
-          this.buildField(
-            relatedModel,
-            Model.isConnection(field as Field),
-            undefined,
-            newPath,
-            name,
-            false
-          )
-        );
+          this.buildField(relatedModel, Model.isConnection(field as Field), undefined, newPath, name, false)
+        )
       }
-    });
+    })
 
-    return relationQueries.join("\n");
+    return relationQueries.join('\n')
   }
 
   private static prepareArguments(args?: Arguments): Arguments {
-    args = (args ? clone(args) : {}) as Arguments;
+    args = (args ? clone(args) : {}) as Arguments
 
     Object.keys(args).forEach((key: string) => {
-      const value = args![key];
+      const value = args![key]
 
       if (value && isPlainObject(value)) {
         if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
           Object.keys(value).forEach((k: string) => {
-            args![k] = value[k];
-          });
-          delete args![key];
+            args![k] = value[k]
+          })
+          delete args![key]
         } else {
-          args![key] = { __type: upcaseFirstLetter(key) };
+          args![key] = { __type: upcaseFirstLetter(key) }
         }
       }
-    });
+    })
 
-    return args;
+    return args
   }
 }

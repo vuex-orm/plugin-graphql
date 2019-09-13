@@ -1,7 +1,7 @@
-import { ActionParams, Data } from "../support/interfaces";
-import Action from "./action";
-import { Store } from "../orm/store";
-import Context from "../common/context";
+import { ActionParams, Data } from '../support/interfaces'
+import Action from './action'
+import { Store } from '../orm/store'
+import Context from '../common/context'
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().
@@ -13,28 +13,25 @@ export default class Destroy extends Action {
    * @param {string} id ID of the record to delete
    * @returns {Promise<any>} true
    */
-  public static async call(
-    { state, dispatch }: ActionParams,
-    { id, args }: ActionParams
-  ): Promise<boolean> {
+  public static async call({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<boolean> {
     if (id) {
-      const model = this.getModelFromState(state!);
-      const mutationName = Context.getInstance().adapter.getNameForDestroy(model);
+      const model = this.getModelFromState(state!)
+      const mutationName = Context.getInstance().adapter.getNameForDestroy(model)
 
-      const mockReturnValue = model.$mockHook("destroy", { id });
+      const mockReturnValue = model.$mockHook('destroy', { id })
 
       if (mockReturnValue) {
-        await Store.insertData(mockReturnValue, dispatch!);
-        return true;
+        await Store.insertData(mockReturnValue, dispatch!)
+        return true
       }
 
-      args = this.prepareArgs(args, id);
+      args = this.prepareArgs(args, id)
 
-      await Action.mutation(mutationName, args as Data, dispatch!, model);
-      return true;
+      await Action.mutation(mutationName, args as Data, dispatch!, model)
+      return true
     } else {
       /* istanbul ignore next */
-      throw new Error("The destroy action requires the 'id' to be set");
+      throw new Error("The destroy action requires the 'id' to be set")
     }
   }
 }
