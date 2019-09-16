@@ -1,4 +1,4 @@
-import { ActionParams, Data } from '../support/interfaces'
+import { ActionParams, Arguments, Data } from '../support/interfaces'
 import Action from './action'
 import { Store } from '../orm/store'
 import Context from '../common/context'
@@ -16,8 +16,10 @@ export default class Push extends Action {
    */
   public static async call({ state, dispatch }: ActionParams, { data, args }: ActionParams): Promise<Data> {
     if (data) {
+      const context: Context = Context.getInstance()
+      const schema = await context.loadSchema()
       const model = this.getModelFromState(state!)
-      const mutationName = Context.getInstance().adapter.getNameForPush(model)
+      const mutationName = context.adapter.getNameForPush(model)
 
       const mockReturnValue = model.$mockHook('push', {
         data,
@@ -31,6 +33,26 @@ export default class Push extends Action {
       // Arguments
       args = this.prepareArgs(args, data.id)
       this.addRecordToArgs(args, model, data)
+
+      // Check the mutation in the schema and remove unneeded arguments from sending to the server
+      if (args) {
+        try {
+          const mutation = schema.getMutation(mutationName)
+          const newArgs: Arguments = {}
+          Object.entries(args).forEach(([argName, value]) => {
+            if (mutation && !mutation.args.find((a) => a.name === argName)) {
+              context.logger.warn(
+                `Removing mutation argument ${mutationName}.${argName} because it's not in the schema.`
+              )
+            } else {
+              newArgs[argName] = value
+            }
+          })
+          args = newArgs
+        } catch (error) {
+          context.logger.warn(`Ignoring mutation ${mutationName} because it's not in the schema. ${error}`)
+        }
+      }
 
       // Send the mutation
       return Action.mutation(mutationName, args as Data, dispatch!, model)

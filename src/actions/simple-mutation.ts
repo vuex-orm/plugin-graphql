@@ -13,7 +13,7 @@ export default class SimpleMutation extends Action {
    * @param {Arguments} variables
    * @returns {Promise<any>} The result
    */
-  public static async call({  }: ActionParams, { query, variables }: ActionParams): Promise<any> {
+  public static async call({ dispatch }: ActionParams, { query, variables }: ActionParams): Promise<any> {
     const context: Context = Context.getInstance()
 
     if (query) {

@@ -178,24 +178,25 @@ export default class Model {
   public skipField(field: string) {
     if (field.startsWith('$')) return true
     if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true
-    return false
 
-    // const context = Context.getInstance();
-    // let shouldSkipField: boolean = false;
-    // this.getRelations().forEach((relation: Relation) => {
-    //   if (
-    //     (relation instanceof context.components.BelongsTo ||
-    //       relation instanceof context.components.HasOne) &&
-    //     relation.foreignKey === field
-    //   ) {
-    //     console.log('relations', relation, relation.foreignKey, relation.foreignKey === field)
-    //     shouldSkipField = true;
-    //     return false;
-    //   }
-    //   return true;
-    // });
+    const context = Context.getInstance()
+    if (context.adapter.sendForeignKeys()) {
+      return false
+    } else {
+      let shouldSkipField: boolean = false
+      this.getRelations().forEach((relation: Relation) => {
+        if (
+          (relation instanceof context.components.BelongsTo || relation instanceof context.components.HasOne) &&
+          relation.foreignKey === field
+        ) {
+          shouldSkipField = true
+          return false
+        }
+        return true
+      })
 
-    // return shouldSkipField;
+      return shouldSkipField
+    }
   }
 
   /**

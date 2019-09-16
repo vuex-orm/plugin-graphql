@@ -1,6 +1,5 @@
 import { GraphQLField, GraphQLSchema, GraphQLType, GraphQLTypeDefinition } from '../support/interfaces'
-import { upcaseFirstLetter } from '../support/utils'
-import { ConnectionMode } from '../adapters/adapter'
+import { ConnectionMode } from '..'
 import Context from '../common/context'
 
 export default class Schema {

@@ -53,7 +53,7 @@ export default class VuexORMGraphQL {
   private static setupModelMethods() {
     const context = Context.getInstance()
 
-    // Register static model convenience methods
+      // Register static model convenience methods
     ;(context.components.Model as typeof PatchedModel).fetch = async function(filter: any, bypassCache = false) {
       let filterObj = filter
       if (!isPlainObject(filterObj)) {
@@ -61,11 +61,9 @@ export default class VuexORMGraphQL {
       }
       return this.dispatch('fetch', { filter: filterObj, bypassCache })
     }
-
     ;(context.components.Model as typeof PatchedModel).mutate = async function(params: ActionParams) {
       return this.dispatch('mutate', params)
     }
-
     ;(context.components.Model as typeof PatchedModel).customQuery = async function({
       name,
       filter,

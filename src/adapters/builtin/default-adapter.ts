@@ -46,4 +46,8 @@ export default class DefaultAdapter implements Adapter {
   prepareSchemaTypeName(name: string): string {
     return upcaseFirstLetter(name)
   }
+
+  sendForeignKeys(): boolean {
+    return false
+  }
 }

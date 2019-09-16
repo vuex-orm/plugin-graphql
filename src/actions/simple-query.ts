@@ -14,7 +14,7 @@ export default class SimpleQuery extends Action {
    * @param {boolean} bypassCache Whether to bypass the cache
    * @returns {Promise<any>} The result
    */
-  public static async call({  }: ActionParams, { query, bypassCache, variables }: ActionParams): Promise<any> {
+  public static async call({ dispatch }: ActionParams, { query, bypassCache, variables }: ActionParams): Promise<any> {
     const context: Context = Context.getInstance()
 
     if (query) {

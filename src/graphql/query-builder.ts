@@ -224,8 +224,9 @@ export default class QueryBuilder {
       })
 
       if (!first) {
-        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE)
+        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE) {
           returnValue = `filter: { ${returnValue} }`
+        }
         returnValue = `(${returnValue})`
       }
     }

@@ -1,5 +1,5 @@
 import Context from '../common/context'
-import { ActionParams, Data } from '../support/interfaces'
+import { ActionParams, Data, Arguments } from '../support/interfaces'
 import Action from './action'
 import { Store } from '../orm/store'
 
@@ -15,8 +15,11 @@ export default class Persist extends Action {
    */
   public static async call({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<Data> {
     if (id) {
+      const context: Context = Context.getInstance()
+      const schema = await context.loadSchema()
+
       const model = this.getModelFromState(state!)
-      const mutationName = Context.getInstance().adapter.getNameForPersist(model)
+      const mutationName = context.adapter.getNameForPersist(model)
       const oldRecord = model.getRecordWithId(id)!
 
       const mockReturnValue = model.$mockHook('persist', {
@@ -33,6 +36,26 @@ export default class Persist extends Action {
       // Arguments
       args = this.prepareArgs(args)
       this.addRecordToArgs(args, model, oldRecord)
+
+      // Check the mutation in the schema and remove unneeded arguments from sending to the server
+      if (args) {
+        try {
+          const mutation = schema.getMutation(mutationName)
+          const newArgs: Arguments = {}
+          Object.entries(args).forEach(([argName, value]) => {
+            if (mutation && !mutation.args.find((a) => a.name === argName)) {
+              context.logger.warn(
+                `Removing mutation argument ${mutationName}.${argName} because it's not in the schema.`
+              )
+            } else {
+              newArgs[argName] = value
+            }
+          })
+          args = newArgs
+        } catch (error) {
+          context.logger.warn(`Ignoring mutation ${mutationName} because it's not in the schema. ${error}`)
+        }
+      }
 
       // Send mutation
       const newRecord = await Action.mutation(mutationName, args as Data, dispatch!, model)

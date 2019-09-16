@@ -29,4 +29,7 @@ export default interface Adapter {
   getInputTypeName(model: Model, action?: string): string
 
   prepareSchemaTypeName(name: string): string
+
+  // Allow to send the foreignKey of a belongsTo/hasOne relation
+  sendForeignKeys(): boolean
 }
