@@ -17,7 +17,6 @@ export default class Push extends Action {
   public static async call({ state, dispatch }: ActionParams, { data, args }: ActionParams): Promise<Data> {
     if (data) {
       const context: Context = Context.getInstance()
-      const schema = await context.loadSchema()
       const model = this.getModelFromState(state!)
       const mutationName = context.adapter.getNameForPush(model)
 
@@ -33,6 +32,8 @@ export default class Push extends Action {
       // Arguments
       args = this.prepareArgs(args, data.id)
       this.addRecordToArgs(args, model, data)
+
+      const schema = await context.loadSchema()
 
       // Check the mutation in the schema and remove unneeded arguments from sending to the server
       if (args) {

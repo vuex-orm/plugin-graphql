@@ -16,7 +16,6 @@ export default class Persist extends Action {
   public static async call({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<Data> {
     if (id) {
       const context: Context = Context.getInstance()
-      const schema = await context.loadSchema()
 
       const model = this.getModelFromState(state!)
       const mutationName = context.adapter.getNameForPersist(model)
@@ -36,6 +35,8 @@ export default class Persist extends Action {
       // Arguments
       args = this.prepareArgs(args)
       this.addRecordToArgs(args, model, oldRecord)
+
+      const schema = await context.loadSchema()
 
       // Check the mutation in the schema and remove unneeded arguments from sending to the server
       if (args) {
