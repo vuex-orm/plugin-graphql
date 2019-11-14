@@ -49,7 +49,7 @@ We recommend to activate the debug mode in development env automatically via:
 ## Client
 
 You can inject your own instance of the Apollo Client using `option.apolloClient`. This is useful if
-the app requires a more complex configuration, such as integration wiht AWS AppSync. When `apolloClient`
+the app requires a more complex configuration, such as integration with AWS AppSync. When `apolloClient`
 is used, `plugin-graphql` ignores any other options to configure Apollo client.
 
 Here is an example configuration for AWS AppSync:
