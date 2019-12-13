@@ -7,6 +7,7 @@ import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import Transformer from "../graphql/transformer";
 import Schema from "../graphql/schema";
 import { singularize } from "../support/utils";
+import { GraphQLType } from "../support/interfaces";
 
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -46,19 +47,19 @@ export default class Action {
         newData.id = parseInt(newData.id, 10);
 
         const insertedData: Data = await Store.insertData(
-          { [model.pluralName]: newData } as Data,
+          { [model.singularName]: newData } as Data,
           dispatch
         );
 
         // Try to find the record to return
-        const records = insertedData[model.pluralName];
+        const records = insertedData[model.singularName];
         const newRecord = records[records.length - 1];
         if (newRecord) {
           return newRecord;
         } else {
           Context.getInstance().logger.log(
             "Couldn't find the record of type '",
-            model.pluralName,
+            model.singularName,
             "' within",
             insertedData,
             ". Falling back to find()"
@@ -104,7 +105,12 @@ export default class Action {
    * @returns {Arguments}
    */
   static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments {
-    args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
+    args[model.singularName] = Transformer.transformOutgoingData(
+      model,
+      data,
+      false,
+      this.getInputType(model)
+    );
     return args;
   }
 
@@ -121,7 +127,12 @@ export default class Action {
 
       if (value instanceof context.components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false);
+        const transformedValue = Transformer.transformOutgoingData(
+          model,
+          value,
+          false,
+          this.getInputType(model)
+        );
         context.logger.log(
           "A",
           key,
@@ -135,5 +146,16 @@ export default class Action {
     });
 
     return args;
+  }
+
+  /**
+   * Gets the mutation input type for the given model
+   * @param {Model} model
+   * @returns {GraphQLType | null}
+   */
+  protected static getInputType(model: Model): GraphQLType | null {
+    const context: Context = Context.getInstance();
+    const inputTypeName: string = context.adapter.getInputTypeName(model);
+    return context.schema!.getType(inputTypeName);
   }
 }
