@@ -22,8 +22,22 @@ In rare cases the automatic detection might fail or report the wrong mode. In th
 manually set the connection mode via a custom adapter. The modes and the resulting
 queries are explained in the next sections.
 
+## Mode 1: `plain` 
 
-## Mode 1: `nodes`
+The third mode is the less preferred one due to the lack of meta information. In this case we just plain pass the field
+queries:
+
+```
+query Users {
+  users {
+    id
+    email
+    name
+  }
+}
+```
+
+## Mode 2: `nodes`
 
 This is the preferred mode and used for the example queries in this documentation. Setting the connection mode to
 `nodes` (or letting the plugin auto detect this mode) will lead to the following query when calling `User.fetch()`:
@@ -41,7 +55,7 @@ query Users {
 ```
 
  
-## Mode 2: `edges` 
+## Mode 3: `edges` 
 
 This mode uses a `edges` not to query the edge an then query the `node` within that edge:
 
@@ -55,22 +69,6 @@ query Users {
         name
       }
     }
-  }
-}
-```
-
-
-## Mode 3: `plain` 
-
-The third mode is the less preferred one due to the lack of meta information. In this case we just plain pass the field
-queries:
-
-```
-query Users {
-  users {
-    id
-    email
-    name
   }
 }
 ```
