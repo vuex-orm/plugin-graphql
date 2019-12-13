@@ -40,6 +40,7 @@ export default class Fetch extends Action {
         model,
         params.filter as Data,
         true,
+        undefined,
         Object.keys(params.filter)
       );
     }
