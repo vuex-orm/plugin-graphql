@@ -10,6 +10,7 @@ import {
   singularize
 } from "../support/utils";
 import { ConnectionMode } from "../adapters/adapter";
+import { GraphQLType, GraphQLField } from "../support/interfaces";
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -32,6 +33,7 @@ export default class Transformer {
     model: Model,
     data: Data,
     read: boolean,
+    inputType?: GraphQLType | null,
     whitelist?: Array<String>,
     outgoingRecords?: Map<string, Array<string>>,
     recursiveCall?: boolean
@@ -39,6 +41,7 @@ export default class Transformer {
     const context = Context.getInstance();
     const relations: Map<string, Relation> = model.getRelations();
     const returnValue: Data = {} as Data;
+    const inputFields = inputType ? inputType.inputFields : undefined;
     if (outgoingRecords === undefined) outgoingRecords = new Map<string, Array<string>>();
     if (recursiveCall === undefined) recursiveCall = false;
 
@@ -64,7 +67,8 @@ export default class Transformer {
           key,
           value,
           model,
-          whitelist
+          whitelist,
+          inputFields
         )
       ) {
         let relatedModel = Model.getRelatedModel(relations.get(key)!);
@@ -80,6 +84,7 @@ export default class Transformer {
                 arrayModel || model,
                 v,
                 read,
+                undefined,
                 undefined,
                 outgoingRecords,
                 true
@@ -101,6 +106,7 @@ export default class Transformer {
             relatedModel,
             value,
             read,
+            undefined,
             undefined,
             outgoingRecords,
             true
@@ -176,6 +182,12 @@ export default class Transformer {
             result[key] = parseFloat(data[key]);
           } else if (key.endsWith("Type") && model.isTypeFieldOfPolymorphicRelation(key)) {
             result[key] = pluralize(downcaseFirstLetter(data[key]));
+          } else if (Array.isArray(data[key]) && recursiveCall) {
+            const relation: Relation | undefined = model.getRelations().get(key);
+            if (relation) {
+              const related: Model | null = Model.getRelatedModel(relation)!;
+              result[key] = this.transformIncomingData(data[key], related, mutation, true);
+            }
           } else {
             result[key] = data[key];
           }
@@ -201,6 +213,7 @@ export default class Transformer {
    * @param {any} value Value of the field.
    * @param {Model} model Model class which contains the field.
    * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
+   * @param {Array<GraphQLField>|undefined} schemaFields Contains a list of schema fields which are defined in the model input type for the mutation.
    * @returns {boolean}
    */
   public static shouldIncludeOutgoingField(
@@ -208,7 +221,8 @@ export default class Transformer {
     fieldName: string,
     value: any,
     model: Model,
-    whitelist?: Array<String>
+    whitelist?: Array<String>,
+    schemaFields?: Array<GraphQLField>
   ): boolean {
     // Always add fields on the whitelist.
     if (whitelist && whitelist.includes(fieldName)) return true;
@@ -218,6 +232,9 @@ export default class Transformer {
 
     // Ignore empty fields
     if (value === null || value === undefined) return false;
+
+    // Is the field in the mutation type field list, if provided?
+    if (schemaFields && !schemaFields.find(f => f.name === fieldName)) return false;
 
     // Include all eager save connections
     if (model.getRelations().has(fieldName)) {

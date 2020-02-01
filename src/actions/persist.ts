@@ -21,7 +21,12 @@ export default class Persist extends Action {
     if (id) {
       const model = this.getModelFromState(state!);
       const mutationName = Context.getInstance().adapter.getNameForPersist(model);
-      const oldRecord = model.getRecordWithId(id)!;
+
+      const oldRecord = model.baseModel
+        .query()
+        .withAllRecursive()
+        .where("$id", id)
+        .first()!;
 
       const mockReturnValue = model.$mockHook("persist", {
         id,
