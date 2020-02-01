@@ -52,8 +52,7 @@
     "url": "https://github.com/vuex-orm/plugin-graphql/issues"
   },
   "dependencies": {
-    "apollo-cache-inmemory": "^1.1.7",
-    "app": "latest"
+    "apollo-cache-inmemory": "^1.1.7"
   },
   "peerDependencies": {
     "@vuex-orm/core": "^0.31.12"
