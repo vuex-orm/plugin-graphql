@@ -182,7 +182,7 @@ export default class Transformer {
             result[key] = parseFloat(data[key]);
           } else if (key.endsWith("Type") && model.isTypeFieldOfPolymorphicRelation(key)) {
             result[key] = pluralize(downcaseFirstLetter(data[key]));
-          } else if (Array.isArray(data[key])) {
+          } else if (Array.isArray(data[key]) && recursiveCall) {
             const relation: Relation | undefined = model.getRelations().get(key);
             if (relation) {
               const related: Model | null = Model.getRelatedModel(relation)!;
