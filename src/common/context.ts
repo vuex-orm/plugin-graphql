@@ -149,7 +149,7 @@ export default class Context {
 
   public async loadSchema(): Promise<Schema> {
     if (!this.schemaWillBeLoaded) {
-      this.schemaWillBeLoaded = new Promise(async (resolve) => {
+      this.schemaWillBeLoaded = new Promise(async (resolve, reject) => {
         this.logger.log('Fetching GraphQL Schema initially ...')
 
         this.connectionMode = this.adapter.getConnectionMode()
@@ -158,18 +158,22 @@ export default class Context {
         const context = {
           headers: { 'X-GraphQL-Introspection-Query': 'true' },
         }
+        try {
+          const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, (context as unknown) as Data)
 
-        const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, (context as unknown) as Data)
+          this.schema = new Schema(result.data.__schema)
 
-        this.schema = new Schema(result.data.__schema)
+          this.logger.log('GraphQL Schema successful fetched', result)
 
-        this.logger.log('GraphQL Schema successful fetched', result)
+          this.logger.log('Starting to process the schema ...')
+          this.processSchema()
+          this.logger.log('Schema procession done!')
 
-        this.logger.log('Starting to process the schema ...')
-        this.processSchema()
-        this.logger.log('Schema procession done!')
-
-        resolve(this.schema)
+          resolve(this.schema)
+        } catch (e) {
+          reject(new Error('Could not load schema!'))
+          this.schemaWillBeLoaded = undefined
+        }
       })
     }
 

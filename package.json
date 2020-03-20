@@ -60,6 +60,7 @@
     "@vuex-orm/core": "^0.31.12"
   },
   "devDependencies": {
+    "tslib": "^1.11.1",
     "@commitlint/cli": "^7.1.2",
     "@commitlint/config-conventional": "^7.1.2",
     "@types/graphql": "^14.2.0",
