@@ -1,5 +1,5 @@
 import VuexORMGraphQL from './vuex-orm-graphql'
-import { Components, Plugin } from '@vuex-orm/core/lib/plugins/use'
+import { PluginComponents, Plugin } from '@vuex-orm/core/lib/plugins/use'
 import { Options } from './support/interfaces'
 
 /**
@@ -19,7 +19,7 @@ export default class VuexORMGraphQLPlugin implements Plugin {
    * @param {Options} options The options passed to VuexORM.install
    * @returns {VuexORMGraphQL}
    */
-  public static install(components: Components, options: Options): VuexORMGraphQL {
+  public static install(components: PluginComponents, options: Options): VuexORMGraphQL {
     VuexORMGraphQLPlugin.instance = new VuexORMGraphQL(components, options)
     return VuexORMGraphQLPlugin.instance
   }
