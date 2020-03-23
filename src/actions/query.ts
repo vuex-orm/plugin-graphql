@@ -1,10 +1,10 @@
-import QueryBuilder from "../graphql/query-builder";
-import Context from "../common/context";
-import { Store } from "../orm/store";
-import Transformer from "../graphql/transformer";
-import { ActionParams, Data } from "../support/interfaces";
-import Action from "./action";
-import Schema from "../graphql/schema";
+import QueryBuilder from '../graphql/query-builder'
+import Context from '../common/context'
+import { Store } from '../orm/store'
+import Transformer from '../graphql/transformer'
+import { ActionParams, Data } from '../support/interfaces'
+import Action from './action'
+import Schema from '../graphql/schema'
 
 /**
  * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
@@ -24,43 +24,37 @@ export default class Query extends Action {
     { name, filter, bypassCache }: ActionParams
   ): Promise<Data> {
     if (name) {
-      const context: Context = Context.getInstance();
-      const model = this.getModelFromState(state!);
+      const context: Context = Context.getInstance()
+      const model = this.getModelFromState(state!)
 
-      const mockReturnValue = model.$mockHook("query", {
+      const mockReturnValue = model.$mockHook('query', {
         name,
-        filter: filter || {}
-      });
+        filter: filter || {},
+      })
 
       if (mockReturnValue) {
-        return Store.insertData(mockReturnValue, dispatch!);
+        return Store.insertData(mockReturnValue, dispatch!)
       }
 
-      const schema: Schema = await context.loadSchema();
+      const schema: Schema = await context.loadSchema()
 
       // Filter
-      filter = filter ? Transformer.transformOutgoingData(model, filter as Data, true) : {};
+      filter = filter ? Transformer.transformOutgoingData(model, filter as Data, true) : {}
 
       // Multiple?
-      const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
+      const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!)
 
       // Build query
-      const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, false);
+      const query = QueryBuilder.buildQuery('query', model, name, filter, multiple, false)
 
       // Send the request to the GraphQL API
-      const data = await context.apollo.request(
-        model,
-        query,
-        filter,
-        false,
-        bypassCache as boolean
-      );
+      const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean)
 
       // Insert incoming data into the store
-      return Store.insertData(data, dispatch!);
+      return Store.insertData(data, dispatch!)
     } else {
       /* istanbul ignore next */
-      throw new Error("The customQuery action requires the query name ('name') to be set");
+      throw new Error("The customQuery action requires the query name ('name') to be set")
     }
   }
 }

@@ -1,8 +1,8 @@
-import { Model as ORMModel, Relation } from "@vuex-orm/core";
-import { Field, PatchedModel } from "../support/interfaces";
-import Context from "../common/context";
-import { Mock, MockOptions } from "../test-utils";
-import { pluralize, singularize, pick, isEqual } from "../support/utils";
+import { Model as ORMModel, Relation } from '@vuex-orm/core'
+import { Field, PatchedModel } from '../support/interfaces'
+import Context from '../common/context'
+import { Mock, MockOptions } from '../test-utils'
+import { pluralize, singularize, pick, isEqual } from '../support/utils'
 
 /**
  * Wrapper around a Vuex-ORM model with some useful methods.
@@ -14,47 +14,47 @@ export default class Model {
    * The singular name of a model like `blogPost`
    * @type {string}
    */
-  public readonly singularName: string;
+  public readonly singularName: string
 
   /**
    * The plural name of a model like `blogPosts`
    * @type {string}
    */
-  public readonly pluralName: string;
+  public readonly pluralName: string
 
   /**
    * The original Vuex-ORM model
    */
-  public readonly baseModel: typeof PatchedModel;
+  public readonly baseModel: typeof PatchedModel
 
   /**
    * The fields of the model
    * @type {Map<string, Field>}
    */
-  public readonly fields: Map<string, Field> = new Map<string, Field>();
+  public readonly fields: Map<string, Field> = new Map<string, Field>()
 
   /**
    * Container for the mocks.
    * @type {Object}
    */
-  private mocks: { [key: string]: Array<Mock> } = {};
+  private mocks: { [key: string]: Array<Mock> } = {}
 
   /**
    * @constructor
    * @param {Model} baseModel The original Vuex-ORM model
    */
   public constructor(baseModel: typeof ORMModel) {
-    this.baseModel = baseModel as typeof PatchedModel;
+    this.baseModel = baseModel as typeof PatchedModel
 
     // Generate name variants
-    this.singularName = singularize(this.baseModel.entity);
-    this.pluralName = pluralize(this.baseModel.entity);
+    this.singularName = singularize(this.baseModel.entity)
+    this.pluralName = pluralize(this.baseModel.entity)
 
     // Cache the fields of the model in this.fields
-    const fields = this.baseModel.fields();
+    const fields = this.baseModel.fields()
     Object.keys(fields).forEach((name: string) => {
-      this.fields.set(name, fields[name] as Field);
-    });
+      this.fields.set(name, fields[name] as Field)
+    })
   }
 
   /**
@@ -64,12 +64,10 @@ export default class Model {
    * @returns {boolean}
    */
   public static isFieldNumber(field: Field | undefined): boolean {
-    if (!field) return false;
+    if (!field) return false
 
-    const context = Context.getInstance();
-    return (
-      field instanceof context.components.Number || field instanceof context.components.Increment
-    );
+    const context = Context.getInstance()
+    return field instanceof context.components.Number || field instanceof context.components.Uid
   }
 
   /**
@@ -78,15 +76,15 @@ export default class Model {
    * @returns {boolean}
    */
   public static isFieldAttribute(field: Field): boolean {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
     return (
-      field instanceof context.components.Increment ||
+      field instanceof context.components.Uid ||
       field instanceof context.components.Attr ||
       field instanceof context.components.String ||
       field instanceof context.components.Number ||
       field instanceof context.components.Boolean
-    );
+    )
   }
 
   /**
@@ -95,14 +93,14 @@ export default class Model {
    * @returns {boolean}
    */
   public static isConnection(field: Field): boolean {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
     return !(
       field instanceof context.components.BelongsTo ||
       field instanceof context.components.HasOne ||
       field instanceof context.components.MorphTo ||
       field instanceof context.components.MorphOne
-    );
+    )
   }
 
   /**
@@ -111,15 +109,15 @@ export default class Model {
    * @param {Model} model
    */
   public static augment(model: Model) {
-    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
+    const originalFieldGenerator = model.baseModel.fields.bind(model.baseModel)
 
     model.baseModel.fields = () => {
-      const originalFields = originalFieldGenerator();
+      const originalFields = originalFieldGenerator()
 
-      originalFields["$isPersisted"] = model.baseModel.boolean(false);
+      originalFields['$isPersisted'] = model.baseModel.boolean(false)
 
-      return originalFields;
-    };
+      return originalFields
+    }
   }
 
   /**
@@ -128,9 +126,9 @@ export default class Model {
    * @returns {Model|null}
    */
   public static getRelatedModel(relation?: Relation) {
-    if (relation === undefined) return null;
+    if (relation === undefined) return null
 
-    const context: Context = Context.getInstance();
+    const context: Context = Context.getInstance()
 
     if (
       relation instanceof context.components.BelongsToMany ||
@@ -142,17 +140,14 @@ export default class Model {
       relation instanceof context.components.MorphToMany ||
       relation instanceof context.components.HasOne
     ) {
-      return context.getModel(relation.related.entity, true);
-    } else if (
-      relation instanceof context.components.BelongsTo ||
-      relation instanceof context.components.HasManyBy
-    ) {
-      return context.getModel(relation.parent.entity, true);
+      return context.getModel(relation.related.entity, true)
+    } else if (relation instanceof context.components.BelongsTo || relation instanceof context.components.HasManyBy) {
+      return context.getModel(relation.parent.entity, true)
     } else if (relation instanceof context.components.MorphTo) {
-      return context.getModel(relation.type, true);
+      return context.getModel(relation.type, true)
     } else {
-      console.warn("Failed relation", typeof relation, relation);
-      throw new Error(`Can't find related model for relation of type ${typeof relation}!`);
+      console.warn('Failed relation', typeof relation, relation)
+      throw new Error(`Can't find related model for relation of type ${typeof relation}!`)
     }
   }
 
@@ -162,15 +157,15 @@ export default class Model {
    * @returns {Array<string>} field names which should be queried
    */
   public getQueryFields(): Array<string> {
-    const fields: Array<string> = [];
+    const fields: Array<string> = []
 
     this.fields.forEach((field: Field, name: string) => {
       if (Model.isFieldAttribute(field) && !this.skipField(name)) {
-        fields.push(name);
+        fields.push(name)
       }
-    });
+    })
 
-    return fields;
+    return fields
   }
 
   /**
@@ -181,41 +176,42 @@ export default class Model {
    * @returns {boolean}
    */
   public skipField(field: string) {
-    if (field.startsWith("$")) return true;
-    if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
+    if (field.startsWith('$')) return true
+    if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true
 
-    const context = Context.getInstance();
+    const context = Context.getInstance()
+    if (context.adapter.sendForeignKeys()) {
+      return false
+    } else {
+      let shouldSkipField: boolean = false
+      this.getRelations().forEach((relation: Relation) => {
+        if (
+          (relation instanceof context.components.BelongsTo || relation instanceof context.components.HasOne) &&
+          relation.foreignKey === field
+        ) {
+          shouldSkipField = true
+          return false
+        }
+        return true
+      })
 
-    let shouldSkipField: boolean = false;
-
-    this.getRelations().forEach((relation: Relation) => {
-      if (
-        (relation instanceof context.components.BelongsTo ||
-          relation instanceof context.components.HasOne) &&
-        relation.foreignKey === field
-      ) {
-        shouldSkipField = true;
-        return false;
-      }
-      return true;
-    });
-
-    return shouldSkipField;
+      return shouldSkipField
+    }
   }
 
   /**
    * @returns {Map<string, Relation>} all relations of the model.
    */
   public getRelations(): Map<string, Relation> {
-    const relations = new Map<string, Relation>();
+    const relations = new Map<string, Relation>()
 
     this.fields.forEach((field: Field, name: string) => {
       if (!Model.isFieldAttribute(field)) {
-        relations.set(name, field as Relation);
+        relations.set(name, field as Relation)
       }
-    });
+    })
 
-    return relations;
+    return relations
   }
 
   /**
@@ -225,13 +221,13 @@ export default class Model {
    * @returns {boolean}
    */
   public isTypeFieldOfPolymorphicRelation(name: string): boolean {
-    const context = Context.getInstance();
-    let found: boolean = false;
+    const context = Context.getInstance()
+    let found: boolean = false
 
-    context.models.forEach(model => {
-      if (found) return false;
+    context.models.forEach((model) => {
+      if (found) return false
 
-      model.getRelations().forEach(relation => {
+      model.getRelations().forEach((relation) => {
         if (
           relation instanceof context.components.MorphMany ||
           relation instanceof context.components.MorphedByMany ||
@@ -239,21 +235,21 @@ export default class Model {
           relation instanceof context.components.MorphTo ||
           relation instanceof context.components.MorphToMany
         ) {
-          const related = (relation as Field).related;
+          const related = (relation as Field).related
 
           if (relation.type === name && related && related.entity === this.baseModel.entity) {
-            found = true;
-            return false; // break
+            found = true
+            return false // break
           }
         }
 
-        return true;
-      });
+        return true
+      })
 
-      return true;
-    });
+      return true
+    })
 
-    return found;
+    return found
   }
 
   /**
@@ -265,8 +261,8 @@ export default class Model {
     return this.baseModel
       .query()
       .withAllRecursive()
-      .where("id", id)
-      .first();
+      .where('id', id)
+      .first()
   }
 
   /**
@@ -279,12 +275,8 @@ export default class Model {
    * @param {Model} relatedModel Related model
    * @returns {boolean}
    */
-  public shouldEagerLoadRelation(
-    fieldName: string,
-    relation: Relation,
-    relatedModel: Model
-  ): boolean {
-    const context = Context.getInstance();
+  public shouldEagerLoadRelation(fieldName: string, relation: Relation, relatedModel: Model): boolean {
+    const context = Context.getInstance()
 
     // HasOne, BelongsTo and MorphOne are always eager loaded
     if (
@@ -292,19 +284,19 @@ export default class Model {
       relation instanceof context.components.BelongsTo ||
       relation instanceof context.components.MorphOne
     ) {
-      return true;
+      return true
     }
 
     // Create a list of all relations that have to be eager loaded
-    const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
-    Array.prototype.push.apply(eagerLoadList, this.baseModel.eagerSync || []);
+    const eagerLoadList: Array<String> = this.baseModel.eagerLoad || []
+    Array.prototype.push.apply(eagerLoadList, this.baseModel.eagerSync || [])
 
     // Check if the name of the related model or the fieldName is included in the eagerLoadList.
     return (
-      eagerLoadList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+      eagerLoadList.find((n) => {
+        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName
       }) !== undefined
-    );
+    )
   }
 
   /**
@@ -316,28 +308,24 @@ export default class Model {
    * @param {Model} relatedModel Related model
    * @returns {boolean}
    */
-  public shouldEagerSaveRelation(
-    fieldName: string,
-    relation: Relation,
-    relatedModel: Model
-  ): boolean {
-    const context = Context.getInstance();
+  public shouldEagerSaveRelation(fieldName: string, relation: Relation, relatedModel: Model): boolean {
+    const context = Context.getInstance()
 
     // BelongsTo is always eager saved
     if (relation instanceof context.components.BelongsTo) {
-      return true;
+      return true
     }
 
     // Create a list of all relations that have to be eager saved
-    const eagerSaveList: Array<String> = this.baseModel.eagerSave || [];
-    Array.prototype.push.apply(eagerSaveList, this.baseModel.eagerSync || []);
+    const eagerSaveList: Array<String> = this.baseModel.eagerSave || []
+    Array.prototype.push.apply(eagerSaveList, this.baseModel.eagerSync || [])
 
     // Check if the name of the related model or the fieldName is included in the eagerSaveList.
     return (
-      eagerSaveList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
+      eagerSaveList.find((n) => {
+        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName
       }) !== undefined
-    );
+    )
   }
 
   /**
@@ -347,11 +335,11 @@ export default class Model {
    * @returns {boolean}
    */
   public $addMock(mock: Mock): boolean {
-    if (this.$findMock(mock.action, mock.options)) return false;
-    if (!this.mocks[mock.action]) this.mocks[mock.action] = [];
+    if (this.$findMock(mock.action, mock.options)) return false
+    if (!this.mocks[mock.action]) this.mocks[mock.action] = []
 
-    this.mocks[mock.action].push(mock);
-    return true;
+    this.mocks[mock.action].push(mock)
+    return true
   }
 
   /**
@@ -364,16 +352,16 @@ export default class Model {
   public $findMock(action: string, options: MockOptions | undefined): Mock | null {
     if (this.mocks[action]) {
       return (
-        this.mocks[action].find(m => {
-          if (!m.options || !options) return true;
+        this.mocks[action].find((m) => {
+          if (!m.options || !options) return true
 
-          const relevantOptions = pick(options, Object.keys(m.options));
-          return isEqual(relevantOptions, m.options || {});
+          const relevantOptions = pick(options, Object.keys(m.options))
+          return isEqual(relevantOptions, m.options || {})
         }) || null
-      );
+      )
     }
 
-    return null;
+    return null
   }
 
   /**
@@ -384,27 +372,27 @@ export default class Model {
    * @returns {any} null when no mock was found.
    */
   public $mockHook(action: string, options: MockOptions): any {
-    let returnValue: null | { [key: string]: any } = null;
-    const mock = this.$findMock(action, options);
+    let returnValue: null | { [key: string]: any } = null
+    const mock = this.$findMock(action, options)
 
     if (mock) {
       if (mock.returnValue instanceof Function) {
-        returnValue = mock.returnValue();
+        returnValue = mock.returnValue()
       } else {
-        returnValue = mock.returnValue || null;
+        returnValue = mock.returnValue || null
       }
     }
 
     if (returnValue) {
       if (returnValue instanceof Array) {
-        returnValue.forEach(r => (r.$isPersisted = true));
+        returnValue.forEach((r) => (r.$isPersisted = true))
       } else {
-        returnValue.$isPersisted = true;
+        returnValue.$isPersisted = true
       }
 
-      return { [this.pluralName]: returnValue };
+      return { [this.pluralName]: returnValue }
     }
 
-    return null;
+    return null
   }
 }

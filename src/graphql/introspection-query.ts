@@ -78,4 +78,4 @@ query Introspection {
     }
   }
 }
-`;
+`

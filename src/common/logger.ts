@@ -1,7 +1,7 @@
-import { DocumentNode } from "graphql/language/ast";
-import { Arguments } from "../support/interfaces";
-import { FetchPolicy } from "apollo-client";
-import { isPlainObject, prettify } from "../support/utils";
+import { DocumentNode } from 'graphql/language/ast'
+import { Arguments } from '../support/interfaces'
+import { FetchPolicy } from 'apollo-client'
+import { isPlainObject, prettify } from '../support/utils'
 
 /**
  * Vuex-ORM-Apollo Debug Logger.
@@ -14,25 +14,25 @@ export default class Logger {
    * Tells if any logging should happen
    * @type {boolean}
    */
-  private readonly enabled: boolean;
+  private readonly enabled: boolean
 
   /**
    * Fancy Vuex-ORM-Apollo prefix for all log messages.
    * @type {string[]}
    */
   private readonly PREFIX = [
-    "%c Vuex-ORM: GraphQL Plugin %c",
-    "background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;",
-    "background: transparent;"
-  ];
+    '%c Vuex-ORM: GraphQL Plugin %c',
+    'background: #35495e; padding: 1px 0; border-radius: 3px; color: #eee;',
+    'background: transparent;',
+  ]
 
   /**
    * @constructor
    * @param {boolean} enabled Tells if any logging should happen
    */
   public constructor(enabled: boolean) {
-    this.enabled = enabled;
-    this.log("Logging is enabled.");
+    this.enabled = enabled
+    this.log('Logging is enabled.')
   }
 
   /**
@@ -43,9 +43,9 @@ export default class Logger {
   public group(...messages: Array<any>): void {
     if (this.enabled) {
       if (console.groupCollapsed) {
-        console.groupCollapsed(...this.PREFIX, ...messages);
+        console.groupCollapsed(...this.PREFIX, ...messages)
       } else {
-        console.log(...this.PREFIX, ...messages);
+        console.log(...this.PREFIX, ...messages)
       }
     }
   }
@@ -54,7 +54,7 @@ export default class Logger {
    * Wrapper for console.groupEnd. In TEST env nothing happens because console.groupEnd doesn't work on CLI.
    */
   public groupEnd(): void {
-    if (this.enabled && console.groupEnd) console.groupEnd();
+    if (this.enabled && console.groupEnd) console.groupEnd()
   }
 
   /**
@@ -63,7 +63,7 @@ export default class Logger {
    */
   public log(...messages: Array<any>): void {
     if (this.enabled) {
-      console.log(...this.PREFIX, ...messages);
+      console.log(...this.PREFIX, ...messages)
     }
   }
 
@@ -73,7 +73,7 @@ export default class Logger {
    */
   public warn(...messages: Array<any>): void {
     if (this.enabled) {
-      console.warn(...this.PREFIX, ...messages);
+      console.warn(...this.PREFIX, ...messages)
     }
   }
 
@@ -86,28 +86,28 @@ export default class Logger {
   public logQuery(query: string | DocumentNode, variables?: Arguments, fetchPolicy?: FetchPolicy) {
     if (this.enabled) {
       try {
-        let prettified = "";
+        let prettified = ''
         if (isPlainObject(query) && (query as DocumentNode).loc) {
-          prettified = prettify((query as DocumentNode).loc!.source.body);
+          prettified = prettify((query as DocumentNode).loc!.source.body)
         } else {
-          prettified = prettify(query as string);
+          prettified = prettify(query as string)
         }
 
         this.group(
-          "Sending query:",
+          'Sending query:',
           prettified
-            .split("\n")[1]
-            .replace("{", "")
+            .split('\n')[1]
+            .replace('{', '')
             .trim()
-        );
-        console.log(prettified);
+        )
+        console.log(prettified)
 
-        if (variables) console.log("VARIABLES:", variables);
-        if (fetchPolicy) console.log("FETCH POLICY:", fetchPolicy);
+        if (variables) console.log('VARIABLES:', variables)
+        if (fetchPolicy) console.log('FETCH POLICY:', fetchPolicy)
 
-        this.groupEnd();
+        this.groupEnd()
       } catch (e) {
-        console.error("[Vuex-ORM-Apollo] There is a syntax error in the query!", e, query);
+        console.error('[Vuex-ORM-Apollo] There is a syntax error in the query!', e, query)
       }
     }
   }

@@ -1,12 +1,12 @@
-import { ApolloClient, FetchPolicy } from "apollo-client";
-import { InMemoryCache } from "apollo-cache-inmemory";
-import { HttpLink } from "apollo-link-http";
-import { ApolloLink } from "apollo-link";
-import Context from "../common/context";
-import { Arguments, Data } from "../support/interfaces";
-import Transformer from "./transformer";
-import Model from "../orm/model";
-import gql from "graphql-tag";
+import { ApolloClient, FetchPolicy } from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { HttpLink } from 'apollo-link-http'
+import { ApolloLink } from 'apollo-link'
+import Context from '../common/context'
+import { Arguments, Data } from '../support/interfaces'
+import Transformer from './transformer'
+import Model from '../orm/model'
+import gql from 'graphql-tag'
 
 /**
  * This class takes care of the communication with the graphql endpoint by leveraging the awesome apollo-client lib.
@@ -16,42 +16,42 @@ export default class Apollo {
    * The http link instance to use.
    * @type {HttpLink}
    */
-  private readonly httpLink: ApolloLink;
+  private readonly httpLink: ApolloLink
 
   /**
    * The ApolloClient instance
    * @type {ApolloClient}
    */
-  private readonly apolloClient: ApolloClient<any>;
+  private readonly apolloClient: ApolloClient<any>
 
   /**
    * @constructor
    */
   public constructor() {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
     // This allows the test suite to pass a custom link
     if (!context.options.apolloClient && context.options.link) {
-      this.httpLink = context.options.link;
+      this.httpLink = context.options.link
     } else {
       /* istanbul ignore next */
       this.httpLink = new HttpLink({
-        uri: context.options.url ? context.options.url : "/graphql",
-        credentials: context.options.credentials ? context.options.credentials : "same-origin",
-        useGETForQueries: Boolean(context.options.useGETForQueries)
-      });
+        uri: context.options.url ? context.options.url : '/graphql',
+        credentials: context.options.credentials ? context.options.credentials : 'same-origin',
+        useGETForQueries: Boolean(context.options.useGETForQueries),
+      })
     }
 
     if (context.options.apolloClient) {
-      this.apolloClient = (context => {
-        return context.options.apolloClient;
-      })(context);
+      this.apolloClient = ((context) => {
+        return context.options.apolloClient
+      })(context)
     } else {
       this.apolloClient = new ApolloClient({
         link: this.httpLink,
         cache: new InMemoryCache(),
-        connectToDevTools: context.debugMode
-      });
+        connectToDevTools: context.debugMode,
+      })
     }
   }
 
@@ -71,20 +71,20 @@ export default class Apollo {
     mutation: boolean = false,
     bypassCache: boolean = false
   ): Promise<Data> {
-    const fetchPolicy: FetchPolicy = bypassCache ? "network-only" : "cache-first";
-    Context.getInstance().logger.logQuery(query, variables, fetchPolicy);
+    const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first'
+    Context.getInstance().logger.logQuery(query, variables, fetchPolicy)
 
-    const context = { headers: Apollo.getHeaders() };
+    const context = { headers: Apollo.getHeaders() }
 
-    let response;
+    let response
     if (mutation) {
-      response = await this.apolloClient.mutate({ mutation: query, variables, context });
+      response = await this.apolloClient.mutate({ mutation: query, variables, context })
     } else {
-      response = await this.apolloClient.query({ query, variables, fetchPolicy, context });
+      response = await this.apolloClient.query({ query, variables, fetchPolicy, context })
     }
 
     // Transform incoming data into something useful
-    return Transformer.transformIncomingData(response.data as Data, model, mutation);
+    return Transformer.transformIncomingData(response.data as Data, model, mutation)
   }
 
   public async simpleQuery(
@@ -93,32 +93,32 @@ export default class Apollo {
     bypassCache: boolean = false,
     context?: Data
   ): Promise<any> {
-    const fetchPolicy: FetchPolicy = bypassCache ? "network-only" : "cache-first";
+    const fetchPolicy: FetchPolicy = bypassCache ? 'network-only' : 'cache-first'
     return this.apolloClient.query({
       query: gql(query),
       variables,
       fetchPolicy,
-      context: { headers: Apollo.getHeaders() }
-    });
+      context: { headers: Apollo.getHeaders() },
+    })
   }
 
   public async simpleMutation(query: string, variables: Arguments, context?: Data): Promise<any> {
     return this.apolloClient.mutate({
       mutation: gql(query),
       variables,
-      context: { headers: Apollo.getHeaders() }
-    });
+      context: { headers: Apollo.getHeaders() },
+    })
   }
 
   private static getHeaders() {
-    const context = Context.getInstance();
+    const context = Context.getInstance()
 
-    let headers: any = context.options.headers ? context.options.headers : {};
+    let headers: any = context.options.headers ? context.options.headers : {}
 
-    if (typeof headers === "function") {
-      headers = headers(context);
+    if (typeof headers === 'function') {
+      headers = headers(context)
     }
 
-    return headers;
+    return headers
   }
 }
