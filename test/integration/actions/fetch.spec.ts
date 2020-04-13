@@ -149,7 +149,7 @@ query User($id: ID!) {
         profileId: 2,
         posts: [
           {
-            id: "$uid3",
+            id: "$uid1",
             authorId: "1",
             content: "This is a test!",
             otherId: 15,
@@ -182,7 +182,7 @@ query Users($profileId: ID!, $posts: [PostFilter]!) {
   describe("without ID but with filter with object", () => {
     test("sends the correct query to the API", async () => {
       // @ts-ignore
-      await Profile.fetch("2");
+      await Profile.fetch(2);
       const profile: Data = Context.getInstance()
         .getModel("profile")
         .getRecordWithId("2")! as Data;

@@ -58,7 +58,7 @@ export async function recordGraphQLRequest(callback: Function, allowToFail: bool
   try {
     await callback();
   } catch (e) {
-    //console.log(JSON.stringify(e, null, 2));
+    console.log(JSON.stringify(e, null, 2));
     throw e;
   }
 

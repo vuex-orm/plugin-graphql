@@ -130,7 +130,7 @@ describe("Model", () => {
       const expectedRecord = model.baseModel
         .query()
         .withAllRecursive()
-        .where("id", "2")
+        .where("id", 2)
         .first();
       expect(model.getRecordWithId("2")).toEqual(expectedRecord);
     });

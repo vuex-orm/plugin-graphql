@@ -87,7 +87,6 @@ export class Comment extends ORMModel {
       content: this.string(""),
       authorId: this.uid(),
       author: this.belongsTo(User, "authorId"),
-
       subjectId: this.uid(),
       subjectType: this.string("")
     };
@@ -101,8 +100,8 @@ export class TariffTariffOption extends ORMModel {
 
   static fields(): Fields {
     return {
-      tariffUuid: this.string(""),
-      tariffOptionId: this.number(0)
+      tariffUuid: this.uid(),
+      tariffOptionId: this.uid()
     };
   }
 }

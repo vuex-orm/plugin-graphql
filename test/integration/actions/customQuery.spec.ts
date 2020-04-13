@@ -74,10 +74,10 @@ query UnpublishedPosts($authorId: ID!) {
     const post: Data = Post.find(1)! as Data;
 
     const request = await recordGraphQLRequest(async () => {
-      await post.$customQuery({ name: "unpublishedPosts", filter: { authorId: 2 } });
+      await post.$customQuery({ name: "unpublishedPosts", filter: { authorId: "2" } });
     });
 
-    expect(request!.variables.authorId).toEqual(2);
+    expect(request!.variables.authorId).toEqual("2");
     expect(request!.variables.id).toEqual("1");
     expect(request!.query).toEqual(
       `
