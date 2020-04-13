@@ -8,18 +8,18 @@ let store;
 let vuexOrmGraphQL;
 
 const userData = {
-  id: 42,
+  id: "42",
   name: "Charlie Brown"
 };
 
 const userResult = {
   users: [
     {
-      id: 42,
-      $id: 42,
+      id: "42",
+      $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
-      profileId: 0,
+      profileId: "$uid1",
       posts: [],
       comments: [],
       profile: null
@@ -33,14 +33,14 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a fetch", async () => {
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(userData);
 
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch(42);
+      result = await User.fetch("42");
     }, true);
 
     expect(request).toEqual(null);
@@ -49,7 +49,7 @@ describe("TestUtils", () => {
 
   it("allows to return multiple records", async () => {
     const userData2 = JSON.parse(JSON.stringify(userData));
-    userData2.id = 8;
+    userData2.id = "8";
     userData2.name = "Snoopy";
 
     mock("fetch")
@@ -66,21 +66,21 @@ describe("TestUtils", () => {
     expect(result).toEqual({
       users: [
         {
-          id: 8,
-          $id: 8,
+          id: "8",
+          $id: "8",
           $isPersisted: true,
           name: "Snoopy",
-          profileId: 0,
+          profileId: "$uid1",
           posts: [],
           comments: [],
           profile: null
         },
         {
-          id: 42,
-          $id: 42,
+          id: "42",
+          $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
-          profileId: 0,
+          profileId: "$uid2",
           posts: [],
           comments: [],
           profile: null
@@ -90,7 +90,7 @@ describe("TestUtils", () => {
   });
 
   it("only mocks matched options", async () => {
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(userData);
 
@@ -105,18 +105,18 @@ describe("TestUtils", () => {
   });
 
   it("only mocks once", async () => {
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(userData);
 
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(userData);
 
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch(1);
+      result = await User.fetch("1");
     }, true);
 
     expect(request).not.toEqual(null);
@@ -124,14 +124,14 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a action with a dynamic value", async () => {
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(() => userData);
 
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch(42);
+      result = await User.fetch("42");
     }, true);
 
     expect(request).toEqual(null);
@@ -146,7 +146,7 @@ describe("TestUtils", () => {
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch(42);
+      result = await User.fetch("42");
     }, true);
 
     expect(request).toEqual(null);
@@ -154,14 +154,14 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a action without partial matching options", async () => {
-    mock("fetch", { filter: { id: 42 } })
+    mock("fetch", { filter: { id: "42" } })
       .for(User)
       .andReturn(() => userData);
 
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch(42);
+      result = await User.fetch("42");
     }, true);
 
     expect(request).toEqual(null);
@@ -169,27 +169,27 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a destroy", async () => {
-    mock("destroy", { id: 42 })
+    mock("destroy", { id: "42" })
       .for(User)
       .andReturn(userData);
 
     let result;
     await User.create({ data: userData });
-    const user: Data = User.query().last()! as Data;
+    const user: User = User.query().last()! as User;
 
     const request = await recordGraphQLRequest(async () => {
-      result = await user.$destroy();
+      result = await user.$delete();
     }, true);
 
     expect(request).toEqual(null);
-    expect(result).toEqual(true);
+    expect(result).toEqual(user);
   });
 
   it("allows to mock a mutate", async () => {
-    mock("mutate", { name: "upvote", args: { id: 4 } })
+    mock("mutate", { name: "upvote", args: { id: "4" } })
       .for(Post)
       .andReturn({
-        id: 4,
+        id: "4",
         content: "Test content",
         title: "Test title",
         published: true,
@@ -199,7 +199,7 @@ describe("TestUtils", () => {
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await Post.mutate({ name: "upvote", args: { id: 4 } });
+      result = await Post.mutate({ name: "upvote", args: { id: "4" } });
     }, true);
 
     expect(request).toEqual(null);
@@ -207,12 +207,12 @@ describe("TestUtils", () => {
     expect(result).toEqual({
       posts: [
         {
-          id: 4,
-          $id: 4,
+          id: "4",
+          $id: "4",
           $isPersisted: true,
           content: "Test content",
           title: "Test title",
-          authorId: 0,
+          authorId: "0",
           otherId: 0,
           published: true,
           author: null,
@@ -224,16 +224,16 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a persist", async () => {
-    mock("persist", { id: 42 })
+    mock("persist", { id: "42" })
       .for(User)
       .andReturn(userData);
 
     let result;
     await User.create({ data: userData });
-    const user: Data = User.query().last()! as Data;
+    const user: User = User.query().last()! as User;
 
     const request = await recordGraphQLRequest(async () => {
-      result = await user.$persist();
+      result = await user.$save();
     }, true);
 
     expect(request).toEqual(null);
@@ -247,7 +247,7 @@ describe("TestUtils", () => {
 
     let result;
     await User.create({ data: userData });
-    const user: Data = User.query().last()! as Data;
+    const user: User = User.query().last()! as User;
 
     const request = await recordGraphQLRequest(async () => {
       result = await user.$push();
@@ -265,7 +265,7 @@ describe("TestUtils", () => {
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.customQuery({ name: "example", filter: { test: 42 } });
+      result = await User.customQuery({ name: "example", filter: { test: "42" } });
     }, true);
 
     expect(request).toEqual(null);
@@ -321,9 +321,9 @@ describe("TestUtils", () => {
   describe("clearORMStore", () => {
     it("cleans the store", async () => {
       await Post.create({ data: { name: "test" } });
-      expect(Post.find(1)).not.toEqual(null);
+      expect(Post.find("1")).not.toEqual(null);
       await clearORMStore();
-      expect(Post.find(1)).toEqual(null);
+      expect(Post.find("1")).toEqual(null);
     });
   });
 });

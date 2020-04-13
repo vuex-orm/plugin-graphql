@@ -43,7 +43,6 @@ export default class Action {
         newData = newData[Object.keys(newData)[0]];
 
         // IDs as String cause terrible issues, so we convert them to integers.
-        newData.id = parseInt(newData.id, 10);
 
         const insertedData: Data = await Store.insertData(
           { [model.pluralName]: newData } as Data,

@@ -14,9 +14,9 @@ export class User extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
-      profileId: this.number(0),
+      profileId: this.uid(),
       posts: this.hasMany(Post, "authorId"),
       comments: this.hasMany(Comment, "authorId"),
       profile: this.belongsTo(Profile, "profileId")
@@ -30,7 +30,7 @@ export class Profile extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       email: this.string(""),
       age: this.number(0),
       sex: this.boolean(true),
@@ -45,10 +45,10 @@ export class Video extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.number(0),
+      authorId: this.uid(),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       ignoreMe: this.string(""),
       author: this.belongsTo(User, "authorId"),
@@ -65,10 +65,10 @@ export class Post extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.number(0),
+      authorId: this.uid(),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       published: this.boolean(true),
       author: this.belongsTo(User, "authorId"),
@@ -83,12 +83,12 @@ export class Comment extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
-      authorId: this.number(0),
+      authorId: this.uid(),
       author: this.belongsTo(User, "authorId"),
 
-      subjectId: this.number(0),
+      subjectId: this.uid(),
       subjectType: this.string("")
     };
   }
@@ -114,7 +114,7 @@ export class Tariff extends ORMModel {
 
   static fields(): Fields {
     return {
-      uuid: this.string(""),
+      uuid: this.uid(),
       name: this.string(""),
       displayName: this.string(""),
       tariffType: this.string(""),
@@ -131,7 +131,7 @@ export class TariffOption extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
       description: this.string(""),
 
@@ -145,10 +145,10 @@ export class Category extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
 
-      parentId: this.number(0),
+      parentId: this.uid(),
       parent: this.belongsTo(Category, "parentId")
     };
   }
@@ -159,9 +159,9 @@ export class Taggable extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
-      tagId: this.number(0),
-      subjectId: this.number(0),
+      id: this.uid(),
+      tagId: this.uid(),
+      subjectId: this.uid(),
       subjectType: this.string("")
     };
   }
@@ -172,7 +172,7 @@ export class Tag extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string("")
     };
   }

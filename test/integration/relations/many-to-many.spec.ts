@@ -15,7 +15,7 @@ describe("Many To Many Relation", async () => {
 
     const tariff: Data = Tariff.query()
       .withAllRecursive()
-      .find("ED5F2379-6A8B-4E1D-A4E3-A2C03057C2FC")! as Data;
+      .find(["ED5F2379-6A8B-4E1D-A4E3-A2C03057C2FC"])! as Data;
     expect(tariff.name).toEqual("Super DSL S");
     expect(tariff.tariffOptions).not.toEqual(null);
     expect(tariff.tariffOptions.length).not.toEqual(0);

@@ -16,14 +16,14 @@ describe("Polymorphic Many To Many", async () => {
     // @ts-ignore
     await Post.fetch(1);
 
-    const tag: Data = Tag.query()
+    let tag: Tag = Tag.query()
       .withAllRecursive()
-      .find(1)! as Data;
+      .find("1")! as Tag;
 
     const post: Data = Post.query()
       .withAllRecursive()
       .find(1)! as Data;
 
-    expect(post!.tags).toContain(tag);
+    expect(post!.tags[0]).toEqual(expect.objectContaining(tag));
   });
 });

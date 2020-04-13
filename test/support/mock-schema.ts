@@ -625,7 +625,15 @@ const categories = [
 const tags = [
   {
     id: 1,
-    name: "GraphQL"
+    name: "GraphQL",
+    pivot: {
+      $id: "1_1_posts",
+      $isPersisted: false,
+      id: "$uid1",
+      subjectId: "1",
+      subjectType: "posts",
+      tagId: "1"
+    }
   },
 
   {
@@ -653,31 +661,16 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.profile = findOne(Profile, profiles, record.profileId, path);
       }
       if (!ignoreRelation(Comment, path)) {
-        record.comments = findMany(
-          Comment,
-          comments,
-          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.comments = findMany(Comment, comments, r => r.authorId === record.id, path);
       }
       if (!ignoreRelation(Post, path)) {
-        record.posts = findMany(
-          Post,
-          posts,
-          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.posts = findMany(Post, posts, r => r.authorId === record.id, path);
       }
       break;
 
     case Profile:
       if (!ignoreRelation(User, path)) {
-        record.user = findOne(
-          User,
-          users,
-          (r: any) => parseInt(r.profileId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.user = findOne(User, users, (r: any) => r.profileId === record.id, path);
       }
       break;
 
@@ -687,7 +680,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.comments = findMany(
           Comment,
           comments,
-          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "video",
+          r => r.subjectId === record.id && r.subjectType === "video",
           path
         );
       }
@@ -697,7 +690,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.tags.length > 0 &&
         typeof record.tags[0] === "number"
       ) {
-        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
+        record.tags = findMany(Tag, tags, r => record.tags.includes(r.id), path);
       }
       break;
 
@@ -707,7 +700,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.comments = findMany(
           Comment,
           comments,
-          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "post",
+          r => r.subjectId === record.id && r.subjectType === "post",
           path
         );
       }
@@ -717,7 +710,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.tags.length > 0 &&
         typeof record.tags[0] === "number"
       ) {
-        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
+        record.tags = findMany(Tag, tags, r => record.tags.includes(r.id), path);
       }
       break;
 
