@@ -30,7 +30,7 @@ describe("Model", () => {
 
   describe(".baseModel", () => {
     test("returns the Vuex-ORM Model class", () => {
-      expect(model.baseModel).toEqual(User);
+      expect(model.baseModel.name).toEqual(User.name);
     });
   });
 
@@ -46,12 +46,13 @@ describe("Model", () => {
 
       expect(relations.has("posts")).toEqual(true);
       expect(relations.has("comments")).toEqual(true);
-      expect(relations.get("posts")).toEqual({
+      expect(relations.get("posts")).toMatchObject({
         foreignKey: "authorId",
-        localKey: "id",
-        model: User,
-        related: Post
+        localKey: "id"
       });
+
+      expect(relations.get("posts")!.model.name).toEqual(User.name);
+      expect(relations.get("posts")!.related.name).toEqual(Post.name);
     });
   });
 

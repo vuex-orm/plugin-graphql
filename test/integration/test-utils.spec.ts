@@ -16,7 +16,7 @@ const userResult = {
   users: [
     {
       id: 42,
-      $id: 42,
+      $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
       profileId: 0,
@@ -67,7 +67,7 @@ describe("TestUtils", () => {
       users: [
         {
           id: 8,
-          $id: 8,
+          $id: "8",
           $isPersisted: true,
           name: "Snoopy",
           profileId: 0,
@@ -77,7 +77,7 @@ describe("TestUtils", () => {
         },
         {
           id: 42,
-          $id: 42,
+          $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
           profileId: 0,
@@ -208,7 +208,7 @@ describe("TestUtils", () => {
       posts: [
         {
           id: 4,
-          $id: 4,
+          $id: "4",
           $isPersisted: true,
           content: "Test content",
           title: "Test title",

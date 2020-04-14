@@ -1,6 +1,6 @@
 import { PatchedModel, Options, ActionParams } from "./support/interfaces";
 import Context from "./common/context";
-import { Components } from "@vuex-orm/core/lib/plugins/use";
+import { PluginComponents } from "@vuex-orm/core/lib/plugins/use";
 import { Destroy, Fetch, Mutate, Persist, Push } from "./actions";
 import Query from "./actions/query";
 import SimpleQuery from "./actions/simple-query";
@@ -13,10 +13,10 @@ import { isPlainObject } from "./support/utils";
 export default class VuexORMGraphQL {
   /**
    * @constructor
-   * @param {Components} components The Vuex-ORM Components collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    */
-  public constructor(components: Components, options: Options) {
+  public constructor(components: PluginComponents, options: Options) {
     Context.setup(components, options);
     VuexORMGraphQL.setupActions();
     VuexORMGraphQL.setupModelMethods();

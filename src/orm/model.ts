@@ -67,9 +67,7 @@ export default class Model {
     if (!field) return false;
 
     const context = Context.getInstance();
-    return (
-      field instanceof context.components.Number || field instanceof context.components.Increment
-    );
+    return field instanceof context.components.Number || field instanceof context.components.Uid;
   }
 
   /**
@@ -81,7 +79,7 @@ export default class Model {
     const context = Context.getInstance();
 
     return (
-      field instanceof context.components.Increment ||
+      field instanceof context.components.Uid ||
       field instanceof context.components.Attr ||
       field instanceof context.components.String ||
       field instanceof context.components.Number ||

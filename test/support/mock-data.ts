@@ -14,7 +14,7 @@ export class User extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
       profileId: this.number(0),
       posts: this.hasMany(Post, "authorId"),
@@ -30,7 +30,7 @@ export class Profile extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       email: this.string(""),
       age: this.number(0),
       sex: this.boolean(true),
@@ -45,7 +45,7 @@ export class Video extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
       title: this.string(""),
       authorId: this.number(0),
@@ -65,7 +65,7 @@ export class Post extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
       title: this.string(""),
       authorId: this.number(0),
@@ -83,7 +83,7 @@ export class Comment extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(""),
       authorId: this.number(0),
       author: this.belongsTo(User, "authorId"),
@@ -131,7 +131,7 @@ export class TariffOption extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
       description: this.string(""),
 
@@ -145,7 +145,7 @@ export class Category extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(""),
 
       parentId: this.number(0),
@@ -159,7 +159,7 @@ export class Taggable extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       tagId: this.number(0),
       subjectId: this.number(0),
       subjectType: this.string("")
@@ -172,7 +172,7 @@ export class Tag extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string("")
     };
   }
