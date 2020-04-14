@@ -19,7 +19,7 @@ const userResult = {
       $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
-      profileId: "$uid1",
+      profileId: expect.stringMatching(/(\$uid\d+)/),
       posts: [],
       comments: [],
       profile: null
@@ -170,7 +170,7 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a destroy", async () => {
-    mock("destroy", { id: 42 })
+    mock("destroy", { id: "42" })
       .for(User)
       .andReturn(userData);
 
@@ -187,7 +187,7 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a mutate", async () => {
-    mock("mutate", { name: "upvote", args: { id: 4 } })
+    mock("mutate", { name: "upvote", args: { id: "4" } })
       .for(Post)
       .andReturn({
         id: 4,
@@ -205,15 +205,14 @@ describe("TestUtils", () => {
 
     expect(request).toEqual(null);
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       posts: [
         {
-          id: "4",
+          id: 4,
           $id: "4",
-          $isPersisted: true,
           content: "Test content",
           title: "Test title",
-          authorId: "0",
+          authorId: expect.stringMatching(/(\$uid\d+)/),
           otherId: 0,
           published: true,
           author: null,
@@ -322,9 +321,10 @@ describe("TestUtils", () => {
   describe("clearORMStore", () => {
     it("cleans the store", async () => {
       await Post.create({ data: { name: "test" } });
-      expect(Post.find("1")).not.toEqual(null);
+      const post: Data = Post.query().last()! as Data;
+      expect(Post.find(post.id)).not.toEqual(null);
       await clearORMStore();
-      expect(Post.find("1")).toEqual(null);
+      expect(Post.find(post.id)).toEqual(null);
     });
   });
 });

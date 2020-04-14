@@ -145,11 +145,11 @@ query User($id: ID!) {
         await User.fetch({ profileId: 2, posts: [post] });
       });
 
-      expect(request!.variables).toEqual({
+      expect(request!.variables).toMatchObject({
         profileId: 2,
         posts: [
           {
-            id: "$uid1",
+            id: expect.stringMatching(/(\$uid\d+)/),
             authorId: "1",
             content: "This is a test!",
             otherId: 15,
