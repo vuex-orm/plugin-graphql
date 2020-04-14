@@ -25,7 +25,7 @@ export default class Context {
   public static instance: Context;
 
   /**
-   * PluginComponents collection of Vuex-ORM
+   * Components collection of Vuex-ORM
    * @type {PluginComponents}
    */
   public readonly components: PluginComponents;
@@ -99,7 +99,7 @@ export default class Context {
    * Private constructor, called by the setup method
    *
    * @constructor
-   * @param {PluginComponents} components The Vuex-ORM PluginComponents collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    */
   private constructor(components: PluginComponents, options: Options) {
@@ -127,7 +127,7 @@ export default class Context {
 
   /**
    * This is called only once and creates a new instance of the Context.
-   * @param {PluginComponents} components The Vuex-ORM PluginComponents collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    * @returns {Context}
    */

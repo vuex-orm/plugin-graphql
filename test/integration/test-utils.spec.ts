@@ -15,7 +15,7 @@ const userData = {
 const userResult = {
   users: [
     {
-      id: "42",
+      id: 42,
       $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
@@ -66,7 +66,7 @@ describe("TestUtils", () => {
     expect(result).toEqual({
       users: [
         {
-          id: "8",
+          id: 8,
           $id: "8",
           $isPersisted: true,
           name: "Snoopy",
@@ -76,7 +76,7 @@ describe("TestUtils", () => {
           profile: null
         },
         {
-          id: "42",
+          id: 42,
           $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
@@ -210,6 +210,7 @@ describe("TestUtils", () => {
         {
           id: 4,
           $id: "4",
+          $isPersisted: true,
           content: "Test content",
           title: "Test title",
           authorId: expect.stringMatching(/(\$uid\d+)/),

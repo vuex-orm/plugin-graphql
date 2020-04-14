@@ -13,7 +13,7 @@ import { isPlainObject } from "./support/utils";
 export default class VuexORMGraphQL {
   /**
    * @constructor
-   * @param {PluginComponents} components The Vuex-ORM PluginComponents collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    */
   public constructor(components: PluginComponents, options: Options) {
