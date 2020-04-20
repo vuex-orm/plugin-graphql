@@ -67,7 +67,7 @@ export default class Model {
     if (!field) return false;
 
     const context = Context.getInstance();
-    //remove Uid cause it must be a string
+    // Remove UID cause it must be a string
     return field instanceof context.components.Number;
   }
 
