@@ -95,7 +95,6 @@ export class Comment extends ORMModel {
 
 export class TariffTariffOption extends ORMModel {
   static entity = "tariffTariffOptions";
-
   static primaryKey = ["tariffUuid", "tariffOptionId"];
 
   static fields(): Fields {
@@ -109,7 +108,7 @@ export class TariffTariffOption extends ORMModel {
 export class Tariff extends ORMModel {
   static entity = "tariffs";
   static eagerLoad = ["tariffOptions"];
-  static primaryKey = ["uuid"];
+  static primaryKey = "uuid";
 
   static fields(): Fields {
     return {
