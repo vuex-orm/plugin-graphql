@@ -59,23 +59,11 @@ describe("Action", () => {
           tags: [
             {
               id: "1",
-              name: "GraphQL",
-              pivot: {
-                id: "$uid1",
-                subjectId: "1",
-                subjectType: "posts",
-                tagId: "1"
-              }
+              name: "GraphQL"
             },
             {
               id: "2",
-              name: "Ruby",
-              pivot: {
-                id: "$uid2",
-                subjectId: "1",
-                subjectType: "posts",
-                tagId: "2"
-              }
+              name: "Ruby"
             }
           ],
           authorId: "1"
