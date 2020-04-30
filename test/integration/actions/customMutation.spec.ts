@@ -81,7 +81,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
 
       const request = await recordGraphQLRequest(async () => {
         // @ts-ignore
-        await post.$mutate({ name: "upvotePost", args: { captchaToken: "15", id: post.id } });
+        await post.$mutate({ name: "upvotePost", args: { captchaToken: "15" } });
       });
 
       expect(request!.variables.captchaToken).toEqual("15");
