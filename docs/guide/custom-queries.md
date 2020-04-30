@@ -14,7 +14,7 @@ specific type. Also the return value is not automatically inserted in the Vuex s
 
 ::: warning
 It's not a clean and good solution that the simple queries are also triggered via Vuex action, but currently the only
-way. This might be changed in the future, when we find a better solution. 
+way. This might be changed in the future, when we find a better solution.
 :::
 
 
@@ -67,7 +67,7 @@ Variables:
 
 ```json
 {
-  "id": 42
+  "id": "42"
 }
 ```
 
@@ -119,7 +119,7 @@ Following fields are allowed:
 
 ::: tip
 As `query` you can also pass a GraphQL AST DocumentNode like it's returned by the `gql` function or
-the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag). 
+the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag).
 :::
 
 ## Model related custom mutation
@@ -169,7 +169,7 @@ Variables:
 
 ```json
 {
-  "id": 42
+  "id": "42"
 }
 ```
 
@@ -222,7 +222,7 @@ Following fields are allowed:
 
 ::: tip
 As `query` you can also pass a GraphQL AST DocumentNode like it's returned by the `gql` function or
-the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag). 
+the `*.graphql` webpack loader of [graphql-tag](https://github.com/apollographql/graphql-tag).
 :::
 
 

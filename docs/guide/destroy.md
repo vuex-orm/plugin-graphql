@@ -25,7 +25,7 @@ mutation DeletePost($id: ID!) {
     id
     title
     content
-    
+
     user {
       id
       email
@@ -38,7 +38,7 @@ Variables:
 
 ```json
 {
-  "id": 42
+  "id": "42"
 }
 ```
 

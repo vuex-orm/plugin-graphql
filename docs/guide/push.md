@@ -37,14 +37,14 @@ Variables:
 
 ```json
 {
-  "id": 42,
+  "id": "42",
   "post": {
-    "id": 42,
-    "userId": 15,
+    "id": "42",
+    "userId": "15",
     "content": "Some more exciting content!",
     "title": "Not a example post",
     "user": {
-      "id": 15,
+      "id": "15",
       "email": "example@example.com"
     }
   }
@@ -58,7 +58,7 @@ Like when persisting, all records which are returned replace the respective exis
 ## Additional variables
 
 You can pass a object like this: `$push({ captchaToken: 'asdfasdf' })`. All fields in the object will be passed as
-variables to the mutation. 
+variables to the mutation.
 
 
 ## Relationships

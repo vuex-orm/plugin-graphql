@@ -15,7 +15,7 @@ export default class Product extends Model {
 
     static fields () {
         return {
-            id: this.increment(),
+            id: this.uid(),
             title: this.string(''),
             content:  this.string(''),
             parsedMarkdownContent: this.string('')

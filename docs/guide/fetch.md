@@ -26,17 +26,17 @@ query Comments {
       content
       postId
       userId
-        
+
       user {
         id
         email
       }
-        
+
       post {
         id
         content
         title
-      
+
         user {
           id
           email
@@ -64,11 +64,11 @@ When fetching all returned records replace the respective existing records in th
 You can also fetch single records via ID:
 
 ```javascript
-await Comment.fetch(42);
+await Comment.fetch('42');
 // or
-await Comment.fetch({ id: 42 });
+await Comment.fetch({ id: '42' });
 // or
-await Comment.dispatch('fetch', { filter: { id: 42 }})
+await Comment.dispatch('fetch', { filter: { id: '42' }})
 ```
 
 It automatically recognizes, that you're requesting a single record and sends a GraphQL Query for a single record:
@@ -80,17 +80,17 @@ query Comment($id: ID!) {
     content
     postId
     userId
-    
+
     user {
       id
       email
     }
-    
+
     post {
       id
       content
       title
-  
+
       user {
         id
         email
@@ -106,10 +106,10 @@ query Comment($id: ID!) {
 Additionally you can pass a filter object to the fetch action like this:
 
 ```javascript
-await Comment.fetch({ postId: 15, deleted: false });
+await Comment.fetch({ postId: '15', deleted: false });
 // or
-await Comment.dispatch('fetch', { filter: { postId: 15, deleted: false }})
-``` 
+await Comment.dispatch('fetch', { filter: { postId: '15', deleted: false }})
+```
 
 This will generate the following GraphQL query:
 
@@ -121,17 +121,17 @@ query Comments($postId: ID!, $deleted: Boolean!) {
       content
       postId
       userId
-        
+
       user {
         id
         email
       }
-      
+
       post {
         id
         content
         title
-      
+
         user {
           id
           email
@@ -160,20 +160,20 @@ recommend the usage of async/await.
   export default {
     // Use a computed property for the component state to keep it reactive
     computed: {
-      post: () => Post.find(1)
+      post: () => Post.find('1')
     },
-    
+
     created () {
       // fetch the data when the view is created and the data is
       // already being observed
       this.fetchData();
     },
-    
+
     watch: {
       // call again the method if the route changes
       '$route': 'fetchData'
     },
-    
+
     methods: {
       // Loads the data from the server and stores them in the Vuex Store.
       async fetchData () {
@@ -191,7 +191,7 @@ The plugin caches same queries. To bypass caching set the second param of the `f
 when using the convenience method or add `bypassCache: true` to the arguments of the `dispatch()` call
 
 ```javascript
-await Comment.fetch({ id: 42 }, true );
+await Comment.fetch({ id: '42' }, true );
 // Or
-await Comment.dispatch('fetch', { filter: { id: 42 }, bypassCache: true })
+await Comment.dispatch('fetch', { filter: { id: '42' }, bypassCache: true })
 ```

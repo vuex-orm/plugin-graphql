@@ -22,11 +22,11 @@ class Profile extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       age: this.string(''),
       sex: this.string(''),
-      userId: this.number(0),
-      user: this.belongsTo(User, 'userID')
+      userId: this.string(''),
+      user: this.belongsTo(User, 'userId')
     }
   }
 }
@@ -36,7 +36,7 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(''),
       profile: this.hasOne(Profile, 'userId')
     }
@@ -98,8 +98,8 @@ class Comment extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
-      postId: this.number(0),
+      id: this.uid(),
+      postId: this.string(''),
       content: this.string(''),
       post: this.belongsTo(Post, 'postId')
     }
@@ -111,7 +111,7 @@ class Post extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       content: this.string(''),
       comments: this.hasMany(Comment, 'postId')
@@ -173,7 +173,7 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       email: this.string(''),
       roles: this.belongsToMany(Role, RoleUser, 'userId', 'roleId')
     }
@@ -185,7 +185,7 @@ class Role extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(''),
       users: this.belongsToMany(User, RoleUser, 'roleId', 'userId')
     }
@@ -198,8 +198,8 @@ class RoleUser extends Model {
 
   static fields () {
     return {
-      roleId: this.number(0),
-      userId: this.number(0)
+      roleId: this.string(''),
+      userId: this.string('')
     }
   }
 }
@@ -259,7 +259,7 @@ class Country extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string(''),
       users: this.hasMany(User, 'countryId'),
       posts: this.hasManyThrough(Post, User, 'countryId', 'userId')
@@ -272,9 +272,9 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       email: this.string(''),
-      countryId: this.number(0),
+      countryId: this.string(''),
       country: this.belongsTo(Country, 'countryId'),
       posts: this.hasMany(Post, 'userId'),
     }
@@ -286,10 +286,10 @@ class Post extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       content: this.string(''),
-      userId: this.number(0),
+      userId: this.string(''),
       user: this.belongsTo(User, 'userId')
     }
   }
@@ -368,7 +368,7 @@ class Post extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       content: this.string(''),
       comments: this.morphMany(Comment, 'commentableId', 'commentableType')
@@ -382,7 +382,7 @@ class Video extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       url: this.string(''),
       comments: this.morphMany(Comment, 'commentableId', 'commentableType')
@@ -395,9 +395,9 @@ class Comment extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       content: this.string(''),
-      commentableId: this.number(0),
+      commentableId: this.string(''),
       commentableType: this.string('')
     }
   }
@@ -444,7 +444,7 @@ class Post extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       content: this.string(''),
       tags: this.morphToMany(Tag, Taggable, 'tagId', 'taggableId', 'taggableType')
@@ -458,7 +458,7 @@ class Video extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       title: this.string(''),
       url: this.string(''),
       tags: this.morphToMany(Tag, Taggable, 'tagId', 'taggableId', 'taggableType')
@@ -471,7 +471,7 @@ class Tag extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
+      id: this.uid(),
       name: this.string('')
     }
   }
@@ -482,9 +482,9 @@ class Taggable extends Model {
 
   static fields () {
     return {
-      id: this.increment(),
-      tagId: this.number(0),
-      taggableId: this.number(0),
+      id: this.uid(),
+      tagId: this.string(''),
+      taggableId: this.string(''),
       taggableType: this.string('')
     }
   }

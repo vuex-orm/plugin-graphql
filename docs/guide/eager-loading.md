@@ -18,9 +18,9 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.attr(null),
-      name: this.attr(''),
-      
+      id: this.uid(),
+      name: this.string(''),
+
       posts: this.hasMany(Post, 'userId')
     }
   }
@@ -43,9 +43,9 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.attr(null),
-      name: this.attr(''),
-      
+      id: this.uid(),
+      name: this.string(''),
+
       posts: this.hasMany(Post, 'userId')
     }
   }
@@ -66,9 +66,9 @@ class User extends Model {
 
   static fields () {
     return {
-      id: this.attr(null),
-      name: this.attr(''),
-      
+      id: this.uid(),
+      name: this.string(''),
+
       posts: this.hasMany(Post, 'userId')
     }
   }

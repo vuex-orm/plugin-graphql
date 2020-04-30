@@ -46,12 +46,12 @@ Variables:
 ```json
 {
   "post": {
-    "id": 42,
-    "userId": 15,
+    "id": "42",
+    "userId": "15",
     "content": "Lorem Ipsum dolor sit amet",
     "title": "Example Post",
     "user": {
-      "id": 15,
+      "id": "15",
       "email": "example@example.com"
     }
   }

@@ -54,7 +54,7 @@ is used, `plugin-graphql` ignores any other options to configure Apollo client.
 
 Here is an example configuration for AWS AppSync:
 
-```
+```js
 import VuexORM from '@vuex-orm/core'
 import AWSAppSyncClient from 'aws-appsync'
 import { Auth } from 'aws-amplify'
