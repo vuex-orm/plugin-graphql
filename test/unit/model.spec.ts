@@ -60,7 +60,6 @@ describe("Model", () => {
     test("returns true when the field is numeric", () => {
       model = context.getModel("post");
       expect(Model.isFieldNumber(model.fields.get("otherId"))).toEqual(true);
-      //expect(Model.isFieldNumber(model.fields.get("id"))).toEqual(true);
     });
 
     test("returns false when the field is not numeric", () => {
