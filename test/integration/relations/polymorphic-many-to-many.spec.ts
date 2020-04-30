@@ -24,6 +24,8 @@ describe("Polymorphic Many To Many", () => {
       .withAllRecursive()
       .find(1)! as Data;
 
-    expect(post!.tags).toEqual(expect.objectContaining(tag));
+    expect(post!.tags.length).toEqual(2);
+    expect(post!.tags[0].name).toEqual("GraphQL");
+    expect(post!.tags[1].name).toEqual("Ruby");
   });
 });

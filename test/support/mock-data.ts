@@ -162,7 +162,7 @@ export class Taggable extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.attr(null),
+      id: this.uid(),
       tagId: this.string(""),
       subjectId: this.string(""),
       subjectType: this.string("")
@@ -175,7 +175,7 @@ export class Tag extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.attr(null),
+      id: this.uid(),
       name: this.string("")
     };
   }
