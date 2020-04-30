@@ -16,7 +16,7 @@ export class User extends ORMModel {
     return {
       id: this.uid(),
       name: this.string(""),
-      profileId: this.uid(),
+      profileId: this.string(""),
       posts: this.hasMany(Post, "authorId"),
       comments: this.hasMany(Comment, "authorId"),
       profile: this.belongsTo(Profile, "profileId")
@@ -48,7 +48,7 @@ export class Video extends ORMModel {
       id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.uid(),
+      authorId: this.string(""),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       ignoreMe: this.string(""),
       author: this.belongsTo(User, "authorId"),
@@ -68,7 +68,7 @@ export class Post extends ORMModel {
       id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.uid(),
+      authorId: this.string(""),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       published: this.boolean(true),
       author: this.belongsTo(User, "authorId"),
@@ -85,9 +85,9 @@ export class Comment extends ORMModel {
     return {
       id: this.uid(),
       content: this.string(""),
-      authorId: this.uid(),
+      authorId: this.string(""),
       author: this.belongsTo(User, "authorId"),
-      subjectId: this.uid(),
+      subjectId: this.string(""),
       subjectType: this.string("")
     };
   }
@@ -99,8 +99,8 @@ export class TariffTariffOption extends ORMModel {
 
   static fields(): Fields {
     return {
-      tariffUuid: this.uid(),
-      tariffOptionId: this.uid()
+      tariffUuid: this.string(""),
+      tariffOptionId: this.string("")
     };
   }
 }
@@ -118,7 +118,12 @@ export class Tariff extends ORMModel {
       tariffType: this.string(""),
       slug: this.string(""),
 
-      tariffOptions: this.belongsToMany(TariffOption, TariffTariffOption, "uuid", "tariffOptionId")
+      tariffOptions: this.belongsToMany(
+        TariffOption,
+        TariffTariffOption,
+        "tariffUuid",
+        "tariffOptionId"
+      )
     };
   }
 }
@@ -133,7 +138,7 @@ export class TariffOption extends ORMModel {
       name: this.string(""),
       description: this.string(""),
 
-      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "uuid")
+      tariffs: this.belongsToMany(Tariff, TariffTariffOption, "tariffOptionId", "tariffUuid")
     };
   }
 }
@@ -146,7 +151,7 @@ export class Category extends ORMModel {
       id: this.uid(),
       name: this.string(""),
 
-      parentId: this.uid(),
+      parentId: this.string(""),
       parent: this.belongsTo(Category, "parentId")
     };
   }
@@ -157,9 +162,9 @@ export class Taggable extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.uid(),
-      tagId: this.number(0),
-      subjectId: this.number(0),
+      id: this.attr(null),
+      tagId: this.string(""),
+      subjectId: this.string(""),
       subjectType: this.string("")
     };
   }
@@ -170,7 +175,7 @@ export class Tag extends ORMModel {
 
   static fields(): Fields {
     return {
-      id: this.uid(),
+      id: this.attr(null),
       name: this.string("")
     };
   }
