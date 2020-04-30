@@ -4,7 +4,7 @@ import { Data } from "../../../src/support/interfaces";
 let store: any;
 let vuexOrmGraphQL;
 
-describe("Polymorphic Many To Many", async () => {
+describe("Polymorphic Many To Many", () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
   });
@@ -24,6 +24,8 @@ describe("Polymorphic Many To Many", async () => {
       .withAllRecursive()
       .find(1)! as Data;
 
-    expect(post!.tags).toContain(tag);
+    expect(post!.tags.length).toEqual(2);
+    expect(post!.tags[0].name).toEqual("GraphQL");
+    expect(post!.tags[1].name).toEqual("Ruby");
   });
 });

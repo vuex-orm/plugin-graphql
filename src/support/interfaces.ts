@@ -28,7 +28,7 @@ export interface ActionParams {
   rootState?: any;
   state?: RootState;
   filter?: Filter;
-  id?: number;
+  id?: string;
   data?: Data;
   args?: Arguments;
   variables?: Arguments;

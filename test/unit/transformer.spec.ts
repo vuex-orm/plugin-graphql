@@ -19,26 +19,26 @@ describe("Transformer", () => {
     test("transforms models to a useful data hashmap", async () => {
       // @ts-ignore
       await Video.fetch(1);
-      const video = context.getModel("video").getRecordWithId(1)!;
+      const video = context.getModel("video").getRecordWithId("1")!;
       const transformedData = Transformer.transformOutgoingData(
         context.getModel("video"),
         video,
         false
       );
       expect(transformedData).toEqual({
-        id: 1,
+        id: "1",
         ignoreMe: "",
         content: "Foo",
         title: "Example Video 1",
         otherId: 42,
-        authorId: 1,
+        authorId: "1",
 
         author: {
-          id: 1,
+          id: "1",
           name: "Charlie Brown",
-          profileId: 1,
+          profileId: "1",
           profile: {
-            id: 1,
+            id: "1",
             email: "charlie@peanuts.com",
             age: 8,
             sex: true
@@ -113,7 +113,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -129,7 +129,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -145,7 +145,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -191,26 +191,26 @@ describe("Transformer", () => {
         posts: [
           {
             $isPersisted: true,
-            id: 1,
+            id: "1",
             content: "example content",
             title: "example title",
             author: {
               $isPersisted: true,
-              id: 15,
+              id: "15",
               name: "Charly Brown"
             },
             otherId: 4894.35,
             comments: [
               {
                 $isPersisted: true,
-                id: 42,
+                id: "42",
                 content: "Works!",
                 author: {
                   $isPersisted: true,
-                  id: 14,
+                  id: "14",
                   name: "Peppermint Patty"
                 },
-                subjectId: 1,
+                subjectId: "1",
                 subjectType: "posts"
               }
             ]
@@ -253,7 +253,7 @@ describe("Transformer", () => {
             {
               $isPersisted: true,
               description: "Very foo, much more bar",
-              id: 1,
+              id: "1",
               name: "Foo Bar 1"
             }
           ],
@@ -350,7 +350,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -366,7 +366,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -382,7 +382,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: 1,
+                id: "1",
                 name: "Foo Bar 1"
               }
             ],
@@ -432,26 +432,26 @@ describe("Transformer", () => {
         posts: [
           {
             $isPersisted: true,
-            id: 1,
+            id: "1",
             content: "example content",
             title: "example title",
             author: {
               $isPersisted: true,
-              id: 15,
+              id: "15",
               name: "Charly Brown"
             },
             otherId: 4894.35,
             comments: [
               {
                 $isPersisted: true,
-                id: 42,
+                id: "42",
                 content: "Works!",
                 author: {
                   $isPersisted: true,
-                  id: 14,
+                  id: "14",
                   name: "Peppermint Patty"
                 },
-                subjectId: 1,
+                subjectId: "1",
                 subjectType: "posts"
               }
             ]

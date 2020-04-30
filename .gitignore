@@ -72,3 +72,5 @@ compiled
 
 /dist/lib
 /dist/types
+
+.DS_Store

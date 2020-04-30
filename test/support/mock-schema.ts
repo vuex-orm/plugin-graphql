@@ -398,41 +398,41 @@ export const typeDefs = `
 
 const users = [
   {
-    id: 1,
+    id: "1",
     name: "Charlie Brown",
-    profileId: 1
+    profileId: "1"
   },
 
   {
-    id: 2,
+    id: "2",
     name: "Peppermint Patty",
-    profileId: 2
+    profileId: "2"
   },
 
   {
-    id: 3,
+    id: "3",
     name: "Snoopy",
-    profileId: 3
+    profileId: "3"
   }
 ];
 
 const profiles = [
   {
-    id: 1,
+    id: "1",
     email: "charlie@peanuts.com",
     age: 8,
     sex: true
   },
 
   {
-    id: 2,
+    id: "2",
     email: "peppermint@peanuts.com",
     age: 9,
     sex: false
   },
 
   {
-    id: 3,
+    id: "3",
     email: "snoopy@peanuts.com",
     age: 5,
     sex: true
@@ -441,87 +441,87 @@ const profiles = [
 
 const videos = [
   {
-    id: 1,
+    id: "1",
     content: "Foo",
     title: "Example Video 1",
-    otherId: 42,
-    authorId: 1,
-    tags: [4]
+    otherId: "42",
+    authorId: "1",
+    tags: ["4"]
   },
 
   {
-    id: 2,
+    id: "2",
     content: "Bar",
     title: "Example Video 2",
     otherId: 67,
-    authorId: 2,
-    tags: [1]
+    authorId: "2",
+    tags: ["1"]
   },
 
   {
-    id: 3,
+    id: "3",
     content: "FooBar",
     title: "Example Video 3",
     otherId: 491,
-    authorId: 2,
-    tags: [1, 3]
+    authorId: "2",
+    tags: ["1", "3"]
   }
 ];
 
 const posts = [
   {
-    id: 1,
+    id: "1",
     content: "GraphQL is so nice!",
     title: "GraphQL",
-    otherId: 123,
+    otherId: "123",
     published: true,
-    authorId: 1,
-    tags: [1, 2]
+    authorId: "1",
+    tags: ["1", "2"]
   },
 
   {
-    id: 2,
+    id: "2",
     content: "Vue is so awesome!",
     title: "Vue.js",
     otherId: 435,
     published: true,
-    authorId: 3,
-    tags: [3, 4]
+    authorId: "3",
+    tags: ["3", "4"]
   },
 
   {
-    id: 3,
+    id: "3",
     content: "Vuex-ORM is so crisp",
     title: "Vuex-ORM",
     otherId: 987,
     published: false,
-    authorId: 3,
-    tags: [4, 1]
+    authorId: "3",
+    tags: ["4", "1"]
   }
 ];
 
 const comments = [
   {
-    id: 1,
+    id: "1",
     content: "Yes!!!!",
-    authorId: 2,
-    subjectId: 1,
+    authorId: "2",
+    subjectId: "1",
     subjectType: "post"
   },
 
   {
-    id: 2,
+    id: "2",
     content: "So crazy :O",
-    authorId: 1,
-    subjectId: 2,
+    authorId: "1",
+    subjectId: "2",
     subjectType: "video"
   },
 
   {
-    id: 3,
+    id: "3",
     content: "Hell no!",
-    authorId: 3,
-    subjectId: 3,
+    authorId: "3",
+    subjectId: "3",
     subjectType: "post"
   }
 ];
@@ -554,19 +554,19 @@ const tariffs = [
 
 const tariffOptions = [
   {
-    id: 1,
+    id: "1",
     name: "Installation",
     description: "Someone will come up your house and setup the router and so on."
   },
 
   {
-    id: 2,
+    id: "2",
     name: "Spotify Music",
     description: "Spotify Premium"
   },
 
   {
-    id: 3,
+    id: "3",
     name: "HomeMatic IP Access Point",
     description: "Smarthome stuff."
   }
@@ -574,72 +574,72 @@ const tariffOptions = [
 
 const categories = [
   {
-    id: 1,
+    id: "1",
     name: "Programming",
-    parentId: 0
+    parentId: "0"
   },
 
   {
-    id: 2,
+    id: "2",
     name: "Frameworks",
-    parentId: 1
+    parentId: "1"
   },
 
   {
-    id: 3,
+    id: "3",
     name: "Languages",
-    parentId: 1
+    parentId: "1"
   },
 
   {
-    id: 4,
+    id: "4",
     name: "Patterns",
-    parentId: 1
+    parentId: "1"
   },
 
   {
-    id: 5,
+    id: "5",
     name: "Ruby",
-    parentId: 3
+    parentId: "3"
   },
 
   {
-    id: 6,
+    id: "6",
     name: "JavaScript",
-    parentId: 3
+    parentId: "3"
   },
 
   {
-    id: 7,
+    id: "7",
     name: "PHP",
-    parentId: 3
+    parentId: "3"
   },
 
   {
-    id: 8,
+    id: "8",
     name: "RSpec",
-    parentId: 5
+    parentId: "5"
   }
 ];
 
 const tags = [
   {
-    id: 1,
+    id: "1",
     name: "GraphQL"
   },
 
   {
-    id: 2,
+    id: "2",
     name: "Ruby"
   },
 
   {
-    id: 3,
+    id: "3",
     name: "JavaScript"
   },
 
   {
-    id: 4,
+    id: "4",
     name: "Vue"
   }
 ];
@@ -653,31 +653,16 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.profile = findOne(Profile, profiles, record.profileId, path);
       }
       if (!ignoreRelation(Comment, path)) {
-        record.comments = findMany(
-          Comment,
-          comments,
-          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.comments = findMany(Comment, comments, r => r.authorId === record.id, path);
       }
       if (!ignoreRelation(Post, path)) {
-        record.posts = findMany(
-          Post,
-          posts,
-          r => parseInt(r.authorId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.posts = findMany(Post, posts, r => r.authorId === record.id, path);
       }
       break;
 
     case Profile:
       if (!ignoreRelation(User, path)) {
-        record.user = findOne(
-          User,
-          users,
-          (r: any) => parseInt(r.profileId, 10) === parseInt(record.id, 10),
-          path
-        );
+        record.user = findOne(User, users, (r: any) => r.profileId === record.id, path);
       }
       break;
 
@@ -687,7 +672,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.comments = findMany(
           Comment,
           comments,
-          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "video",
+          r => r.subjectId === record.id && r.subjectType === "video",
           path
         );
       }
@@ -695,9 +680,9 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         !ignoreRelation(Tag, path) &&
         record.tags &&
         record.tags.length > 0 &&
-        typeof record.tags[0] === "number"
+        typeof record.tags[0] === "string"
       ) {
-        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
+        record.tags = findMany(Tag, tags, r => record.tags.includes(r.id), path);
       }
       break;
 
@@ -707,7 +692,7 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         record.comments = findMany(
           Comment,
           comments,
-          r => parseInt(r.subjectId, 10) === parseInt(record.id, 10) && r.subjectType === "post",
+          r => r.subjectId === record.id && r.subjectType === "post",
           path
         );
       }
@@ -715,9 +700,9 @@ function addRelations(model: typeof Model, record: any, path: Array<string> = []
         !ignoreRelation(Tag, path) &&
         record.tags &&
         record.tags.length > 0 &&
-        typeof record.tags[0] === "number"
+        typeof record.tags[0] === "string"
       ) {
-        record.tags = findMany(Tag, tags, r => record.tags.includes(parseInt(r.id, 10)), path);
+        record.tags = findMany(Tag, tags, r => record.tags.includes(r.id), path);
       }
       break;
 

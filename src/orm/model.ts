@@ -67,9 +67,8 @@ export default class Model {
     if (!field) return false;
 
     const context = Context.getInstance();
-    return (
-      field instanceof context.components.Number || field instanceof context.components.Increment
-    );
+    // Remove UID cause it must be a string
+    return field instanceof context.components.Number;
   }
 
   /**
@@ -81,7 +80,7 @@ export default class Model {
     const context = Context.getInstance();
 
     return (
-      field instanceof context.components.Increment ||
+      field instanceof context.components.Uid ||
       field instanceof context.components.Attr ||
       field instanceof context.components.String ||
       field instanceof context.components.Number ||
@@ -258,10 +257,10 @@ export default class Model {
 
   /**
    * Returns a record of this model with the given ID.
-   * @param {number} id
+   * @param {string} id
    * @returns {any}
    */
-  public getRecordWithId(id: number) {
+  public getRecordWithId(id: string) {
     return this.baseModel
       .query()
       .withAllRecursive()

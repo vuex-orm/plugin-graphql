@@ -1,7 +1,7 @@
 import Logger from "./logger";
 import Model from "../orm/model";
 import { Model as ORMModel } from "@vuex-orm/core";
-import { Components } from "@vuex-orm/core/lib/plugins/use";
+import { PluginComponents } from "@vuex-orm/core/lib/plugins/use";
 import { downcaseFirstLetter, isEqual, pick, singularize } from "../support/utils";
 import Apollo from "../graphql/apollo";
 import Database from "@vuex-orm/core/lib/database/Database";
@@ -26,9 +26,9 @@ export default class Context {
 
   /**
    * Components collection of Vuex-ORM
-   * @type {Components}
+   * @type {PluginComponents}
    */
-  public readonly components: Components;
+  public readonly components: PluginComponents;
 
   /**
    * The options which have been passed to VuexOrm.install
@@ -99,10 +99,10 @@ export default class Context {
    * Private constructor, called by the setup method
    *
    * @constructor
-   * @param {Components} components The Vuex-ORM Components collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    */
-  private constructor(components: Components, options: Options) {
+  private constructor(components: PluginComponents, options: Options) {
     this.components = components;
     this.options = options;
 
@@ -127,11 +127,11 @@ export default class Context {
 
   /**
    * This is called only once and creates a new instance of the Context.
-   * @param {Components} components The Vuex-ORM Components collection
+   * @param {PluginComponents} components The Vuex-ORM Components collection
    * @param {Options} options The options passed to VuexORM.install
    * @returns {Context}
    */
-  public static setup(components: Components, options: Options): Context {
+  public static setup(components: PluginComponents, options: Options): Context {
     this.instance = new Context(components, options);
 
     this.instance.apollo = new Apollo();

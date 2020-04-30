@@ -20,7 +20,10 @@ describe("push", () => {
       await user.$push();
     });
 
-    expect(request!.variables).toEqual({ id: 1, user: { id: 1, name: "Snoopy", profileId: 1 } });
+    expect(request!.variables).toEqual({
+      id: "1",
+      user: { id: "1", name: "Snoopy", profileId: "1" }
+    });
     expect(request!.query).toEqual(
       `
 mutation UpdateUser($id: ID!, $user: UserInput!) {

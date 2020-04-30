@@ -4,7 +4,7 @@ import { Data } from "../../../src/support/interfaces";
 let store: any;
 let vuexOrmGraphQL;
 
-describe("Polymorphic Has One", async () => {
+describe("Polymorphic Has One", () => {
   beforeEach(async () => {
     [store, vuexOrmGraphQL] = await setupMockData();
   });

@@ -216,6 +216,9 @@ export default class Transformer {
     // Ignore internal fields
     if (fieldName.startsWith("$")) return false;
 
+    // Ignore pivot objects
+    if (fieldName === "pivot") return false;
+
     // Ignore empty fields
     if (value === null || value === undefined) return false;
 
