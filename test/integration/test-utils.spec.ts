@@ -19,7 +19,7 @@ const userResult = {
       $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
-      profileId: expect.stringMatching(/(\$uid\d+)/),
+      profileId: "",
       posts: [],
       comments: [],
       profile: null
@@ -70,7 +70,7 @@ describe("TestUtils", () => {
           $id: "8",
           $isPersisted: true,
           name: "Snoopy",
-          profileId: "$uid2",
+          profileId: "",
           posts: [],
           comments: [],
           profile: null
@@ -80,7 +80,7 @@ describe("TestUtils", () => {
           $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
-          profileId: "$uid3",
+          profileId: "",
           posts: [],
           comments: [],
           profile: null
@@ -212,7 +212,7 @@ describe("TestUtils", () => {
           $id: "4",
           content: "Test content",
           title: "Test title",
-          authorId: expect.stringMatching(/(\$uid\d+)/),
+          authorId: "",
           otherId: 0,
           published: true,
           author: null,
