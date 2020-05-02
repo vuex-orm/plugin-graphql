@@ -1,13 +1,36 @@
-import { ActionParams, Arguments, Data } from "../support/interfaces";
+import { ActionParams, PatchedModel, Data } from "../support/interfaces";
 import Action from "./action";
 import Context from "../common/context";
 import Schema from "../graphql/schema";
 import { Store } from "../orm/store";
+import { toNumber } from "../support/utils";
 
 /**
  * Mutate action for sending a custom mutation. Will be used for Model.mutate() and record.$mutate().
  */
 export default class Mutate extends Action {
+  /**
+   * Registers the Model.mutate() and the record.$mutate() methods and the mutate Vuex Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    const model: typeof PatchedModel = context.components.Model as typeof PatchedModel;
+    const record: PatchedModel = context.components.Model.prototype as PatchedModel;
+
+    context.components.Actions.mutate = Mutate.call.bind(Mutate);
+
+    model.mutate = async function(params: ActionParams) {
+      return this.dispatch("mutate", params);
+    };
+
+    record.$mutate = async function({ name, args, multiple }: ActionParams) {
+      args = args || {};
+      if (!args["id"]) args["id"] = toNumber(this.$id);
+
+      return this.$dispatch("mutate", { name, args, multiple });
+    };
+  }
+
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model

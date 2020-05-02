@@ -8,6 +8,14 @@ import { clone, graphQlDocumentToString, parseQuery } from "../support/utils";
  */
 export default class SimpleMutation extends Action {
   /**
+   * Registers the Model.simpleMutation() Vuex Root Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
+  }
+
+  /**
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {string} query The query to send
    * @param {Arguments} variables

@@ -1,12 +1,33 @@
-import { ActionParams, Data } from "../support/interfaces";
+import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
 import { Store } from "../orm/store";
 import Context from "../common/context";
+import { toNumber } from "../support/utils";
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().
  */
 export default class Destroy extends Action {
+  /**
+   * Registers the record.$destroy() and record.$deleteAndDestroy() methods and
+   * the destroy Vuex Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    const record: PatchedModel = context.components.Model.prototype as PatchedModel;
+
+    context.components.Actions.destroy = Destroy.call.bind(Destroy);
+
+    record.$destroy = async function() {
+      return this.$dispatch("destroy", { id: toNumber(this.$id) });
+    };
+
+    record.$deleteAndDestroy = async function() {
+      await this.$delete();
+      return this.$destroy();
+    };
+  }
+
   /**
    * @param {State} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model

@@ -8,6 +8,14 @@ import { clone, graphQlDocumentToString, parseQuery, removeSymbols } from "../su
  */
 export default class SimpleQuery extends Action {
   /**
+   * Registers the Model.simpleQuery() Vuex Root Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+  }
+
+  /**
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
    * @param {string} query The query to send
    * @param {Arguments} variables

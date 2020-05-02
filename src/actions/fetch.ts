@@ -2,13 +2,31 @@ import QueryBuilder from "../graphql/query-builder";
 import Context from "../common/context";
 import { Store } from "../orm/store";
 import Transformer from "../graphql/transformer";
-import { ActionParams, Arguments, Data } from "../support/interfaces";
+import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
+import { isPlainObject } from "../support/utils";
 
 /**
  * Fetch action for sending a query. Will be used for Model.fetch().
  */
 export default class Fetch extends Action {
+  /**
+   * Registers the Model.fetch() method and the fetch Vuex Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    const model: typeof PatchedModel = context.components.Model as typeof PatchedModel;
+
+    context.components.Actions.fetch = Fetch.call.bind(Fetch);
+
+    model.fetch = async function(filter: any, bypassCache = false) {
+      let filterObj = filter;
+      if (!isPlainObject(filterObj)) filterObj = { id: filter };
+
+      return this.dispatch("fetch", { filter: filterObj, bypassCache });
+    };
+  }
+
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model

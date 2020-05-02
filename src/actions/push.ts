@@ -1,4 +1,4 @@
-import { ActionParams, Data } from "../support/interfaces";
+import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
 import { Store } from "../orm/store";
 import Context from "../common/context";
@@ -7,6 +7,20 @@ import Context from "../common/context";
  * Push action for sending a update mutation. Will be used for record.$push().
  */
 export default class Push extends Action {
+  /**
+   * Registers the record.$push() method and the push Vuex Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    const model: PatchedModel = context.components.Model.prototype as PatchedModel;
+
+    context.components.Actions.push = Push.call.bind(Push);
+
+    model.$push = async function(args: any) {
+      return this.$dispatch("push", { data: this, args });
+    };
+  }
+
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model

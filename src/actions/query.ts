@@ -2,14 +2,38 @@ import QueryBuilder from "../graphql/query-builder";
 import Context from "../common/context";
 import { Store } from "../orm/store";
 import Transformer from "../graphql/transformer";
-import { ActionParams, Data } from "../support/interfaces";
+import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
 import Schema from "../graphql/schema";
+import { toNumber } from "../support/utils";
 
 /**
  * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
  */
 export default class Query extends Action {
+  /**
+   * Registers the Model.customQuery and the record.$customQuery() methods and the
+   * query Vuex Action.
+   */
+  public static setup() {
+    const context = Context.getInstance();
+    const model: typeof PatchedModel = context.components.Model as typeof PatchedModel;
+    const record: PatchedModel = context.components.Model.prototype as PatchedModel;
+
+    context.components.Actions.query = Query.call.bind(Query);
+
+    model.customQuery = async function({ name, filter, multiple, bypassCache }: ActionParams) {
+      return this.dispatch("query", { name, filter, multiple, bypassCache });
+    };
+
+    record.$customQuery = async function({ name, filter, multiple, bypassCache }: ActionParams) {
+      filter = filter || {};
+      if (!filter["id"]) filter["id"] = toNumber(this.$id);
+
+      return this.$dispatch("query", { name, filter, multiple, bypassCache });
+    };
+  }
+
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
