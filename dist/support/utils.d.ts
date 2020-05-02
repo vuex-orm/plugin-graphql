@@ -52,3 +52,7 @@ export declare function clone(input: any): any;
 export declare function takeWhile(array: Array<any>, predicate: (x: any, idx: number, array: Array<any>) => any): any[];
 export declare function matches(source: any): (object: any) => boolean;
 export declare function removeSymbols(input: any): any;
+/**
+ * Converts the argument into a number.
+ */
+export declare function toNumber(input: string | number | null): number | string;

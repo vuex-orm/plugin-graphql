@@ -126,3 +126,16 @@ export function matches(source: any) {
 export function removeSymbols(input: any) {
   return JSON.parse(JSON.stringify(input));
 }
+
+/**
+ * Converts the argument into a number.
+ */
+export function toNumber(input: string | number | null): number | string {
+  if (input === null) return 0;
+
+  if (typeof input === "string" && input.startsWith("$uid")) {
+    return input;
+  }
+
+  return parseInt(input.toString(), 10);
+}

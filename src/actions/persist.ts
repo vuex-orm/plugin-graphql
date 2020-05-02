@@ -3,6 +3,7 @@ import { ActionParams, Data } from "../support/interfaces";
 import Action from "./action";
 import Model from "../orm/model";
 import { Store } from "../orm/store";
+import { toNumber } from "../support/utils";
 
 /**
  * Persist action for sending a create mutation. Will be used for record.$persist().
@@ -11,7 +12,7 @@ export default class Persist extends Action {
   /**
    * @param {any} state The Vuex state
    * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-   * @param {string} id ID of the record to persist
+   * @param {number|string} id ID of the record to persist
    * @returns {Promise<Data>} The saved record
    */
   public static async call(
@@ -24,7 +25,7 @@ export default class Persist extends Action {
       const oldRecord = model.getRecordWithId(id)!;
 
       const mockReturnValue = model.$mockHook("persist", {
-        id,
+        id: toNumber(id),
         args: args || {}
       });
 

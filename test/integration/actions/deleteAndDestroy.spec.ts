@@ -19,7 +19,7 @@ describe("deleteAndDestroy", () => {
       await post.$deleteAndDestroy();
     });
 
-    expect(request!.variables).toEqual({ id: "1" });
+    expect(request!.variables).toEqual({ id: 1 });
     expect(request!.query).toEqual(
       `
 mutation DeletePost($id: ID!) {

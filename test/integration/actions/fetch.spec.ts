@@ -14,7 +14,7 @@ describe("fetch", () => {
   test("also requests the otherId field", async () => {
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      await Post.fetch("1");
+      await Post.fetch(1);
     });
 
     expect(request!.query).toEqual(
@@ -67,7 +67,7 @@ query Post($id: ID!) {
 
     const post: Data = Post.query()
       .withAll()
-      .where("id", "1")
+      .where("id", 1)
       .first()! as Data;
 
     expect(post.title).toEqual("GraphQL");
@@ -150,7 +150,7 @@ query User($id: ID!) {
         posts: [
           {
             id: expect.stringMatching(/(\$uid\d+)/),
-            authorId: "1",
+            authorId: 1,
             content: "This is a test!",
             otherId: 15,
             published: false,
@@ -185,7 +185,7 @@ query Users($profileId: ID!, $posts: [PostFilter]!) {
       await Profile.fetch(2);
       const profile: Data = Context.getInstance()
         .getModel("profile")
-        .getRecordWithId("2")! as Data;
+        .getRecordWithId(2)! as Data;
 
       const request = await recordGraphQLRequest(async () => {
         // @ts-ignore

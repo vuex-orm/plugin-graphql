@@ -26,19 +26,19 @@ describe("Transformer", () => {
         false
       );
       expect(transformedData).toEqual({
-        id: "1",
+        id: 1,
         ignoreMe: "",
         content: "Foo",
         title: "Example Video 1",
         otherId: 42,
-        authorId: "1",
+        authorId: 1,
 
         author: {
-          id: "1",
+          id: 1,
           name: "Charlie Brown",
-          profileId: "1",
+          profileId: 1,
           profile: {
-            id: "1",
+            id: 1,
             email: "charlie@peanuts.com",
             age: 8,
             sex: true
@@ -62,7 +62,7 @@ describe("Transformer", () => {
               tariffOptions: {
                 nodes: [
                   {
-                    id: "1",
+                    id: 1,
                     name: "Foo Bar 1",
                     description: "Very foo, much more bar"
                   }
@@ -78,7 +78,7 @@ describe("Transformer", () => {
               tariffOptions: {
                 nodes: [
                   {
-                    id: "1",
+                    id: 1,
                     name: "Foo Bar 1",
                     description: "Very foo, much more bar"
                   }
@@ -94,7 +94,7 @@ describe("Transformer", () => {
               tariffOptions: {
                 nodes: [
                   {
-                    id: "1",
+                    id: 1,
                     name: "Foo Bar 1",
                     description: "Very foo, much more bar"
                   }
@@ -113,7 +113,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -129,7 +129,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -145,7 +145,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -161,24 +161,24 @@ describe("Transformer", () => {
         posts: {
           nodes: [
             {
-              id: "1",
+              id: 1,
               content: "example content",
               title: "example title",
               author: {
-                id: "15",
+                id: 15,
                 name: "Charly Brown"
               },
-              otherId: "4894.35",
+              otherId: 4894.35,
               comments: {
                 nodes: [
                   {
-                    id: "42",
+                    id: 42,
                     content: "Works!",
                     author: {
-                      id: "14",
+                      id: 14,
                       name: "Peppermint Patty"
                     },
-                    subjectId: "1",
+                    subjectId: 1,
                     subjectType: "Post"
                   }
                 ]
@@ -191,26 +191,26 @@ describe("Transformer", () => {
         posts: [
           {
             $isPersisted: true,
-            id: "1",
+            id: 1,
             content: "example content",
             title: "example title",
             author: {
               $isPersisted: true,
-              id: "15",
+              id: 15,
               name: "Charly Brown"
             },
             otherId: 4894.35,
             comments: [
               {
                 $isPersisted: true,
-                id: "42",
+                id: 42,
                 content: "Works!",
                 author: {
                   $isPersisted: true,
-                  id: "14",
+                  id: 14,
                   name: "Peppermint Patty"
                 },
-                subjectId: "1",
+                subjectId: 1,
                 subjectType: "posts"
               }
             ]
@@ -238,7 +238,7 @@ describe("Transformer", () => {
           tariffOptions: {
             nodes: [
               {
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1",
                 description: "Very foo, much more bar"
               }
@@ -253,7 +253,7 @@ describe("Transformer", () => {
             {
               $isPersisted: true,
               description: "Very foo, much more bar",
-              id: "1",
+              id: 1,
               name: "Foo Bar 1"
             }
           ],
@@ -289,7 +289,7 @@ describe("Transformer", () => {
                   edges: [
                     {
                       node: {
-                        id: "1",
+                        id: 1,
                         name: "Foo Bar 1",
                         description: "Very foo, much more bar"
                       }
@@ -309,7 +309,7 @@ describe("Transformer", () => {
                   edges: [
                     {
                       node: {
-                        id: "1",
+                        id: 1,
                         name: "Foo Bar 1",
                         description: "Very foo, much more bar"
                       }
@@ -329,7 +329,7 @@ describe("Transformer", () => {
                   edges: [
                     {
                       node: {
-                        id: "1",
+                        id: 1,
                         name: "Foo Bar 1",
                         description: "Very foo, much more bar"
                       }
@@ -350,7 +350,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -366,7 +366,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -382,7 +382,7 @@ describe("Transformer", () => {
               {
                 $isPersisted: true,
                 description: "Very foo, much more bar",
-                id: "1",
+                id: 1,
                 name: "Foo Bar 1"
               }
             ],
@@ -399,25 +399,25 @@ describe("Transformer", () => {
           edges: [
             {
               node: {
-                id: "1",
+                id: 1,
                 content: "example content",
                 title: "example title",
                 author: {
-                  id: "15",
+                  id: 15,
                   name: "Charly Brown"
                 },
-                otherId: "4894.35",
+                otherId: 4894.35,
                 comments: {
                   edges: [
                     {
                       node: {
-                        id: "42",
+                        id: 42,
                         content: "Works!",
                         author: {
-                          id: "14",
+                          id: 14,
                           name: "Peppermint Patty"
                         },
-                        subjectId: "1",
+                        subjectId: 1,
                         subjectType: "Post"
                       }
                     }
@@ -432,26 +432,26 @@ describe("Transformer", () => {
         posts: [
           {
             $isPersisted: true,
-            id: "1",
+            id: 1,
             content: "example content",
             title: "example title",
             author: {
               $isPersisted: true,
-              id: "15",
+              id: 15,
               name: "Charly Brown"
             },
             otherId: 4894.35,
             comments: [
               {
                 $isPersisted: true,
-                id: "42",
+                id: 42,
                 content: "Works!",
                 author: {
                   $isPersisted: true,
-                  id: "14",
+                  id: 14,
                   name: "Peppermint Patty"
                 },
-                subjectId: "1",
+                subjectId: 1,
                 subjectType: "posts"
               }
             ]

@@ -36,37 +36,37 @@ describe("Action", () => {
       // @ts-ignore
       await Post.fetch(1);
 
-      const record = model.getRecordWithId("1")!;
+      const record = model.getRecordWithId(1)!;
 
       expect(Action.addRecordToArgs({ test: 2 }, model, record)).toEqual({
         post: {
-          id: "1",
+          id: 1,
           content: "GraphQL is so nice!",
           otherId: 123,
           published: true,
           title: "GraphQL",
           author: {
-            id: "1",
+            id: 1,
             name: "Charlie Brown",
             profile: {
+              id: 1,
               age: 8,
               email: "charlie@peanuts.com",
-              id: "1",
               sex: true
             },
-            profileId: "1"
+            profileId: 1
           },
           tags: [
             {
-              id: "1",
+              id: 1,
               name: "GraphQL"
             },
             {
-              id: "2",
+              id: 2,
               name: "Ruby"
             }
           ],
-          authorId: "1"
+          authorId: 1
         },
 
         test: 2

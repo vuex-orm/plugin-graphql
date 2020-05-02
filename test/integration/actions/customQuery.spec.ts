@@ -13,10 +13,10 @@ describe("custom query", () => {
   test("via Model method sends the correct query to the API", async () => {
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      await Post.customQuery({ name: "unpublishedPosts", filter: { authorId: "3" } });
+      await Post.customQuery({ name: "unpublishedPosts", filter: { authorId: 3 } });
     });
 
-    expect(request!.variables.authorId).toEqual("3");
+    expect(request!.variables.authorId).toEqual(3);
     expect(request!.query).toEqual(
       `
 query UnpublishedPosts($authorId: ID!) {
@@ -74,11 +74,11 @@ query UnpublishedPosts($authorId: ID!) {
     const post: Data = Post.find(1)! as Data;
 
     const request = await recordGraphQLRequest(async () => {
-      await post.$customQuery({ name: "unpublishedPosts", filter: { authorId: "2" } });
+      await post.$customQuery({ name: "unpublishedPosts", filter: { authorId: 2 } });
     });
 
-    expect(request!.variables.authorId).toEqual("2");
-    expect(request!.variables.id).toEqual("1");
+    expect(request!.variables.authorId).toEqual(2);
+    expect(request!.variables.id).toEqual(1);
     expect(request!.query).toEqual(
       `
 query UnpublishedPosts($authorId: ID!, $id: ID!) {

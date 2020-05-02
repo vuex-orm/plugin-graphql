@@ -46,7 +46,7 @@ describe("Plugin GraphQL", () => {
       expect(user.$isPersisted).toBeFalsy();
 
       const result = await user.$persist();
-      user = User.find(4)! as Data;
+      user = User.query().last() as Data;
 
       expect(user.$isPersisted).toBeTruthy();
     });

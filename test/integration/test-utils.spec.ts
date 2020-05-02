@@ -8,18 +8,18 @@ let store;
 let vuexOrmGraphQL;
 
 const userData = {
-  id: "42",
+  id: 42,
   name: "Charlie Brown"
 };
 
 const userResult = {
   users: [
     {
-      id: "42",
+      id: 42,
       $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
-      profileId: "",
+      profileId: 0,
       posts: [],
       comments: [],
       profile: null
@@ -33,14 +33,14 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a fetch", async () => {
-    mock("fetch", { filter: { id: "42" } })
+    mock("fetch", { filter: { id: 42 } })
       .for(User)
       .andReturn(userData);
 
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await User.fetch("42");
+      result = await User.fetch(42);
     }, true);
 
     expect(request).toEqual(null);
@@ -49,7 +49,7 @@ describe("TestUtils", () => {
 
   it("allows to return multiple records", async () => {
     const userData2 = JSON.parse(JSON.stringify(userData));
-    userData2.id = "8";
+    userData2.id = 8;
     userData2.name = "Snoopy";
 
     mock("fetch")
@@ -66,21 +66,21 @@ describe("TestUtils", () => {
     expect(result).toEqual({
       users: [
         {
-          id: "8",
+          id: 8,
           $id: "8",
           $isPersisted: true,
           name: "Snoopy",
-          profileId: "",
+          profileId: 0,
           posts: [],
           comments: [],
           profile: null
         },
         {
-          id: "42",
+          id: 42,
           $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
-          profileId: "",
+          profileId: 0,
           posts: [],
           comments: [],
           profile: null
@@ -170,7 +170,7 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a destroy", async () => {
-    mock("destroy", { id: "42" })
+    mock("destroy", { id: 42 })
       .for(User)
       .andReturn(userData);
 
@@ -187,7 +187,7 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a mutate", async () => {
-    mock("mutate", { name: "upvote", args: { id: "4" } })
+    mock("mutate", { name: "upvote", args: { id: 4 } })
       .for(Post)
       .andReturn({
         id: 4,
@@ -200,7 +200,7 @@ describe("TestUtils", () => {
     let result;
     const request = await recordGraphQLRequest(async () => {
       // @ts-ignore
-      result = await Post.mutate({ name: "upvote", args: { id: "4" } });
+      result = await Post.mutate({ name: "upvote", args: { id: 4 } });
     }, true);
 
     expect(request).toEqual(null);
@@ -212,7 +212,7 @@ describe("TestUtils", () => {
           $id: "4",
           content: "Test content",
           title: "Test title",
-          authorId: "",
+          authorId: 0,
           otherId: 0,
           published: true,
           author: null,
@@ -224,7 +224,7 @@ describe("TestUtils", () => {
   });
 
   it("allows to mock a persist", async () => {
-    mock("persist", { id: "42" })
+    mock("persist", { id: 42 })
       .for(User)
       .andReturn(userData);
 

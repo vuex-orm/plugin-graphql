@@ -5,7 +5,7 @@ import { Destroy, Fetch, Mutate, Persist, Push } from "./actions";
 import Query from "./actions/query";
 import SimpleQuery from "./actions/simple-query";
 import SimpleMutation from "./actions/simple-mutation";
-import { isPlainObject } from "./support/utils";
+import { isPlainObject, toNumber } from "./support/utils";
 
 /**
  * Main class of the plugin. Setups the internal context, Vuex actions and model methods
@@ -85,13 +85,13 @@ export default class VuexORMGraphQL {
 
     model.$mutate = async function({ name, args, multiple }: ActionParams) {
       args = args || {};
-      if (!args["id"]) args["id"] = this.$id;
+      if (!args["id"]) args["id"] = toNumber(this.$id);
       return this.$dispatch("mutate", { name, args, multiple });
     };
 
     model.$customQuery = async function({ name, filter, multiple, bypassCache }: ActionParams) {
       filter = filter || {};
-      if (!filter["id"]) filter["id"] = this.$id;
+      if (!filter["id"]) filter["id"] = toNumber(this.$id);
       return this.$dispatch("query", { name, filter, multiple, bypassCache });
     };
 
@@ -104,7 +104,7 @@ export default class VuexORMGraphQL {
     };
 
     model.$destroy = async function() {
-      return this.$dispatch("destroy", { id: this.$id });
+      return this.$dispatch("destroy", { id: toNumber(this.$id) });
     };
 
     model.$deleteAndDestroy = async function() {

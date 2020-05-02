@@ -7747,6 +7747,17 @@ function takeWhile(array, predicate) {
 function removeSymbols(input) {
     return JSON.parse(JSON.stringify(input));
 }
+/**
+ * Converts the argument into a number.
+ */
+function toNumber(input) {
+    if (input === null)
+        return 0;
+    if (typeof input === "string" && input.startsWith("$uid")) {
+        return input;
+    }
+    return parseInt(input.toString(), 10);
+}
 
 /**
  * Vuex-ORM-Apollo Debug Logger.
@@ -7901,8 +7912,8 @@ var Model = /** @class */ (function () {
         if (!field)
             return false;
         var context = Context.getInstance();
-        // Remove UID cause it must be a string
-        return field instanceof context.components.Number;
+        return field instanceof context.components.Number ||
+            field instanceof context.components.Uid;
     };
     /**
      * Tells if a field is a attribute (and thus not a relation)
@@ -8058,14 +8069,14 @@ var Model = /** @class */ (function () {
     };
     /**
      * Returns a record of this model with the given ID.
-     * @param {string} id
+     * @param {number|string} id
      * @returns {any}
      */
     Model.prototype.getRecordWithId = function (id) {
         return this.baseModel
             .query()
             .withAllRecursive()
-            .where("id", id)
+            .where("id", toNumber(id))
             .first();
     };
     /**
@@ -15338,7 +15349,7 @@ var Action = /** @class */ (function () {
                         if (!(name !== context.adapter.getNameForDestroy(model))) return [3 /*break*/, 4];
                         newData = newData[Object.keys(newData)[0]];
                         // IDs as String cause terrible issues, so we convert them to integers.
-                        newData.id = parseInt(newData.id, 10);
+                        newData.id = toNumber(newData.id);
                         return [4 /*yield*/, Store.insertData((_a = {}, _a[model.pluralName] = newData, _a), dispatch)];
                     case 3:
                         insertedData = _b.sent();
@@ -15423,7 +15434,7 @@ var Destroy = /** @class */ (function (_super) {
     /**
      * @param {State} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {string} id ID of the record to delete
+     * @param {number} id ID of the record to delete
      * @returns {Promise<any>} true
      */
     Destroy.call = function (_a, _b) {
@@ -15575,7 +15586,7 @@ var Persist = /** @class */ (function (_super) {
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {string} id ID of the record to persist
+     * @param {number|string} id ID of the record to persist
      * @returns {Promise<Data>} The saved record
      */
     Persist.call = function (_a, _b) {
@@ -15591,7 +15602,7 @@ var Persist = /** @class */ (function (_super) {
                         mutationName = Context.getInstance().adapter.getNameForPersist(model);
                         oldRecord = model.getRecordWithId(id);
                         mockReturnValue = model.$mockHook("persist", {
-                            id: id,
+                            id: toNumber(id),
                             args: args || {}
                         });
                         if (!mockReturnValue) return [3 /*break*/, 3];
@@ -15922,7 +15933,7 @@ var VuexORMGraphQL = /** @class */ (function () {
                 return __generator(this, function (_b) {
                     args = args || {};
                     if (!args["id"])
-                        args["id"] = this.$id;
+                        args["id"] = toNumber(this.$id);
                     return [2 /*return*/, this.$dispatch("mutate", { name: name, args: args, multiple: multiple })];
                 });
             });
@@ -15933,7 +15944,7 @@ var VuexORMGraphQL = /** @class */ (function () {
                 return __generator(this, function (_b) {
                     filter = filter || {};
                     if (!filter["id"])
-                        filter["id"] = this.$id;
+                        filter["id"] = toNumber(this.$id);
                     return [2 /*return*/, this.$dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
                 });
             });
@@ -15955,7 +15966,7 @@ var VuexORMGraphQL = /** @class */ (function () {
         model.$destroy = function () {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch("destroy", { id: this.$id })];
+                    return [2 /*return*/, this.$dispatch("destroy", { id: toNumber(this.$id) })];
                 });
             });
         };

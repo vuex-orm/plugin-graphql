@@ -7645,6 +7645,17 @@ function takeWhile(array, predicate) {
 function removeSymbols(input) {
     return JSON.parse(JSON.stringify(input));
 }
+/**
+ * Converts the argument into a number.
+ */
+function toNumber(input) {
+    if (input === null)
+        return 0;
+    if (typeof input === "string" && input.startsWith("$uid")) {
+        return input;
+    }
+    return parseInt(input.toString(), 10);
+}
 
 /**
  * Vuex-ORM-Apollo Debug Logger.
@@ -7785,8 +7796,8 @@ class Model {
         if (!field)
             return false;
         const context = Context.getInstance();
-        // Remove UID cause it must be a string
-        return field instanceof context.components.Number;
+        return field instanceof context.components.Number ||
+            field instanceof context.components.Uid;
     }
     /**
      * Tells if a field is a attribute (and thus not a relation)
@@ -7940,14 +7951,14 @@ class Model {
     }
     /**
      * Returns a record of this model with the given ID.
-     * @param {string} id
+     * @param {number|string} id
      * @returns {any}
      */
     getRecordWithId(id) {
         return this.baseModel
             .query()
             .withAllRecursive()
-            .where("id", id)
+            .where("id", toNumber(id))
             .first();
     }
     /**
@@ -15315,7 +15326,7 @@ class Action {
             if (name !== context.adapter.getNameForDestroy(model)) {
                 newData = newData[Object.keys(newData)[0]];
                 // IDs as String cause terrible issues, so we convert them to integers.
-                newData.id = parseInt(newData.id, 10);
+                newData.id = toNumber(newData.id);
                 const insertedData = await Store.insertData({ [model.pluralName]: newData }, dispatch);
                 // Try to find the record to return
                 const records = insertedData[model.pluralName];
@@ -15392,7 +15403,7 @@ class Destroy extends Action {
     /**
      * @param {State} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {string} id ID of the record to delete
+     * @param {number} id ID of the record to delete
      * @returns {Promise<any>} true
      */
     static async call({ state, dispatch }, { id, args }) {
@@ -15497,7 +15508,7 @@ class Persist extends Action {
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {string} id ID of the record to persist
+     * @param {number|string} id ID of the record to persist
      * @returns {Promise<Data>} The saved record
      */
     static async call({ state, dispatch }, { id, args }) {
@@ -15506,7 +15517,7 @@ class Persist extends Action {
             const mutationName = Context.getInstance().adapter.getNameForPersist(model);
             const oldRecord = model.getRecordWithId(id);
             const mockReturnValue = model.$mockHook("persist", {
-                id,
+                id: toNumber(id),
                 args: args || {}
             });
             if (mockReturnValue) {
@@ -15749,13 +15760,13 @@ class VuexORMGraphQL {
         model.$mutate = async function ({ name, args, multiple }) {
             args = args || {};
             if (!args["id"])
-                args["id"] = this.$id;
+                args["id"] = toNumber(this.$id);
             return this.$dispatch("mutate", { name, args, multiple });
         };
         model.$customQuery = async function ({ name, filter, multiple, bypassCache }) {
             filter = filter || {};
             if (!filter["id"])
-                filter["id"] = this.$id;
+                filter["id"] = toNumber(this.$id);
             return this.$dispatch("query", { name, filter, multiple, bypassCache });
         };
         model.$persist = async function (args) {
@@ -15765,7 +15776,7 @@ class VuexORMGraphQL {
             return this.$dispatch("push", { data: this, args });
         };
         model.$destroy = async function () {
-            return this.$dispatch("destroy", { id: this.$id });
+            return this.$dispatch("destroy", { id: toNumber(this.$id) });
         };
         model.$deleteAndDestroy = async function () {
             await this.$delete();

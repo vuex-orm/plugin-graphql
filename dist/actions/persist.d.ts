@@ -7,7 +7,7 @@ export default class Persist extends Action {
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
-     * @param {string} id ID of the record to persist
+     * @param {number|string} id ID of the record to persist
      * @returns {Promise<Data>} The saved record
      */
     static call({ state, dispatch }: ActionParams, { id, args }: ActionParams): Promise<Data>;

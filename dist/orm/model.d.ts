@@ -94,10 +94,10 @@ export default class Model {
     isTypeFieldOfPolymorphicRelation(name: string): boolean;
     /**
      * Returns a record of this model with the given ID.
-     * @param {string} id
+     * @param {number|string} id
      * @returns {any}
      */
-    getRecordWithId(id: string): import("@vuex-orm/core").Item<PatchedModel>;
+    getRecordWithId(id: number | string): import("@vuex-orm/core").Item<PatchedModel>;
     /**
      * Determines if we should eager load (means: add as a field in the graphql query) a related entity. belongsTo,
      * hasOne and morphOne related entities are always eager loaded. Others can be added to the `eagerLoad` array

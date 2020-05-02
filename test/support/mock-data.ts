@@ -16,7 +16,7 @@ export class User extends ORMModel {
     return {
       id: this.uid(),
       name: this.string(""),
-      profileId: this.string(""),
+      profileId: this.number(0),
       posts: this.hasMany(Post, "authorId"),
       comments: this.hasMany(Comment, "authorId"),
       profile: this.belongsTo(Profile, "profileId")
@@ -48,7 +48,7 @@ export class Video extends ORMModel {
       id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.string(""),
+      authorId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       ignoreMe: this.string(""),
       author: this.belongsTo(User, "authorId"),
@@ -68,7 +68,7 @@ export class Post extends ORMModel {
       id: this.uid(),
       content: this.string(""),
       title: this.string(""),
-      authorId: this.string(""),
+      authorId: this.number(0),
       otherId: this.number(0), // This is a field which ends with `Id` but doesn't belong to any relation
       published: this.boolean(true),
       author: this.belongsTo(User, "authorId"),
@@ -85,9 +85,9 @@ export class Comment extends ORMModel {
     return {
       id: this.uid(),
       content: this.string(""),
-      authorId: this.string(""),
+      authorId: this.number(0),
       author: this.belongsTo(User, "authorId"),
-      subjectId: this.string(""),
+      subjectId: this.number(0),
       subjectType: this.string("")
     };
   }
@@ -100,7 +100,7 @@ export class TariffTariffOption extends ORMModel {
   static fields(): Fields {
     return {
       tariffUuid: this.string(""),
-      tariffOptionId: this.string("")
+      tariffOptionId: this.number(0)
     };
   }
 }
@@ -112,7 +112,7 @@ export class Tariff extends ORMModel {
 
   static fields(): Fields {
     return {
-      uuid: this.uid(),
+      uuid: this.string(""),
       name: this.string(""),
       displayName: this.string(""),
       tariffType: this.string(""),
@@ -151,7 +151,7 @@ export class Category extends ORMModel {
       id: this.uid(),
       name: this.string(""),
 
-      parentId: this.string(""),
+      parentId: this.number(0),
       parent: this.belongsTo(Category, "parentId")
     };
   }
@@ -163,8 +163,8 @@ export class Taggable extends ORMModel {
   static fields(): Fields {
     return {
       id: this.uid(),
-      tagId: this.string(""),
-      subjectId: this.string(""),
+      tagId: this.number(0),
+      subjectId: this.number(0),
       subjectType: this.string("")
     };
   }

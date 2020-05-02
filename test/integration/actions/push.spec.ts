@@ -21,8 +21,8 @@ describe("push", () => {
     });
 
     expect(request!.variables).toEqual({
-      id: "1",
-      user: { id: "1", name: "Snoopy", profileId: "1" }
+      id: 1,
+      user: { id: 1, name: "Snoopy", profileId: 1 }
     });
     expect(request!.query).toEqual(
       `
