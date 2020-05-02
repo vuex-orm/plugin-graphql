@@ -7912,8 +7912,7 @@ var Model = /** @class */ (function () {
         if (!field)
             return false;
         var context = Context.getInstance();
-        return field instanceof context.components.Number ||
-            field instanceof context.components.Uid;
+        return field instanceof context.components.Number || field instanceof context.components.Uid;
     };
     /**
      * Tells if a field is a attribute (and thus not a relation)
