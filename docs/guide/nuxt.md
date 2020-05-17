@@ -10,8 +10,8 @@ Vuex-ORM and Plugin GraphQL with Nuxt.
 ```javascript
 export default { 
   plugins: [
-    '~/plugins/vuex-orm',
-    '~/plugins/graphql'
+    '~/plugins/graphql',
+    '~/plugins/vuex-orm'
   ] 
 };
 ```
@@ -60,11 +60,17 @@ import { HttpLink } from 'apollo-link-http';
 import fetch from 'node-fetch';
 import database from '~/data/database';
 
-const options = { database, url: '...' };
+// The url can be anything, in this example we use the value from dotenv
+export default function({ app, env: { url } }) {
+    const apolloClient = app?.apolloProvider?.defaultClient
+    const options = { database, url };
 
-if (process.server) {
-  options.link = new HttpLink({ uri: options.url, fetch });
+    if (apolloClient) {
+      options.apolloClient = apolloClient
+    } else {
+      options.link = new HttpLink({ uri: options.url, fetch });
+    }
+
+    VuexORM.use(VuexORMGraphQL, options);
 }
-
-VuexORM.use(VuexORMGraphQL, options);
 ```
