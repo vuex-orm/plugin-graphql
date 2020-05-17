@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Connection Mode | Vuex-ORM GraphQL Plugin</title>
+    <meta name="generator" content="VuePress 1.4.1">
+    
+    <meta name="description" content="Vue + Vuex-ORM + GraphQL = <3">
+    <link rel="preload" href="/plugin-graphql/assets/css/0.styles.13b5bfdc.css" as="style"><link rel="preload" href="/plugin-graphql/assets/js/app.5d588984.js" as="script"><link rel="preload" href="/plugin-graphql/assets/js/2.6b4ed459.js" as="script"><link rel="preload" href="/plugin-graphql/assets/js/8.e9136e2a.js" as="script"><link rel="prefetch" href="/plugin-graphql/assets/js/10.eee8628e.js"><link rel="prefetch" href="/plugin-graphql/assets/js/11.cea734bb.js"><link rel="prefetch" href="/plugin-graphql/assets/js/12.4e6a2292.js"><link rel="prefetch" href="/plugin-graphql/assets/js/13.97a09b06.js"><link rel="prefetch" href="/plugin-graphql/assets/js/14.058ab000.js"><link rel="prefetch" href="/plugin-graphql/assets/js/15.fb28afd1.js"><link rel="prefetch" href="/plugin-graphql/assets/js/16.9729a3f9.js"><link rel="prefetch" href="/plugin-graphql/assets/js/17.7e91fd73.js"><link rel="prefetch" href="/plugin-graphql/assets/js/18.bc857c9f.js"><link rel="prefetch" href="/plugin-graphql/assets/js/19.a8bae462.js"><link rel="prefetch" href="/plugin-graphql/assets/js/20.2409ba11.js"><link rel="prefetch" href="/plugin-graphql/assets/js/21.8adc2a4d.js"><link rel="prefetch" href="/plugin-graphql/assets/js/22.d48fb816.js"><link rel="prefetch" href="/plugin-graphql/assets/js/23.155f7dae.js"><link rel="prefetch" href="/plugin-graphql/assets/js/3.5ca37265.js"><link rel="prefetch" href="/plugin-graphql/assets/js/4.fca74266.js"><link rel="prefetch" href="/plugin-graphql/assets/js/5.0c495115.js"><link rel="prefetch" href="/plugin-graphql/assets/js/6.01f57dbf.js"><link rel="prefetch" href="/plugin-graphql/assets/js/7.b3aa7dc8.js"><link rel="prefetch" href="/plugin-graphql/assets/js/9.8c2e6f11.js">
+    <link rel="stylesheet" href="/plugin-graphql/assets/css/0.styles.13b5bfdc.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/plugin-graphql/" class="home-link router-link-active"><img src="/plugin-graphql/logo-vuex-orm.png" alt="Vuex-ORM GraphQL Plugin" class="logo"> <span class="site-name can-hide">Vuex-ORM GraphQL Plugin</span></a> <div class="links"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <nav class="nav-links can-hide"><div class="nav-item"><a href="/plugin-graphql/" class="nav-link">
+  Home
+</a></div><div class="nav-item"><a href="/plugin-graphql/guide/" class="nav-link router-link-active">
+  Guide
+</a></div><div class="nav-item"><a href="https://vuex-orm.github.io/vuex-orm/" target="_blank" rel="noopener noreferrer" class="nav-link external">
+  Vuex-ORM
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div> <a href="https://github.com/vuex-orm/plugin-graphql" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav></div></header> <div class="sidebar-mask"></div> <aside class="sidebar"><nav class="nav-links"><div class="nav-item"><a href="/plugin-graphql/" class="nav-link">
+  Home
+</a></div><div class="nav-item"><a href="/plugin-graphql/guide/" class="nav-link router-link-active">
+  Guide
+</a></div><div class="nav-item"><a href="https://vuex-orm.github.io/vuex-orm/" target="_blank" rel="noopener noreferrer" class="nav-link external">
+  Vuex-ORM
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div> <a href="https://github.com/vuex-orm/plugin-graphql" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav>  <ul class="sidebar-links"><li><a href="/plugin-graphql/guide/" class="sidebar-link">Introduction</a></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading"><span>Basics</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/setup.html" class="sidebar-link">Setup</a></li><li><a href="/plugin-graphql/guide/fetch.html" class="sidebar-link">fetch</a></li><li><a href="/plugin-graphql/guide/persist.html" class="sidebar-link">persist</a></li><li><a href="/plugin-graphql/guide/push.html" class="sidebar-link">push</a></li><li><a href="/plugin-graphql/guide/destroy.html" class="sidebar-link">destroy</a></li><li><a href="/plugin-graphql/guide/relationships.html" class="sidebar-link">Relationships</a></li></ul></section></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading open"><span>Advanced Topics</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/nuxt.html" class="sidebar-link">Nuxt.js / SSR Integration</a></li><li><a href="/plugin-graphql/guide/adapters.html" class="sidebar-link">Adapters</a></li><li><a href="/plugin-graphql/guide/connection-mode.html" class="active sidebar-link">Connection Mode</a><ul class="sidebar-sub-headers"><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/connection-mode.html#automatic-detection" class="sidebar-link">Automatic detection</a></li><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/connection-mode.html#manual-setting" class="sidebar-link">Manual setting</a></li><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/connection-mode.html#mode-1-plain" class="sidebar-link">Mode 1: plain</a></li><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/connection-mode.html#mode-2-nodes" class="sidebar-link">Mode 2: nodes</a></li><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/connection-mode.html#mode-3-edges" class="sidebar-link">Mode 3: edges</a></li></ul></li><li><a href="/plugin-graphql/guide/custom-queries.html" class="sidebar-link">Custom Queries and Mutations</a></li><li><a href="/plugin-graphql/guide/eager-loading.html" class="sidebar-link">Eager Loading and Saving</a></li><li><a href="/plugin-graphql/guide/virtual-fields.html" class="sidebar-link">Virtual Fields</a></li><li><a href="/plugin-graphql/guide/meta-fields.html" class="sidebar-link">Meta Fields</a></li><li><a href="/plugin-graphql/guide/testing.html" class="sidebar-link">Testing</a></li></ul></section></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading"><span>Meta</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/faq.html" class="sidebar-link">Frequently Asked Questions</a></li><li><a href="/plugin-graphql/guide/contribution.html" class="sidebar-link">Contribution</a></li></ul></section></li></ul> </aside> <main class="page"> <div class="theme-default-content content__default"><h1 id="connection-mode"><a href="#connection-mode" class="header-anchor">#</a> Connection Mode</h1> <p></p><div class="table-of-contents"><ul><li><a href="#automatic-detection">Automatic detection</a></li><li><a href="#manual-setting">Manual setting</a></li><li><a href="#mode-1-plain">Mode 1: plain</a></li><li><a href="#mode-2-nodes">Mode 2: nodes</a></li><li><a href="#mode-3-edges">Mode 3: edges</a></li></ul></div><p></p> <p>It seems that there are several standards within the GraphQL community how connections (fields that returns multiple
+records) are designed. Some do this via a <code>nodes</code> field, some via a <code>edges { nodes }</code> query and some do neither of them.
+Vuex-ORM-GraphQL tries to be flexible and supports all of them.</p> <p>There are four possible modes: <code>AUTO</code>, <code>NODES</code>, <code>EDGES</code>, <code>PLAIN</code>. The Adapter you use will tell the
+plugin which ConnectionMode to use. In the DefaultAdapter this is <code>AUTO</code>.</p> <h2 id="automatic-detection"><a href="#automatic-detection" class="header-anchor">#</a> Automatic detection</h2> <p>The plugin will try to detect automatically which mode should be used by analyzing the GraphQL
+Schema. In the best case you don't have to bother with this at all.</p> <h2 id="manual-setting"><a href="#manual-setting" class="header-anchor">#</a> Manual setting</h2> <p>In rare cases the automatic detection might fail or report the wrong mode. In this case, you can
+manually set the connection mode via a custom adapter. The modes and the resulting
+queries are explained in the next sections.</p> <h2 id="mode-1-plain"><a href="#mode-1-plain" class="header-anchor">#</a> Mode 1: <code>plain</code></h2> <p>The third mode is the less preferred one due to the lack of meta information. In this case we just plain pass the field
+queries:</p> <div class="language- extra-class"><pre class="language-text"><code>query Users {
+  users {
+    id
+    email
+    name
+  }
+}
+</code></pre></div><h2 id="mode-2-nodes"><a href="#mode-2-nodes" class="header-anchor">#</a> Mode 2: <code>nodes</code></h2> <p>This is the preferred mode and used for the example queries in this documentation. Setting the connection mode to
+<code>nodes</code> (or letting the plugin auto detect this mode) will lead to the following query when calling <code>User.fetch()</code>:</p> <div class="language- extra-class"><pre class="language-text"><code>query Users {
+  users {
+    nodes {
+      id
+      email
+      name
+    }
+  }
+}
+</code></pre></div><h2 id="mode-3-edges"><a href="#mode-3-edges" class="header-anchor">#</a> Mode 3: <code>edges</code></h2> <p>This mode uses a <code>edges</code> not to query the edge an then query the <code>node</code> within that edge:</p> <div class="language- extra-class"><pre class="language-text"><code>query Users {
+  users {
+    edges {
+      node {
+        id
+        email
+        name
+      }
+    }
+  }
+}
+</code></pre></div></div> <footer class="page-edit"><div class="edit-link"><a href="https://github.com/vuex-orm/plugin-graphql/edit/master/docs/guide/connection-mode.md" target="_blank" rel="noopener noreferrer">Edit this page</a> <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></div> <!----></footer> <div class="page-nav"><p class="inner"><span class="prev">
+      ←
+      <a href="/plugin-graphql/guide/adapters.html" class="prev">
+        Adapters
+      </a></span> <span class="next"><a href="/plugin-graphql/guide/custom-queries.html">
+        Custom Queries and Mutations
+      </a>
+      →
+    </span></p></div> </main></div><div class="global-ui"></div></div>
+    <script src="/plugin-graphql/assets/js/app.5d588984.js" defer></script><script src="/plugin-graphql/assets/js/2.6b4ed459.js" defer></script><script src="/plugin-graphql/assets/js/8.e9136e2a.js" defer></script>
+  </body>
+</html>

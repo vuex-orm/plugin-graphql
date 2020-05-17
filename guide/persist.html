@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>persist | Vuex-ORM GraphQL Plugin</title>
+    <meta name="generator" content="VuePress 1.4.1">
+    
+    <meta name="description" content="Vue + Vuex-ORM + GraphQL = <3">
+    <link rel="preload" href="/plugin-graphql/assets/css/0.styles.13b5bfdc.css" as="style"><link rel="preload" href="/plugin-graphql/assets/js/app.5d588984.js" as="script"><link rel="preload" href="/plugin-graphql/assets/js/2.6b4ed459.js" as="script"><link rel="preload" href="/plugin-graphql/assets/js/17.7e91fd73.js" as="script"><link rel="prefetch" href="/plugin-graphql/assets/js/10.eee8628e.js"><link rel="prefetch" href="/plugin-graphql/assets/js/11.cea734bb.js"><link rel="prefetch" href="/plugin-graphql/assets/js/12.4e6a2292.js"><link rel="prefetch" href="/plugin-graphql/assets/js/13.97a09b06.js"><link rel="prefetch" href="/plugin-graphql/assets/js/14.058ab000.js"><link rel="prefetch" href="/plugin-graphql/assets/js/15.fb28afd1.js"><link rel="prefetch" href="/plugin-graphql/assets/js/16.9729a3f9.js"><link rel="prefetch" href="/plugin-graphql/assets/js/18.bc857c9f.js"><link rel="prefetch" href="/plugin-graphql/assets/js/19.a8bae462.js"><link rel="prefetch" href="/plugin-graphql/assets/js/20.2409ba11.js"><link rel="prefetch" href="/plugin-graphql/assets/js/21.8adc2a4d.js"><link rel="prefetch" href="/plugin-graphql/assets/js/22.d48fb816.js"><link rel="prefetch" href="/plugin-graphql/assets/js/23.155f7dae.js"><link rel="prefetch" href="/plugin-graphql/assets/js/3.5ca37265.js"><link rel="prefetch" href="/plugin-graphql/assets/js/4.fca74266.js"><link rel="prefetch" href="/plugin-graphql/assets/js/5.0c495115.js"><link rel="prefetch" href="/plugin-graphql/assets/js/6.01f57dbf.js"><link rel="prefetch" href="/plugin-graphql/assets/js/7.b3aa7dc8.js"><link rel="prefetch" href="/plugin-graphql/assets/js/8.e9136e2a.js"><link rel="prefetch" href="/plugin-graphql/assets/js/9.8c2e6f11.js">
+    <link rel="stylesheet" href="/plugin-graphql/assets/css/0.styles.13b5bfdc.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/plugin-graphql/" class="home-link router-link-active"><img src="/plugin-graphql/logo-vuex-orm.png" alt="Vuex-ORM GraphQL Plugin" class="logo"> <span class="site-name can-hide">Vuex-ORM GraphQL Plugin</span></a> <div class="links"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <nav class="nav-links can-hide"><div class="nav-item"><a href="/plugin-graphql/" class="nav-link">
+  Home
+</a></div><div class="nav-item"><a href="/plugin-graphql/guide/" class="nav-link router-link-active">
+  Guide
+</a></div><div class="nav-item"><a href="https://vuex-orm.github.io/vuex-orm/" target="_blank" rel="noopener noreferrer" class="nav-link external">
+  Vuex-ORM
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div> <a href="https://github.com/vuex-orm/plugin-graphql" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav></div></header> <div class="sidebar-mask"></div> <aside class="sidebar"><nav class="nav-links"><div class="nav-item"><a href="/plugin-graphql/" class="nav-link">
+  Home
+</a></div><div class="nav-item"><a href="/plugin-graphql/guide/" class="nav-link router-link-active">
+  Guide
+</a></div><div class="nav-item"><a href="https://vuex-orm.github.io/vuex-orm/" target="_blank" rel="noopener noreferrer" class="nav-link external">
+  Vuex-ORM
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></div> <a href="https://github.com/vuex-orm/plugin-graphql" target="_blank" rel="noopener noreferrer" class="repo-link">
+    GitHub
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a></nav>  <ul class="sidebar-links"><li><a href="/plugin-graphql/guide/" class="sidebar-link">Introduction</a></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading open"><span>Basics</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/setup.html" class="sidebar-link">Setup</a></li><li><a href="/plugin-graphql/guide/fetch.html" class="sidebar-link">fetch</a></li><li><a href="/plugin-graphql/guide/persist.html" class="active sidebar-link">persist</a><ul class="sidebar-sub-headers"><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/persist.html#additional-variables" class="sidebar-link">Additional variables</a></li><li class="sidebar-sub-header"><a href="/plugin-graphql/guide/persist.html#relationships" class="sidebar-link">Relationships</a></li></ul></li><li><a href="/plugin-graphql/guide/push.html" class="sidebar-link">push</a></li><li><a href="/plugin-graphql/guide/destroy.html" class="sidebar-link">destroy</a></li><li><a href="/plugin-graphql/guide/relationships.html" class="sidebar-link">Relationships</a></li></ul></section></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading"><span>Advanced Topics</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/nuxt.html" class="sidebar-link">Nuxt.js / SSR Integration</a></li><li><a href="/plugin-graphql/guide/adapters.html" class="sidebar-link">Adapters</a></li><li><a href="/plugin-graphql/guide/connection-mode.html" class="sidebar-link">Connection Mode</a></li><li><a href="/plugin-graphql/guide/custom-queries.html" class="sidebar-link">Custom Queries and Mutations</a></li><li><a href="/plugin-graphql/guide/eager-loading.html" class="sidebar-link">Eager Loading and Saving</a></li><li><a href="/plugin-graphql/guide/virtual-fields.html" class="sidebar-link">Virtual Fields</a></li><li><a href="/plugin-graphql/guide/meta-fields.html" class="sidebar-link">Meta Fields</a></li><li><a href="/plugin-graphql/guide/testing.html" class="sidebar-link">Testing</a></li></ul></section></li><li><section class="sidebar-group depth-0"><p class="sidebar-heading"><span>Meta</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/plugin-graphql/guide/faq.html" class="sidebar-link">Frequently Asked Questions</a></li><li><a href="/plugin-graphql/guide/contribution.html" class="sidebar-link">Contribution</a></li></ul></section></li></ul> </aside> <main class="page"> <div class="theme-default-content content__default"><h1 id="persist"><a href="#persist" class="header-anchor">#</a> persist</h1> <p></p><div class="table-of-contents"><ul><li><a href="#additional-variables">Additional variables</a></li><li><a href="#relationships">Relationships</a></li></ul></div><p></p> <p>After creating a new record via Vuex-ORM you may want to save it to your server via GraphQL. For this use case we have
+the <code>persist</code> action.</p> <p>Via calling</p> <div class="language-javascript extra-class"><pre class="language-javascript"><code><span class="token keyword">await</span> Post<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">{</span> data<span class="token operator">:</span> <span class="token punctuation">{</span>
+  content<span class="token operator">:</span> <span class="token string">'Lorem Ipsum dolor sit amet'</span><span class="token punctuation">,</span>
+  title<span class="token operator">:</span> <span class="token string">'Example Post'</span><span class="token punctuation">,</span>
+  user<span class="token operator">:</span> User<span class="token punctuation">.</span><span class="token function">query</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">first</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> post <span class="token operator">=</span> Post<span class="token punctuation">.</span><span class="token function">query</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">first</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">await</span> post<span class="token punctuation">.</span><span class="token function">$persist</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment">// or</span>
+<span class="token keyword">await</span> post<span class="token punctuation">.</span><span class="token function">$dispatch</span><span class="token punctuation">(</span><span class="token string">'persist'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> id<span class="token operator">:</span> post<span class="token punctuation">.</span>id <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre></div><p>the post record is send to the GraphQL by generating the following query:</p> <div class="language-graphql extra-class"><pre class="language-graphql"><code><span class="token keyword">mutation</span> CreatePost<span class="token punctuation">(</span><span class="token variable">$post</span><span class="token punctuation">:</span> PostInput<span class="token operator">!</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  createPost<span class="token punctuation">(</span><span class="token attr-name">post</span><span class="token punctuation">:</span> <span class="token variable">$post</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    id
+    userId
+    content
+    title
+
+    user <span class="token punctuation">{</span>
+      id
+      email
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre></div><p>Variables:</p> <div class="language-json extra-class"><pre class="language-json"><code><span class="token punctuation">{</span>
+  <span class="token property">&quot;post&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token string">&quot;42&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;userId&quot;</span><span class="token operator">:</span> <span class="token string">&quot;15&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;content&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Lorem Ipsum dolor sit amet&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;title&quot;</span><span class="token operator">:</span> <span class="token string">&quot;Example Post&quot;</span><span class="token punctuation">,</span>
+    <span class="token property">&quot;user&quot;</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">&quot;id&quot;</span><span class="token operator">:</span> <span class="token string">&quot;15&quot;</span><span class="token punctuation">,</span>
+      <span class="token property">&quot;email&quot;</span><span class="token operator">:</span> <span class="token string">&quot;example@example.com&quot;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre></div><p>Like when pushing, all records which are returned replace the respective existing records in the Vuex-ORM database.</p> <h2 id="additional-variables"><a href="#additional-variables" class="header-anchor">#</a> Additional variables</h2> <p>You can pass a object like this: <code>$perist({ captchaToken: 'asdfasdf' })</code>. All fields in the object will be passed as
+variables to the mutation.</p> <h2 id="relationships"><a href="#relationships" class="header-anchor">#</a> Relationships</h2> <p>When persisting a record, all <code>belongsTo</code> relations are sent to the server too. <code>hasMany</code>/<code>hasOne</code>
+relations on the other hand are filtered out and have to be persisted on their own.</p></div> <footer class="page-edit"><div class="edit-link"><a href="https://github.com/vuex-orm/plugin-graphql/edit/master/docs/guide/persist.md" target="_blank" rel="noopener noreferrer">Edit this page</a> <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15" class="icon outbound"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></div> <!----></footer> <div class="page-nav"><p class="inner"><span class="prev">
+      ←
+      <a href="/plugin-graphql/guide/fetch.html" class="prev">
+        fetch
+      </a></span> <span class="next"><a href="/plugin-graphql/guide/push.html">
+        push
+      </a>
+      →
+    </span></p></div> </main></div><div class="global-ui"></div></div>
+    <script src="/plugin-graphql/assets/js/app.5d588984.js" defer></script><script src="/plugin-graphql/assets/js/2.6b4ed459.js" defer></script><script src="/plugin-graphql/assets/js/17.7e91fd73.js" defer></script>
+  </body>
+</html>
