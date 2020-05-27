@@ -14576,7 +14576,7 @@ class Schema {
         let connection = null;
         this.queries.forEach(query => {
             const typeName = Schema.getTypeNameOfField(query);
-            if (typeName.endsWith("TypeConnection")) {
+            if (typeName.endsWith("Connection")) {
                 connection = this.getType(typeName);
                 return false; // break
             }
@@ -14621,7 +14621,7 @@ class Schema {
         return query || null;
     }
     static returnsConnection(field) {
-        return Schema.getTypeNameOfField(field).endsWith("TypeConnection");
+        return Schema.getTypeNameOfField(field).endsWith("Connection");
     }
     static getRealType(type) {
         if (type.kind === "NON_NULL") {
@@ -15103,7 +15103,7 @@ class QueryBuilder {
                 const isForeignKey = model.skipField(key);
                 const skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
                 let schemaField = this.findSchemaFieldForArgument(key, field, model, filter);
-                const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
+                const isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith("Connection");
                 // Ignore null fields, ids and connections
                 if (value && !skipFieldDueId && !isConnectionField) {
                     let typeOrValue = "";
@@ -15400,6 +15400,22 @@ class Action {
  */
 class Destroy extends Action {
     /**
+     * Registers the record.$destroy() and record.$deleteAndDestroy() methods and
+     * the destroy Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const record = context.components.Model.prototype;
+        context.components.Actions.destroy = Destroy.call.bind(Destroy);
+        record.$destroy = async function () {
+            return this.$dispatch("destroy", { id: toNumber(this.$id) });
+        };
+        record.$deleteAndDestroy = async function () {
+            await this.$delete();
+            return this.$destroy();
+        };
+    }
+    /**
      * @param {State} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {number} id ID of the record to delete
@@ -15429,6 +15445,20 @@ class Destroy extends Action {
  * Fetch action for sending a query. Will be used for Model.fetch().
  */
 class Fetch extends Action {
+    /**
+     * Registers the Model.fetch() method and the fetch Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const model = context.components.Model;
+        context.components.Actions.fetch = Fetch.call.bind(Fetch);
+        model.fetch = async function (filter, bypassCache = false) {
+            let filterObj = filter;
+            if (!isPlainObject(filterObj))
+                filterObj = { id: filter };
+            return this.dispatch("fetch", { filter: filterObj, bypassCache });
+        };
+    }
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15467,6 +15497,24 @@ class Fetch extends Action {
  */
 class Mutate extends Action {
     /**
+     * Registers the Model.mutate() and the record.$mutate() methods and the mutate Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const model = context.components.Model;
+        const record = context.components.Model.prototype;
+        context.components.Actions.mutate = Mutate.call.bind(Mutate);
+        model.mutate = async function (params) {
+            return this.dispatch("mutate", params);
+        };
+        record.$mutate = async function ({ name, args, multiple }) {
+            args = args || {};
+            if (!args["id"])
+                args["id"] = toNumber(this.$id);
+            return this.$dispatch("mutate", { name, args, multiple });
+        };
+    }
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} name Name of the query
@@ -15504,6 +15552,17 @@ class Mutate extends Action {
  * Persist action for sending a create mutation. Will be used for record.$persist().
  */
 class Persist extends Action {
+    /**
+     * Registers the record.$persist() method and the persist Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const record = context.components.Model.prototype;
+        context.components.Actions.persist = Persist.call.bind(Persist);
+        record.$persist = async function (args) {
+            return this.$dispatch("persist", { id: this.$id, args });
+        };
+    }
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15560,6 +15619,17 @@ class Persist extends Action {
  */
 class Push extends Action {
     /**
+     * Registers the record.$push() method and the push Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const model = context.components.Model.prototype;
+        context.components.Actions.push = Push.call.bind(Push);
+        model.$push = async function (args) {
+            return this.$dispatch("push", { data: this, args });
+        };
+    }
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {Arguments} data New data to save
@@ -15594,6 +15664,25 @@ class Push extends Action {
  * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
  */
 class Query extends Action {
+    /**
+     * Registers the Model.customQuery and the record.$customQuery() methods and the
+     * query Vuex Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        const model = context.components.Model;
+        const record = context.components.Model.prototype;
+        context.components.Actions.query = Query.call.bind(Query);
+        model.customQuery = async function ({ name, filter, multiple, bypassCache }) {
+            return this.dispatch("query", { name, filter, multiple, bypassCache });
+        };
+        record.$customQuery = async function ({ name, filter, multiple, bypassCache }) {
+            filter = filter || {};
+            if (!filter["id"])
+                filter["id"] = toNumber(this.$id);
+            return this.$dispatch("query", { name, filter, multiple, bypassCache });
+        };
+    }
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15638,6 +15727,13 @@ class Query extends Action {
  */
 class SimpleQuery extends Action {
     /**
+     * Registers the Model.simpleQuery() Vuex Root Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+    }
+    /**
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} query The query to send
      * @param {Arguments} variables
@@ -15671,6 +15767,13 @@ class SimpleQuery extends Action {
  * SimpleMutation action for sending a model unrelated simple mutation.
  */
 class SimpleMutation extends Action {
+    /**
+     * Registers the Model.simpleMutation() Vuex Root Action.
+     */
+    static setup() {
+        const context = Context.getInstance();
+        context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
+    }
     /**
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} query The query to send
@@ -15712,7 +15815,6 @@ class VuexORMGraphQL {
     constructor(components, options) {
         Context.setup(components, options);
         VuexORMGraphQL.setupActions();
-        VuexORMGraphQL.setupModelMethods();
     }
     /**
      * Allow everything to read the context.
@@ -15721,66 +15823,20 @@ class VuexORMGraphQL {
         return Context.getInstance();
     }
     /**
-     * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
+     * This method will setup:
+     *   - Vuex actions: fetch, persist, push, destroy, mutate
+     *   - Model methods: fetch(), mutate(), customQuery()
+     *   - Record method: $mutate(), $persist(), $push(), $destroy(), $deleteAndDestroy(), $customQuery()
      */
     static setupActions() {
-        const context = Context.getInstance();
-        context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
-        context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
-        context.components.Actions.fetch = Fetch.call.bind(Fetch);
-        context.components.Actions.persist = Persist.call.bind(Persist);
-        context.components.Actions.push = Push.call.bind(Push);
-        context.components.Actions.destroy = Destroy.call.bind(Destroy);
-        context.components.Actions.mutate = Mutate.call.bind(Mutate);
-        context.components.Actions.query = Query.call.bind(Query);
-    }
-    /**
-     * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
-     * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
-     */
-    static setupModelMethods() {
-        const context = Context.getInstance();
-        // Register static model convenience methods
-        context.components.Model.fetch = async function (filter, bypassCache = false) {
-            let filterObj = filter;
-            if (!isPlainObject(filterObj)) {
-                filterObj = { id: filter };
-            }
-            return this.dispatch("fetch", { filter: filterObj, bypassCache });
-        };
-        context.components.Model.mutate = async function (params) {
-            return this.dispatch("mutate", params);
-        };
-        context.components.Model.customQuery = async function ({ name, filter, multiple, bypassCache }) {
-            return this.dispatch("query", { name, filter, multiple, bypassCache });
-        };
-        // Register model convenience methods
-        const model = context.components.Model.prototype;
-        model.$mutate = async function ({ name, args, multiple }) {
-            args = args || {};
-            if (!args["id"])
-                args["id"] = toNumber(this.$id);
-            return this.$dispatch("mutate", { name, args, multiple });
-        };
-        model.$customQuery = async function ({ name, filter, multiple, bypassCache }) {
-            filter = filter || {};
-            if (!filter["id"])
-                filter["id"] = toNumber(this.$id);
-            return this.$dispatch("query", { name, filter, multiple, bypassCache });
-        };
-        model.$persist = async function (args) {
-            return this.$dispatch("persist", { id: this.$id, args });
-        };
-        model.$push = async function (args) {
-            return this.$dispatch("push", { data: this, args });
-        };
-        model.$destroy = async function () {
-            return this.$dispatch("destroy", { id: toNumber(this.$id) });
-        };
-        model.$deleteAndDestroy = async function () {
-            await this.$delete();
-            return this.$destroy();
-        };
+        Fetch.setup();
+        Persist.setup();
+        Push.setup();
+        Destroy.setup();
+        Mutate.setup();
+        Query.setup();
+        SimpleQuery.setup();
+        SimpleMutation.setup();
     }
 }
 

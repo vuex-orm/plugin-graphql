@@ -15,27 +15,27 @@ import { clone, matches, singularize } from "../../src/support/utils";
 export const typeDefs = `
   type Query {
     user(id: ID!): User!
-    users(filter: UserFilter): UserTypeConnection!
+    users(filter: UserFilter): UserConnection!
     profile(id: ID!): Profile!
-    profiles(filter: ProfileFilter): ProfileTypeConnection!
+    profiles(filter: ProfileFilter): ProfileConnection!
     post(id: ID!): Post!
-    posts(filter: PostFilter): PostTypeConnection!
+    posts(filter: PostFilter): PostConnection!
     video(id: ID!): Video!
-    videos(filter: VideoFilter): VideoTypeConnection!
+    videos(filter: VideoFilter): VideoConnection!
     comment(id: ID!): Comment!
-    comments(filter: CommentFilter): CommentTypeConnection!
+    comments(filter: CommentFilter): CommentConnection!
     tariffOption(id: ID!): TariffOption!
-    tariffOptions(filter: TariffOptionFilter): TariffOptionTypeConnection!
+    tariffOptions(filter: TariffOptionFilter): TariffOptionConnection!
     tariff(uuid: String!): Tariff!
-    tariffs(filter: TariffFilter): TariffTypeConnection!
+    tariffs(filter: TariffFilter): TariffConnection!
     tariffTariffOption(id: ID!): TariffTariffOption!
-    tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionTypeConnection!
+    tariffTariffOptions(filter: TariffTariffOptionFilter): TariffTariffOptionConnection!
     category(id: ID!): Category!
-    categories: CategoryTypeConnection!
+    categories: CategoryConnection!
     tag(id: ID!): Tag!
-    tags: TagTypeConnection!
+    tags: TagConnection!
 
-    unpublishedPosts(authorId: ID!): PostTypeConnection
+    unpublishedPosts(authorId: ID!): PostConnection
     status: Status
   }
 
@@ -66,7 +66,7 @@ export const typeDefs = `
 
     upvotePost(captchaToken: String!, id: ID!): Post!
     sendSms(to: String!, text: String!): SmsStatus!
-    reorderItems(id: ID!, itemIds: [ID]!): PostTypeConnection
+    reorderItems(id: ID!, itemIds: [ID]!): PostConnection
   }
 
   type Status {
@@ -83,8 +83,8 @@ export const typeDefs = `
     id: ID
     name: String
     profileId: ID
-    posts: PostTypeConnection
-    comments: CommentTypeConnection
+    posts: PostConnection
+    comments: CommentConnection
     profile: Profile
   }
 
@@ -106,7 +106,7 @@ export const typeDefs = `
   }
 
 
-  type UserTypeConnection {
+  type UserConnection {
     nodes: [User!]!
   }
 
@@ -138,7 +138,7 @@ export const typeDefs = `
   }
 
 
-  type ProfileTypeConnection {
+  type ProfileConnection {
     nodes: [Profile!]!
   }
 
@@ -151,8 +151,8 @@ export const typeDefs = `
     otherId: ID
     published: Boolean
     author: User
-    comments: CommentTypeConnection
-    tags: TagTypeConnection
+    comments: CommentConnection
+    tags: TagConnection
   }
 
 
@@ -179,7 +179,7 @@ export const typeDefs = `
   }
 
 
-  type PostTypeConnection {
+  type PostConnection {
     nodes: [Post!]!
   }
 
@@ -191,8 +191,8 @@ export const typeDefs = `
     authorId: ID
     otherId: ID
     author: User
-    comments: CommentTypeConnection
-    tags: TagTypeConnection
+    comments: CommentConnection
+    tags: TagConnection
   }
 
 
@@ -216,7 +216,7 @@ export const typeDefs = `
   }
 
 
-  type VideoTypeConnection {
+  type VideoConnection {
     nodes: [Video!]!
   }
 
@@ -251,7 +251,7 @@ export const typeDefs = `
   }
 
 
-  type CommentTypeConnection {
+  type CommentConnection {
     nodes: [Comment!]!
   }
 
@@ -260,7 +260,7 @@ export const typeDefs = `
     id: ID
     name: String
     description: String
-    tariffs: TariffTypeConnection
+    tariffs: TariffConnection
   }
 
 
@@ -278,7 +278,7 @@ export const typeDefs = `
   }
 
 
-  type TariffOptionTypeConnection {
+  type TariffOptionConnection {
     nodes: [TariffOption!]!
   }
 
@@ -289,7 +289,7 @@ export const typeDefs = `
     displayName: String
     tariffType: String
     slug: String
-    tariffOptions: TariffOptionTypeConnection
+    tariffOptions: TariffOptionConnection
   }
 
 
@@ -311,7 +311,7 @@ export const typeDefs = `
   }
 
 
-  type TariffTypeConnection {
+  type TariffConnection {
     nodes: [Tariff!]!
   }
 
@@ -334,7 +334,7 @@ export const typeDefs = `
   }
 
 
-  type TariffTariffOptionTypeConnection {
+  type TariffTariffOptionConnection {
     nodes: [TariffTariffOption!]!
   }
 
@@ -362,7 +362,7 @@ export const typeDefs = `
   }
 
 
-  type CategoryTypeConnection {
+  type CategoryConnection {
     nodes: [Category!]!
   }
 
@@ -391,7 +391,7 @@ export const typeDefs = `
   }
 
 
-  type TagTypeConnection {
+  type TagConnection {
     nodes: [Tag!]!
   }
 `;

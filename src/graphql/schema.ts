@@ -37,7 +37,7 @@ export default class Schema {
 
     this.queries.forEach(query => {
       const typeName = Schema.getTypeNameOfField(query);
-      if (typeName.endsWith("TypeConnection")) {
+      if (typeName.endsWith("Connection")) {
         connection = this.getType(typeName);
         return false; // break
       }
@@ -94,7 +94,7 @@ export default class Schema {
   }
 
   static returnsConnection(field: GraphQLField): boolean {
-    return Schema.getTypeNameOfField(field).endsWith("TypeConnection");
+    return Schema.getTypeNameOfField(field).endsWith("Connection");
   }
 
   static getRealType(type: GraphQLTypeDefinition): GraphQLTypeDefinition {

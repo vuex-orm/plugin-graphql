@@ -5,6 +5,10 @@ import Action from "./action";
  */
 export default class SimpleMutation extends Action {
     /**
+     * Registers the Model.simpleMutation() Vuex Root Action.
+     */
+    static setup(): void;
+    /**
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} query The query to send
      * @param {Arguments} variables

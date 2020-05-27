@@ -5,6 +5,10 @@ import Action from "./action";
  */
 export default class Mutate extends Action {
     /**
+     * Registers the Model.mutate() and the record.$mutate() methods and the mutate Vuex Action.
+     */
+    static setup(): void;
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} name Name of the query

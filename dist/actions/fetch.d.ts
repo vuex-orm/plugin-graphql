@@ -5,6 +5,10 @@ import Action from "./action";
  */
 export default class Fetch extends Action {
     /**
+     * Registers the Model.fetch() method and the fetch Vuex Action.
+     */
+    static setup(): void;
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {ActionParams} params Optional params to send with the query

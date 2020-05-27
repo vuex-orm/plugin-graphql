@@ -5,6 +5,10 @@ import Action from "./action";
  */
 export default class Persist extends Action {
     /**
+     * Registers the record.$persist() method and the persist Vuex Action.
+     */
+    static setup(): void;
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {number|string} id ID of the record to persist

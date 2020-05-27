@@ -5,6 +5,11 @@ import Action from "./action";
  */
 export default class Destroy extends Action {
     /**
+     * Registers the record.$destroy() and record.$deleteAndDestroy() methods and
+     * the destroy Vuex Action.
+     */
+    static setup(): void;
+    /**
      * @param {State} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {number} id ID of the record to delete

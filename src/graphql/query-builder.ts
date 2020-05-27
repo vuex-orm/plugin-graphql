@@ -193,7 +193,7 @@ export default class QueryBuilder {
         );
 
         const isConnectionField =
-          schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
+          schemaField && Schema.getTypeNameOfField(schemaField).endsWith("Connection");
 
         // Ignore null fields, ids and connections
         if (value && !skipFieldDueId && !isConnectionField) {
@@ -209,9 +209,7 @@ export default class QueryBuilder {
               /* istanbul ignore next */
               if (!arg) {
                 throw new Error(
-                  `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${
-                    field.name
-                  }`
+                  `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${field.name}`
                 );
               }
 
@@ -240,7 +238,12 @@ export default class QueryBuilder {
       });
 
       if (!first) {
-        if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE) returnValue = `filter: { ${returnValue} }`;
+        if (
+          !signature &&
+          filter &&
+          Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE
+        )
+          returnValue = `filter: { ${returnValue} }`;
         returnValue = `(${returnValue})`;
       }
     }

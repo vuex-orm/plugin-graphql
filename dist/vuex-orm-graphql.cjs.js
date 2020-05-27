@@ -14633,7 +14633,7 @@ var Schema = /** @class */ (function () {
         var connection = null;
         this.queries.forEach(function (query) {
             var typeName = Schema.getTypeNameOfField(query);
-            if (typeName.endsWith("TypeConnection")) {
+            if (typeName.endsWith("Connection")) {
                 connection = _this.getType(typeName);
                 return false; // break
             }
@@ -14681,7 +14681,7 @@ var Schema = /** @class */ (function () {
         return query || null;
     };
     Schema.returnsConnection = function (field) {
-        return Schema.getTypeNameOfField(field).endsWith("TypeConnection");
+        return Schema.getTypeNameOfField(field).endsWith("Connection");
     };
     Schema.getRealType = function (type) {
         if (type.kind === "NON_NULL") {
@@ -15090,7 +15090,7 @@ var QueryBuilder = /** @class */ (function () {
                 var isForeignKey = model.skipField(key);
                 var skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
                 var schemaField = _this.findSchemaFieldForArgument(key, field, model, filter);
-                var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith("TypeConnection");
+                var isConnectionField = schemaField && Schema.getTypeNameOfField(schemaField).endsWith("Connection");
                 // Ignore null fields, ids and connections
                 if (value && !skipFieldDueId && !isConnectionField) {
                     var typeOrValue = "";
@@ -15431,6 +15431,34 @@ var Destroy = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     /**
+     * Registers the record.$destroy() and record.$deleteAndDestroy() methods and
+     * the destroy Vuex Action.
+     */
+    Destroy.setup = function () {
+        var context = Context.getInstance();
+        var record = context.components.Model.prototype;
+        context.components.Actions.destroy = Destroy.call.bind(Destroy);
+        record.$destroy = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch("destroy", { id: toNumber(this.$id) })];
+                });
+            });
+        };
+        record.$deleteAndDestroy = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.$delete()];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/, this.$destroy()];
+                    }
+                });
+            });
+        };
+    };
+    /**
      * @param {State} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {number} id ID of the record to delete
@@ -15477,6 +15505,26 @@ var Fetch = /** @class */ (function (_super) {
     function Fetch() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    /**
+     * Registers the Model.fetch() method and the fetch Vuex Action.
+     */
+    Fetch.setup = function () {
+        var context = Context.getInstance();
+        var model = context.components.Model;
+        context.components.Actions.fetch = Fetch.call.bind(Fetch);
+        model.fetch = function (filter, bypassCache) {
+            if (bypassCache === void 0) { bypassCache = false; }
+            return __awaiter(this, void 0, void 0, function () {
+                var filterObj;
+                return __generator(this, function (_a) {
+                    filterObj = filter;
+                    if (!isPlainObject(filterObj))
+                        filterObj = { id: filter };
+                    return [2 /*return*/, this.dispatch("fetch", { filter: filterObj, bypassCache: bypassCache })];
+                });
+            });
+        };
+    };
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15530,6 +15578,33 @@ var Mutate = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     /**
+     * Registers the Model.mutate() and the record.$mutate() methods and the mutate Vuex Action.
+     */
+    Mutate.setup = function () {
+        var context = Context.getInstance();
+        var model = context.components.Model;
+        var record = context.components.Model.prototype;
+        context.components.Actions.mutate = Mutate.call.bind(Mutate);
+        model.mutate = function (params) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.dispatch("mutate", params)];
+                });
+            });
+        };
+        record.$mutate = function (_a) {
+            var name = _a.name, args = _a.args, multiple = _a.multiple;
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_b) {
+                    args = args || {};
+                    if (!args["id"])
+                        args["id"] = toNumber(this.$id);
+                    return [2 /*return*/, this.$dispatch("mutate", { name: name, args: args, multiple: multiple })];
+                });
+            });
+        };
+    };
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} name Name of the query
@@ -15582,6 +15657,21 @@ var Persist = /** @class */ (function (_super) {
     function Persist() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    /**
+     * Registers the record.$persist() method and the persist Vuex Action.
+     */
+    Persist.setup = function () {
+        var context = Context.getInstance();
+        var record = context.components.Model.prototype;
+        context.components.Actions.persist = Persist.call.bind(Persist);
+        record.$persist = function (args) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch("persist", { id: this.$id, args: args })];
+                });
+            });
+        };
+    };
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15663,6 +15753,21 @@ var Push = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     /**
+     * Registers the record.$push() method and the push Vuex Action.
+     */
+    Push.setup = function () {
+        var context = Context.getInstance();
+        var model = context.components.Model.prototype;
+        context.components.Actions.push = Push.call.bind(Push);
+        model.$push = function (args) {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    return [2 /*return*/, this.$dispatch("push", { data: this, args: args })];
+                });
+            });
+        };
+    };
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {Arguments} data New data to save
@@ -15709,6 +15814,35 @@ var Query = /** @class */ (function (_super) {
     function Query() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    /**
+     * Registers the Model.customQuery and the record.$customQuery() methods and the
+     * query Vuex Action.
+     */
+    Query.setup = function () {
+        var context = Context.getInstance();
+        var model = context.components.Model;
+        var record = context.components.Model.prototype;
+        context.components.Actions.query = Query.call.bind(Query);
+        model.customQuery = function (_a) {
+            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_b) {
+                    return [2 /*return*/, this.dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
+                });
+            });
+        };
+        record.$customQuery = function (_a) {
+            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_b) {
+                    filter = filter || {};
+                    if (!filter["id"])
+                        filter["id"] = toNumber(this.$id);
+                    return [2 /*return*/, this.$dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
+                });
+            });
+        };
+    };
     /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
@@ -15767,6 +15901,13 @@ var SimpleQuery = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     /**
+     * Registers the Model.simpleQuery() Vuex Root Action.
+     */
+    SimpleQuery.setup = function () {
+        var context = Context.getInstance();
+        context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
+    };
+    /**
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} query The query to send
      * @param {Arguments} variables
@@ -15815,6 +15956,13 @@ var SimpleMutation = /** @class */ (function (_super) {
     function SimpleMutation() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    /**
+     * Registers the Model.simpleMutation() Vuex Root Action.
+     */
+    SimpleMutation.setup = function () {
+        var context = Context.getInstance();
+        context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
+    };
     /**
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} query The query to send
@@ -15867,7 +16015,6 @@ var VuexORMGraphQL = /** @class */ (function () {
     function VuexORMGraphQL(components, options) {
         Context.setup(components, options);
         VuexORMGraphQL.setupActions();
-        VuexORMGraphQL.setupModelMethods();
     }
     /**
      * Allow everything to read the context.
@@ -15876,111 +16023,20 @@ var VuexORMGraphQL = /** @class */ (function () {
         return Context.getInstance();
     };
     /**
-     * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
+     * This method will setup:
+     *   - Vuex actions: fetch, persist, push, destroy, mutate
+     *   - Model methods: fetch(), mutate(), customQuery()
+     *   - Record method: $mutate(), $persist(), $push(), $destroy(), $deleteAndDestroy(), $customQuery()
      */
     VuexORMGraphQL.setupActions = function () {
-        var context = Context.getInstance();
-        context.components.RootActions.simpleQuery = SimpleQuery.call.bind(SimpleQuery);
-        context.components.RootActions.simpleMutation = SimpleMutation.call.bind(SimpleMutation);
-        context.components.Actions.fetch = Fetch.call.bind(Fetch);
-        context.components.Actions.persist = Persist.call.bind(Persist);
-        context.components.Actions.push = Push.call.bind(Push);
-        context.components.Actions.destroy = Destroy.call.bind(Destroy);
-        context.components.Actions.mutate = Mutate.call.bind(Mutate);
-        context.components.Actions.query = Query.call.bind(Query);
-    };
-    /**
-     * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
-     * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
-     */
-    VuexORMGraphQL.setupModelMethods = function () {
-        var context = Context.getInstance();
-        // Register static model convenience methods
-        context.components.Model.fetch = function (filter, bypassCache) {
-            if (bypassCache === void 0) { bypassCache = false; }
-            return __awaiter(this, void 0, void 0, function () {
-                var filterObj;
-                return __generator(this, function (_a) {
-                    filterObj = filter;
-                    if (!isPlainObject(filterObj)) {
-                        filterObj = { id: filter };
-                    }
-                    return [2 /*return*/, this.dispatch("fetch", { filter: filterObj, bypassCache: bypassCache })];
-                });
-            });
-        };
-        context.components.Model.mutate = function (params) {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    return [2 /*return*/, this.dispatch("mutate", params)];
-                });
-            });
-        };
-        context.components.Model.customQuery = function (_a) {
-            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_b) {
-                    return [2 /*return*/, this.dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
-                });
-            });
-        };
-        // Register model convenience methods
-        var model = context.components.Model.prototype;
-        model.$mutate = function (_a) {
-            var name = _a.name, args = _a.args, multiple = _a.multiple;
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_b) {
-                    args = args || {};
-                    if (!args["id"])
-                        args["id"] = toNumber(this.$id);
-                    return [2 /*return*/, this.$dispatch("mutate", { name: name, args: args, multiple: multiple })];
-                });
-            });
-        };
-        model.$customQuery = function (_a) {
-            var name = _a.name, filter = _a.filter, multiple = _a.multiple, bypassCache = _a.bypassCache;
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_b) {
-                    filter = filter || {};
-                    if (!filter["id"])
-                        filter["id"] = toNumber(this.$id);
-                    return [2 /*return*/, this.$dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
-                });
-            });
-        };
-        model.$persist = function (args) {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch("persist", { id: this.$id, args: args })];
-                });
-            });
-        };
-        model.$push = function (args) {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch("push", { data: this, args: args })];
-                });
-            });
-        };
-        model.$destroy = function () {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch("destroy", { id: toNumber(this.$id) })];
-                });
-            });
-        };
-        model.$deleteAndDestroy = function () {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.$delete()];
-                        case 1:
-                            _a.sent();
-                            return [2 /*return*/, this.$destroy()];
-                    }
-                });
-            });
-        };
+        Fetch.setup();
+        Persist.setup();
+        Push.setup();
+        Destroy.setup();
+        Mutate.setup();
+        Query.setup();
+        SimpleQuery.setup();
+        SimpleMutation.setup();
     };
     return VuexORMGraphQL;
 }());

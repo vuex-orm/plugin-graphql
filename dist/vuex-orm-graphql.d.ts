@@ -16,12 +16,10 @@ export default class VuexORMGraphQL {
      */
     getContext(): Context;
     /**
-     * This method will setup following Vuex actions: fetch, persist, push, destroy, mutate
+     * This method will setup:
+     *   - Vuex actions: fetch, persist, push, destroy, mutate
+     *   - Model methods: fetch(), mutate(), customQuery()
+     *   - Record method: $mutate(), $persist(), $push(), $destroy(), $deleteAndDestroy(), $customQuery()
      */
     private static setupActions;
-    /**
-     * This method will setup following model methods: Model.fetch, Model.mutate, Model.customQuery, record.$mutate,
-     * record.$persist, record.$push, record.$destroy and record.$deleteAndDestroy, record.$customQuery
-     */
-    private static setupModelMethods;
 }

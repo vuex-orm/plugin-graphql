@@ -5,6 +5,11 @@ import Action from "./action";
  */
 export default class Query extends Action {
     /**
+     * Registers the Model.customQuery and the record.$customQuery() methods and the
+     * query Vuex Action.
+     */
+    static setup(): void;
+    /**
      * @param {any} state The Vuex state
      * @param {DispatchFunction} dispatch Vuex Dispatch method for the model
      * @param {string} name Name of the query
