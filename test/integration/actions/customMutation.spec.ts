@@ -35,6 +35,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -51,6 +52,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
         author {
           id
           name
+          role
           profile {
             id
             email
@@ -98,6 +100,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -114,6 +117,7 @@ mutation UpvotePost($captchaToken: String!, $id: ID!) {
         author {
           id
           name
+          role
           profile {
             id
             email

@@ -30,6 +30,7 @@ mutation UpdateUser($id: ID!, $user: UserInput!) {
   updateUser(id: $id, user: $user) {
     id
     name
+    role
     profile {
       id
       email

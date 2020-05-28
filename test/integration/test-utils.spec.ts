@@ -9,7 +9,8 @@ let vuexOrmGraphQL;
 
 const userData = {
   id: 42,
-  name: "Charlie Brown"
+  name: "Charlie Brown",
+  role: "user"
 };
 
 const userResult = {
@@ -19,6 +20,7 @@ const userResult = {
       $id: "42",
       $isPersisted: true,
       name: "Charlie Brown",
+      role: "user",
       profileId: 0,
       posts: [],
       comments: [],
@@ -51,6 +53,7 @@ describe("TestUtils", () => {
     const userData2 = JSON.parse(JSON.stringify(userData));
     userData2.id = 8;
     userData2.name = "Snoopy";
+    userData2.role = "admin";
 
     mock("fetch")
       .for(User)
@@ -70,6 +73,7 @@ describe("TestUtils", () => {
           $id: "8",
           $isPersisted: true,
           name: "Snoopy",
+          role: "admin",
           profileId: 0,
           posts: [],
           comments: [],
@@ -80,6 +84,7 @@ describe("TestUtils", () => {
           $id: "42",
           $isPersisted: true,
           name: "Charlie Brown",
+          role: "user",
           profileId: 0,
           posts: [],
           comments: [],

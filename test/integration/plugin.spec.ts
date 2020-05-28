@@ -31,6 +31,8 @@ describe("Plugin GraphQL", () => {
 
   describe("$isPersisted", () => {
     test("is false for newly created records", async () => {
+      await Context.getInstance().loadSchema();
+
       const insertedData = await User.insert({ data: { name: "Snoopy" } });
       let user: Data = insertedData.users[0] as Data;
       expect(user.$isPersisted).toBeFalsy();
@@ -40,6 +42,8 @@ describe("Plugin GraphQL", () => {
     });
 
     test("is true for persisted records", async () => {
+      await Context.getInstance().loadSchema();
+
       const insertedData = await User.insert({ data: { name: "Snoopy" } });
       let user: Data = insertedData.users[0] as Data;
 
@@ -52,6 +56,8 @@ describe("Plugin GraphQL", () => {
     });
 
     test("is true for fetched records", async () => {
+      await Context.getInstance().loadSchema();
+
       // @ts-ignore
       await User.fetch(1);
 

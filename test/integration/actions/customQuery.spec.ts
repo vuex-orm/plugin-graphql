@@ -30,6 +30,7 @@ query UnpublishedPosts($authorId: ID!) {
       author {
         id
         name
+        role
         profile {
           id
           email
@@ -46,6 +47,7 @@ query UnpublishedPosts($authorId: ID!) {
           author {
             id
             name
+            role
             profile {
               id
               email
@@ -92,6 +94,7 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
       author {
         id
         name
+        role
         profile {
           id
           email
@@ -108,6 +111,7 @@ query UnpublishedPosts($authorId: ID!, $id: ID!) {
           author {
             id
             name
+            role
             profile {
               id
               email

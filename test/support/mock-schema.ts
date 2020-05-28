@@ -85,6 +85,7 @@ export const typeDefs = `
     profileId: ID
     posts: PostConnection
     comments: CommentConnection
+    role: String
     profile: Profile
   }
 
@@ -400,18 +401,21 @@ const users = [
   {
     id: 1,
     name: "Charlie Brown",
+    role: "user",
     profileId: 1
   },
 
   {
     id: 2,
     name: "Peppermint Patty",
+    role: "user",
     profileId: 2
   },
 
   {
     id: 3,
     name: "Snoopy",
+    role: "admin",
     profileId: 3
   }
 ];

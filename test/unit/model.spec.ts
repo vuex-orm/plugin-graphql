@@ -36,7 +36,7 @@ describe("Model", () => {
 
   describe(".getQueryFields", () => {
     test("returns a list of the models fields", () => {
-      expect(model.getQueryFields()).toEqual(["id", "name"]);
+      expect(model.getQueryFields()).toEqual(["id", "name", "role"]);
     });
   });
 

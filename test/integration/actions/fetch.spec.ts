@@ -29,6 +29,7 @@ query Post($id: ID!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -45,6 +46,7 @@ query Post($id: ID!) {
         author {
           id
           name
+          role
           profile {
             id
             email
@@ -110,6 +112,7 @@ query User($id: ID!) {
   user(id: $id) {
     id
     name
+    role
     profile {
       id
       email
@@ -165,6 +168,7 @@ query Users($profileId: ID!, $posts: [PostFilter]!) {
     nodes {
       id
       name
+      role
       profile {
         id
         email
@@ -208,6 +212,7 @@ query Users($profile: ProfileInput!) {
     nodes {
       id
       name
+      role
       profile {
         id
         email
@@ -237,6 +242,7 @@ query Users {
     nodes {
       id
       name
+      role
       profile {
         id
         email

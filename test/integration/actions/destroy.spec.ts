@@ -32,6 +32,7 @@ mutation DeletePost($id: ID!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -48,6 +49,7 @@ mutation DeletePost($id: ID!) {
         author {
           id
           name
+          role
           profile {
             id
             email

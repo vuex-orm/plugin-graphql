@@ -10,6 +10,7 @@ import {
   singularize
 } from "../support/utils";
 import { ConnectionMode } from "../adapters/adapter";
+import { GraphQLType } from "../support/interfaces";
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -222,6 +223,9 @@ export default class Transformer {
     // Ignore empty fields
     if (value === null || value === undefined) return false;
 
+    // Ignore fields that don't exist in the input type
+    if (!this.inputTypeContainsField(model, fieldName)) return false;
+
     // Include all eager save connections
     if (model.getRelations().has(fieldName)) {
       // We never add relations to filters.
@@ -237,6 +241,23 @@ export default class Transformer {
 
     // Everything else is ok
     return true;
+  }
+
+  /**
+   * Tells whether a field is in the input type.
+   * @param {Model} model
+   * @param {string} fieldName
+   */
+  private static inputTypeContainsField(model: Model, fieldName: string): boolean {
+    const inputTypeName = `${model.singularName}Input`;
+    const inputType: GraphQLType | null = Context.getInstance().schema!.getType(
+      inputTypeName,
+      false
+    );
+
+    if (inputType === null) throw new Error(`Type ${inputType} doesn't exist.`);
+
+    return inputType.inputFields!.find(f => f.name === fieldName) != null;
   }
 
   /**

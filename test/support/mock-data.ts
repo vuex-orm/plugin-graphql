@@ -17,6 +17,7 @@ export class User extends ORMModel {
       id: this.uid(),
       name: this.string(""),
       profileId: this.number(0),
+      role: this.string(""),
       posts: this.hasMany(Post, "authorId"),
       comments: this.hasMany(Comment, "authorId"),
       profile: this.belongsTo(Profile, "profileId")

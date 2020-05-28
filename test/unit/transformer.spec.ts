@@ -27,7 +27,6 @@ describe("Transformer", () => {
       );
       expect(transformedData).toEqual({
         id: 1,
-        ignoreMe: "",
         content: "Foo",
         title: "Example Video 1",
         otherId: 42,
@@ -485,6 +484,7 @@ describe("Transformer", () => {
 
       expect(Transformer.shouldIncludeOutgoingField(false, "id", 15, user)).toEqual(true);
       expect(Transformer.shouldIncludeOutgoingField(false, "name", "test", user)).toEqual(true);
+      expect(Transformer.shouldIncludeOutgoingField(false, "role", "user", user)).toEqual(false);
       expect(Transformer.shouldIncludeOutgoingField(false, "profileId", 15, user)).toEqual(true);
       expect(Transformer.shouldIncludeOutgoingField(false, "posts", [], user)).toEqual(false);
       expect(Transformer.shouldIncludeOutgoingField(false, "comments", [], user)).toEqual(false);

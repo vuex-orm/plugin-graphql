@@ -120,6 +120,7 @@ query test {
   author {
     id
     name
+    role
     profile {
       id
       email
@@ -136,6 +137,7 @@ query test {
       author {
         id
         name
+        role
         profile {
           id
           email
@@ -208,6 +210,7 @@ query users {
     nodes {
       id
       name
+      role
       profile {
         id
         email
@@ -242,6 +245,7 @@ query users {
     nodes {
       id
       name
+      role
       profile {
         id
         email
@@ -276,6 +280,7 @@ query users {
       node {
         id
         name
+        role
         profile {
           id
           email
@@ -309,6 +314,7 @@ query users {
   users(filter: {age: $age}) {
     id
     name
+    role
     profile {
       id
       email
@@ -350,6 +356,7 @@ query Posts($title: String!) {
       author {
         id
         name
+        role
         profile {
           id
           email
@@ -366,6 +373,7 @@ query Posts($title: String!) {
           author {
             id
             name
+            role
             profile {
               id
               email
@@ -406,6 +414,7 @@ mutation CreatePost($post: PostInput!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -422,6 +431,7 @@ mutation CreatePost($post: PostInput!) {
         author {
           id
           name
+          role
           profile {
             id
             email
@@ -464,6 +474,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -480,6 +491,7 @@ mutation UpdatePost($id: ID!, $post: PostInput!) {
         author {
           id
           name
+          role
           profile {
             id
             email
@@ -513,6 +525,7 @@ mutation DeleteUser($id: ID!) {
   deleteUser(id: $id) {
     id
     name
+    role
     profile {
       id
       email
@@ -545,6 +558,7 @@ mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!
     author {
       id
       name
+      role
       profile {
         id
         email
@@ -561,6 +575,7 @@ mutation CreatePost($id: ID!, $authorId: ID!, $title: String!, $content: String!
         author {
           id
           name
+          role
           profile {
             id
             email
