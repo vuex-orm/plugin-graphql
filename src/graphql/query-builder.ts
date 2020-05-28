@@ -242,8 +242,10 @@ export default class QueryBuilder {
           !signature &&
           filter &&
           Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE
-        )
+        ) {
           returnValue = `filter: { ${returnValue} }`;
+        }
+
         returnValue = `(${returnValue})`;
       }
     }

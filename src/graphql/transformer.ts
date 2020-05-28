@@ -1,4 +1,4 @@
-import { Data, Field } from "../support/interfaces";
+import { Data, GraphQLType } from "../support/interfaces";
 import Model from "../orm/model";
 import { Model as ORMModel, Relation } from "@vuex-orm/core";
 import Context from "../common/context";
@@ -10,7 +10,6 @@ import {
   singularize
 } from "../support/utils";
 import { ConnectionMode } from "../adapters/adapter";
-import { GraphQLType } from "../support/interfaces";
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -257,7 +256,7 @@ export default class Transformer {
 
     if (inputType === null) throw new Error(`Type ${inputType} doesn't exist.`);
 
-    return inputType.inputFields!.find(f => f.name === fieldName) != null;
+    return inputType.inputFields!.find(f => f.name === fieldName) !== undefined;
   }
 
   /**

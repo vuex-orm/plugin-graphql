@@ -14243,6 +14243,9 @@ class Transformer {
         // Ignore empty fields
         if (value === null || value === undefined)
             return false;
+        // Ignore fields that don't exist in the input type
+        if (!this.inputTypeContainsField(model, fieldName))
+            return false;
         // Include all eager save connections
         if (model.getRelations().has(fieldName)) {
             // We never add relations to filters.
@@ -14257,6 +14260,18 @@ class Transformer {
         }
         // Everything else is ok
         return true;
+    }
+    /**
+     * Tells whether a field is in the input type.
+     * @param {Model} model
+     * @param {string} fieldName
+     */
+    static inputTypeContainsField(model, fieldName) {
+        const inputTypeName = `${model.singularName}Input`;
+        const inputType = Context.getInstance().schema.getType(inputTypeName, false);
+        if (inputType === null)
+            throw new Error(`Type ${inputType} doesn't exist.`);
+        return inputType.inputFields.find(f => f.name === fieldName) != null;
     }
     /**
      * Registers a record for recursion detection.
@@ -15144,7 +15159,9 @@ class QueryBuilder {
                 }
             });
             if (!first) {
-                if (!signature && filter && Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE)
+                if (!signature &&
+                    filter &&
+                    Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE)
                     returnValue = `filter: { ${returnValue} }`;
                 returnValue = `(${returnValue})`;
             }

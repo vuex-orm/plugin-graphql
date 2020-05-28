@@ -39,6 +39,12 @@ export default class Transformer {
      */
     static shouldIncludeOutgoingField(forFilter: boolean, fieldName: string, value: any, model: Model, whitelist?: Array<String>): boolean;
     /**
+     * Tells whether a field is in the input type.
+     * @param {Model} model
+     * @param {string} fieldName
+     */
+    private static inputTypeContainsField;
+    /**
      * Registers a record for recursion detection.
      * @param {Map<string, Array<string>>} records Map of IDs.
      * @param {ORMModel} record The record to register.
