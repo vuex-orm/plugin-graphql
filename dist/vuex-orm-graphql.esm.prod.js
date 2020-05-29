@@ -14271,7 +14271,7 @@ class Transformer {
         const inputType = Context.getInstance().schema.getType(inputTypeName, false);
         if (inputType === null)
             throw new Error(`Type ${inputType} doesn't exist.`);
-        return inputType.inputFields.find(f => f.name === fieldName) != null;
+        return inputType.inputFields.find(f => f.name === fieldName) !== undefined;
     }
     /**
      * Registers a record for recursion detection.
@@ -15161,8 +15161,9 @@ class QueryBuilder {
             if (!first) {
                 if (!signature &&
                     filter &&
-                    Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE)
+                    Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE) {
                     returnValue = `filter: { ${returnValue} }`;
+                }
                 returnValue = `(${returnValue})`;
             }
         }
@@ -15550,7 +15551,7 @@ class Mutate extends Action {
             if (mockReturnValue) {
                 return Store.insertData(mockReturnValue, dispatch);
             }
-            const schema = await context.loadSchema();
+            await context.loadSchema();
             args = this.prepareArgs(args);
             // There could be anything in the args, but we have to be sure that all records are gone through
             // transformOutgoingData()
@@ -15601,6 +15602,7 @@ class Persist extends Action {
                 return newRecord;
             }
             // Arguments
+            await Context.getInstance().loadSchema();
             args = this.prepareArgs(args);
             this.addRecordToArgs(args, model, oldRecord);
             // Send mutation
@@ -15665,6 +15667,7 @@ class Push extends Action {
                 return Store.insertData(mockReturnValue, dispatch);
             }
             // Arguments
+            await Context.getInstance().loadSchema();
             args = this.prepareArgs(args, data.id);
             this.addRecordToArgs(args, model, data);
             // Send the mutation

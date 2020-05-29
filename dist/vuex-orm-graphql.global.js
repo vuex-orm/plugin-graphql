@@ -14296,7 +14296,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
             var inputType = Context.getInstance().schema.getType(inputTypeName, false);
             if (inputType === null)
                 throw new Error("Type " + inputType + " doesn't exist.");
-            return inputType.inputFields.find(function (f) { return f.name === fieldName; }) != null;
+            return inputType.inputFields.find(function (f) { return f.name === fieldName; }) !== undefined;
         };
         /**
          * Registers a record for recursion detection.
@@ -15147,8 +15147,9 @@ var VuexORMGraphQLPlugin = (function (exports) {
                 if (!first) {
                     if (!signature &&
                         filter &&
-                        Context.getInstance().adapter.getArgumentMode() === exports.ArgumentMode.TYPE)
+                        Context.getInstance().adapter.getArgumentMode() === exports.ArgumentMode.TYPE) {
                         returnValue = "filter: { " + returnValue + " }";
+                    }
                     returnValue = "(" + returnValue + ")";
                 }
             }
@@ -15632,7 +15633,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
             var state = _a.state, dispatch = _a.dispatch;
             var args = _b.args, name = _b.name;
             return __awaiter(this, void 0, void 0, function () {
-                var context, model, mockReturnValue, schema;
+                var context, model, mockReturnValue;
                 return __generator(this, function (_c) {
                     switch (_c.label) {
                         case 0:
@@ -15648,7 +15649,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                             }
                             return [4 /*yield*/, context.loadSchema()];
                         case 1:
-                            schema = _c.sent();
+                            _c.sent();
                             args = this.prepareArgs(args);
                             // There could be anything in the args, but we have to be sure that all records are gone through
                             // transformOutgoingData()
@@ -15702,7 +15703,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                 return __generator(this, function (_c) {
                     switch (_c.label) {
                         case 0:
-                            if (!id) return [3 /*break*/, 6];
+                            if (!id) return [3 /*break*/, 7];
                             model = this.getModelFromState(state);
                             mutationName = Context.getInstance().adapter.getNameForPersist(model);
                             oldRecord = model.getRecordWithId(id);
@@ -15718,20 +15719,24 @@ var VuexORMGraphQLPlugin = (function (exports) {
                         case 2:
                             _c.sent();
                             return [2 /*return*/, newRecord_1];
-                        case 3:
+                        case 3: 
+                        // Arguments
+                        return [4 /*yield*/, Context.getInstance().loadSchema()];
+                        case 4:
                             // Arguments
+                            _c.sent();
                             args = this.prepareArgs(args);
                             this.addRecordToArgs(args, model, oldRecord);
                             return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
-                        case 4:
+                        case 5:
                             newRecord = _c.sent();
                             // Delete the old record if necessary
                             return [4 /*yield*/, this.deleteObsoleteRecord(model, newRecord, oldRecord)];
-                        case 5:
+                        case 6:
                             // Delete the old record if necessary
                             _c.sent();
                             return [2 /*return*/, newRecord];
-                        case 6: 
+                        case 7: 
                         /* istanbul ignore next */
                         throw new Error("The persist action requires the 'id' to be set");
                     }
@@ -15796,23 +15801,28 @@ var VuexORMGraphQLPlugin = (function (exports) {
             return __awaiter(this, void 0, void 0, function () {
                 var model, mutationName, mockReturnValue;
                 return __generator(this, function (_c) {
-                    if (data) {
-                        model = this.getModelFromState(state);
-                        mutationName = Context.getInstance().adapter.getNameForPush(model);
-                        mockReturnValue = model.$mockHook("push", {
-                            data: data,
-                            args: args || {}
-                        });
-                        if (mockReturnValue) {
-                            return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
-                        }
-                        // Arguments
-                        args = this.prepareArgs(args, data.id);
-                        this.addRecordToArgs(args, model, data);
-                        // Send the mutation
-                        return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model)];
-                    }
-                    else {
+                    switch (_c.label) {
+                        case 0:
+                            if (!data) return [3 /*break*/, 2];
+                            model = this.getModelFromState(state);
+                            mutationName = Context.getInstance().adapter.getNameForPush(model);
+                            mockReturnValue = model.$mockHook("push", {
+                                data: data,
+                                args: args || {}
+                            });
+                            if (mockReturnValue) {
+                                return [2 /*return*/, Store.insertData(mockReturnValue, dispatch)];
+                            }
+                            // Arguments
+                            return [4 /*yield*/, Context.getInstance().loadSchema()];
+                        case 1:
+                            // Arguments
+                            _c.sent();
+                            args = this.prepareArgs(args, data.id);
+                            this.addRecordToArgs(args, model, data);
+                            // Send the mutation
+                            return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model)];
+                        case 2: 
                         /* istanbul ignore next */
                         throw new Error("The persist action requires the 'data' to be set");
                     }

@@ -50,6 +50,7 @@ export default class Persist extends Action {
       }
 
       // Arguments
+      await Context.getInstance().loadSchema();
       args = this.prepareArgs(args);
       this.addRecordToArgs(args, model, oldRecord);
 

@@ -56,7 +56,7 @@ export default class Mutate extends Action {
         return Store.insertData(mockReturnValue, dispatch!);
       }
 
-      const schema: Schema = await context.loadSchema();
+      await context.loadSchema();
       args = this.prepareArgs(args);
 
       // There could be anything in the args, but we have to be sure that all records are gone through

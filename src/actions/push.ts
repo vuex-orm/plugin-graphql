@@ -46,6 +46,7 @@ export default class Push extends Action {
       }
 
       // Arguments
+      await Context.getInstance().loadSchema();
       args = this.prepareArgs(args, data.id);
       this.addRecordToArgs(args, model, data);
 
