@@ -7939,17 +7939,17 @@ var VuexORMGraphQLPlugin = (function (exports) {
                 field instanceof context.components.MorphOne);
         };
         /**
-         * Adds $isPersisted and other meta fields to the model by overwriting the fields() method.
-         * @todo is this a good way to add fields?
+         * Adds $isPersisted and other meta fields to the model.
+         *
+         * TODO: This feels rather hacky currently and may break anytime the internal structure of
+         * the core changes. Maybe in the future there will be a feature in the core that allows to add
+         * those meta fields by plugins.
          * @param {Model} model
          */
         Model.augment = function (model) {
-            var originalFieldGenerator = model.baseModel.fields.bind(model.baseModel);
-            model.baseModel.fields = function () {
-                var originalFields = originalFieldGenerator();
-                originalFields["$isPersisted"] = model.baseModel.boolean(false);
-                return originalFields;
-            };
+            var baseModel = model.baseModel;
+            baseModel.getFields();
+            baseModel.cachedFields[baseModel.entity]["$isPersisted"] = baseModel.boolean(false);
         };
         /**
          * Returns the related model for a relation.

@@ -56,8 +56,11 @@ export default class Model {
      */
     static isConnection(field: Field): boolean;
     /**
-     * Adds $isPersisted and other meta fields to the model by overwriting the fields() method.
-     * @todo is this a good way to add fields?
+     * Adds $isPersisted and other meta fields to the model.
+     *
+     * TODO: This feels rather hacky currently and may break anytime the internal structure of
+     * the core changes. Maybe in the future there will be a feature in the core that allows to add
+     * those meta fields by plugins.
      * @param {Model} model
      */
     static augment(model: Model): void;
