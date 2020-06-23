@@ -42,7 +42,8 @@ export function createStore(entities: Array<Entity>, headers?: any, adapter?: Ad
     database: database,
     link,
     headers,
-    adapter
+    adapter,
+    debug: false
   });
 
   const store = new Vuex.Store({

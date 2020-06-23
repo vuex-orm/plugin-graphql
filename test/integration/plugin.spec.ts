@@ -57,21 +57,17 @@ describe("Plugin GraphQL", () => {
 
     test("is true for single fetched records", async () => {
       // @ts-ignore
-      await User.fetch(1);
+      await Post.fetch(1);
 
-      let user: Data = User.find(1)! as Data;
-      expect(user.$isPersisted).toBeTruthy();
+      let post: Data = Post.query().first()! as Data;
+      expect(post.$isPersisted).toBeTruthy();
     });
 
     test("is true for multiple fetched records", async () => {
-      await User.fetch();
-      await Tariff.fetch();
+      await Post.fetch();
 
-      let user: Data = User.query().first()! as Data;
-      expect(user.$isPersisted).toBeTruthy();
-
-      let tariff: Data = Tariff.query().first()! as Data;
-      expect(tariff.$isPersisted).toBeTruthy();
+      let post: Data = Post.query().first()! as Data;
+      expect(post.$isPersisted).toBeTruthy();
     });
   });
 });
