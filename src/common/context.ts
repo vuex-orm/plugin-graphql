@@ -85,7 +85,7 @@ export default class Context {
   private schemaWillBeLoaded: Promise<Schema> | undefined;
 
   /**
-   * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+   * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain' | 'items'
    */
   public connectionMode: ConnectionMode = ConnectionMode.AUTO;
 
