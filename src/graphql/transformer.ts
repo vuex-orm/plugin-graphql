@@ -164,7 +164,7 @@ export default class Transformer {
               result = this.transformIncomingData(data["node"], localModel, mutation, true);
             } else if (data[key].items && context.connectionMode === ConnectionMode.ITEMS) {
               result[pluralize(key)] = this.transformIncomingData(
-                data[key].edges,
+                data[key].items,
                 localModel,
                 mutation,
                 true
