@@ -4,7 +4,8 @@ export enum ConnectionMode {
   AUTO,
   PLAIN,
   NODES,
-  EDGES
+  EDGES,
+  ITEMS
 }
 
 export enum ArgumentMode {

@@ -69,7 +69,7 @@ const options = {
       fetchPolicy: 'cache-and-network'
     }
   },
-  connectionQueryMode: 'nodes',
+  connectionQueryMode: 'items',
   database: database,
   url: awsexports.aws_appsync_graphqlEndpoint,
   includeExtensions: true,

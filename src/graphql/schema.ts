@@ -55,6 +55,8 @@ export default class Schema {
       return ConnectionMode.NODES;
     } else if (connection!.fields!.find(f => f.name === "edges")) {
       return ConnectionMode.EDGES;
+    } else if (connection!.fields!.find(f => f.name === "items")) {
+      return ConnectionMode.ITEMS;
     } else {
       return ConnectionMode.PLAIN;
     }

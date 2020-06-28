@@ -6,7 +6,7 @@ It seems that there are several standards within the GraphQL community how conne
 records) are designed. Some do this via a `nodes` field, some via a `edges { nodes }` query and some do neither of them.
 Vuex-ORM-GraphQL tries to be flexible and supports all of them.
 
-There are four possible modes: `AUTO`, `NODES`, `EDGES`, `PLAIN`. The Adapter you use will tell the
+There are four possible modes: `AUTO`, `NODES`, `EDGES`, `PLAIN`, `ITEMS`. The Adapter you use will tell the
 plugin which ConnectionMode to use. In the DefaultAdapter this is `AUTO`.
 
 
@@ -22,7 +22,7 @@ In rare cases the automatic detection might fail or report the wrong mode. In th
 manually set the connection mode via a custom adapter. The modes and the resulting
 queries are explained in the next sections.
 
-## Mode 1: `plain` 
+## Mode 1: `plain`
 
 The third mode is the less preferred one due to the lack of meta information. In this case we just plain pass the field
 queries:
@@ -54,8 +54,8 @@ query Users {
 }
 ```
 
- 
-## Mode 3: `edges` 
+
+## Mode 3: `edges`
 
 This mode uses a `edges` not to query the edge an then query the `node` within that edge:
 
@@ -68,6 +68,22 @@ query Users {
         email
         name
       }
+    }
+  }
+}
+```
+
+## Mode 4: `items`
+
+This is the mode used for handling the shape of AWS AppSync queries. Using `items` (or letting the plugin auto detect this mode) will lead to the following query when calling `User.fetch()`:
+
+```
+query Users {
+  users {
+    items {
+      id
+      email
+      name
     }
   }
 }

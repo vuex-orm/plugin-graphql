@@ -71,6 +71,14 @@ export default class QueryBuilder {
             }
           }
         `;
+      } else if (context.connectionMode === ConnectionMode.ITEMS) {
+        return `
+          ${header} {
+            items {
+              ${fields}
+            }
+          }
+        `;
       } else {
         return `
           ${header} {
