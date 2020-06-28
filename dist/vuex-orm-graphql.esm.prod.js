@@ -14079,6 +14079,7 @@ var ConnectionMode;
     ConnectionMode[ConnectionMode["PLAIN"] = 1] = "PLAIN";
     ConnectionMode[ConnectionMode["NODES"] = 2] = "NODES";
     ConnectionMode[ConnectionMode["EDGES"] = 3] = "EDGES";
+    ConnectionMode[ConnectionMode["ITEMS"] = 4] = "ITEMS";
 })(ConnectionMode || (ConnectionMode = {}));
 var ArgumentMode;
 (function (ArgumentMode) {
@@ -14189,6 +14190,9 @@ class Transformer {
                         }
                         else if (data["node"] && context.connectionMode === ConnectionMode.EDGES) {
                             result = this.transformIncomingData(data["node"], localModel, mutation, true);
+                        }
+                        else if (data[key].items && context.connectionMode === ConnectionMode.ITEMS) {
+                            result[pluralize$1(key)] = this.transformIncomingData(data[key].items, localModel, mutation, true);
                         }
                         else {
                             let newKey = key;
@@ -14607,6 +14611,9 @@ class Schema {
         else if (connection.fields.find(f => f.name === "edges")) {
             return ConnectionMode.EDGES;
         }
+        else if (connection.fields.find(f => f.name === "items")) {
+            return ConnectionMode.ITEMS;
+        }
         else {
             return ConnectionMode.PLAIN;
         }
@@ -14807,7 +14814,7 @@ class Context {
          */
         this.debugMode = false;
         /**
-         * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+         * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain' | 'items'
          */
         this.connectionMode = ConnectionMode.AUTO;
         /**
@@ -15031,6 +15038,15 @@ class QueryBuilder {
               node {
                 ${fields}
               }
+            }
+          }
+        `;
+            }
+            else if (context.connectionMode === ConnectionMode.ITEMS) {
+                return `
+          ${header} {
+            items {
+              ${fields}
             }
           }
         `;

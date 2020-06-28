@@ -69,7 +69,7 @@ export default class Context {
      */
     private schemaWillBeLoaded;
     /**
-     * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+     * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain' | 'items'
      */
     connectionMode: ConnectionMode;
     /**

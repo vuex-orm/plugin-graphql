@@ -3,7 +3,8 @@ export declare enum ConnectionMode {
     AUTO = 0,
     PLAIN = 1,
     NODES = 2,
-    EDGES = 3
+    EDGES = 3,
+    ITEMS = 4
 }
 export declare enum ArgumentMode {
     TYPE = 0,

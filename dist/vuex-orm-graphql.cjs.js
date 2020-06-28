@@ -14100,6 +14100,7 @@ var HttpLink = (function (_super) {
     ConnectionMode[ConnectionMode["PLAIN"] = 1] = "PLAIN";
     ConnectionMode[ConnectionMode["NODES"] = 2] = "NODES";
     ConnectionMode[ConnectionMode["EDGES"] = 3] = "EDGES";
+    ConnectionMode[ConnectionMode["ITEMS"] = 4] = "ITEMS";
 })(exports.ConnectionMode || (exports.ConnectionMode = {}));
 (function (ArgumentMode) {
     ArgumentMode[ArgumentMode["TYPE"] = 0] = "TYPE";
@@ -14215,6 +14216,9 @@ var Transformer = /** @class */ (function () {
                         }
                         else if (data["node"] && context.connectionMode === exports.ConnectionMode.EDGES) {
                             result = _this.transformIncomingData(data["node"], localModel, mutation, true);
+                        }
+                        else if (data[key].items && context.connectionMode === exports.ConnectionMode.ITEMS) {
+                            result[pluralize$1(key)] = _this.transformIncomingData(data[key].items, localModel, mutation, true);
                         }
                         else {
                             var newKey = key;
@@ -14664,6 +14668,9 @@ var Schema = /** @class */ (function () {
         else if (connection.fields.find(function (f) { return f.name === "edges"; })) {
             return exports.ConnectionMode.EDGES;
         }
+        else if (connection.fields.find(function (f) { return f.name === "items"; })) {
+            return exports.ConnectionMode.ITEMS;
+        }
         else {
             return exports.ConnectionMode.PLAIN;
         }
@@ -14791,7 +14798,7 @@ var Context = /** @class */ (function () {
          */
         this.debugMode = false;
         /**
-         * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain'
+         * Defines how to query connections. 'auto' | 'nodes' | 'edges' | 'plain' | 'items'
          */
         this.connectionMode = exports.ConnectionMode.AUTO;
         /**
@@ -15024,6 +15031,9 @@ var QueryBuilder = /** @class */ (function () {
             }
             else if (context.connectionMode === exports.ConnectionMode.EDGES) {
                 return "\n          " + header + " {\n            edges {\n              node {\n                " + fields + "\n              }\n            }\n          }\n        ";
+            }
+            else if (context.connectionMode === exports.ConnectionMode.ITEMS) {
+                return "\n          " + header + " {\n            items {\n              " + fields + "\n            }\n          }\n        ";
             }
             else {
                 return "\n          " + header + " {\n            " + fields + "\n          }\n        ";
