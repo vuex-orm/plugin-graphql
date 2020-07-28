@@ -180,8 +180,9 @@ export default class QueryBuilder {
     allowIdFields: boolean = true,
     field: GraphQLField | null = null
   ): string {
-    const context = Context.getInstance();
     if (args === undefined) return "";
+
+    const { adapter, ...context } = Context.getInstance();
 
     let returnValue: string = "";
     let first: boolean = true;
@@ -210,7 +211,7 @@ export default class QueryBuilder {
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+              typeOrValue = adapter.getInputTypeName(context.getModel(value.__type)) + "!";
             } else if (value instanceof Array && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
@@ -246,12 +247,8 @@ export default class QueryBuilder {
       });
 
       if (!first) {
-        if (
-          !signature &&
-          filter &&
-          Context.getInstance().adapter.getArgumentMode() === ArgumentMode.TYPE
-        ) {
-          returnValue = `filter: { ${returnValue} }`;
+        if (!signature && filter && adapter.getArgumentMode() === ArgumentMode.TYPE) {
+          returnValue = `${adapter.getNameForArgumentFilter()}: { ${returnValue} }`;
         }
 
         returnValue = `(${returnValue})`;
@@ -321,8 +318,7 @@ export default class QueryBuilder {
     model: Model,
     isFilter: boolean
   ): GraphQLField | undefined {
-    const context = Context.getInstance();
-    const schema = context.schema!;
+    const { logger, adapter, schema } = Context.getInstance();
     let schemaField: GraphQLField | undefined;
 
     if (field) {
@@ -332,7 +328,7 @@ export default class QueryBuilder {
 
     // We try to find the FilterType or at least the Type this query belongs to.
     const type: GraphQLType | null = schema.getType(
-      isFilter ? context.adapter.getFilterTypeName(model) : model.singularName,
+      isFilter ? adapter.getFilterTypeName(model) : model.singularName,
       true
     );
 
@@ -343,7 +339,7 @@ export default class QueryBuilder {
 
     // Warn before we return null
     if (!schemaField) {
-      Context.getInstance().logger.warn(
+      logger.warn(
         `Couldn't find the argument with name ${name} for the mutation/query ${
           field ? field.name : "(?)"
         }`
