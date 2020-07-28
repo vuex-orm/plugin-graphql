@@ -208,13 +208,13 @@ export default class Context {
       }
 
       for (const [fieldName, _] of model.fields) {
-        if (!type.fields!.find(f => f.name === fieldName)) {
+        if (!type!.fields!.find(f => f.name === fieldName)) {
           this.logger.warn(
             `Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`
           );
 
           // TODO: Move skipFields to the model
-          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+          model.baseModel.skipFields = model.baseModel.skipFields ?? [];
           if (!model.baseModel.skipFields.includes(fieldName)) {
             model.baseModel.skipFields.push(fieldName);
           }

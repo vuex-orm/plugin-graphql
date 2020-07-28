@@ -212,7 +212,7 @@ export default class Transformer {
     whitelist?: Array<String>
   ): boolean {
     // Always add fields on the whitelist.
-    if (whitelist && whitelist.includes(fieldName)) return true;
+    if (whitelist?.includes(fieldName)) return true;
 
     // Ignore internal fields
     if (fieldName.startsWith('$')) return false;

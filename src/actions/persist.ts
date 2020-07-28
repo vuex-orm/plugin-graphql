@@ -72,11 +72,12 @@ export default class Persist extends Action {
    * In this case Action.mutation has inserted a new record instead of updating the existing one.
    *
    * @param {Model} model
-   * @param {Data} record
+   * @param newRecord
+   * @param oldRecord
    * @returns {Promise<void>}
    */
   private static async deleteObsoleteRecord(model: Model, newRecord: Data, oldRecord: Data) {
-    if (newRecord && oldRecord && newRecord.id !== oldRecord.id) {
+    if (newRecord?.id !== oldRecord?.id) {
       Context.getInstance().logger.log("Dropping deprecated record", oldRecord);
       return oldRecord.$delete();
     }

@@ -54,7 +54,7 @@ export default class Fetch extends Action {
     // Filter
     let filter = {};
 
-    if (params && params.filter) {
+    if (params?.filter) {
       filter = Transformer.transformOutgoingData(
         model,
         params.filter as Data,
@@ -63,7 +63,7 @@ export default class Fetch extends Action {
       );
     }
 
-    const bypassCache = params && params.bypassCache;
+    const bypassCache = params?.bypassCache;
 
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = adapter.shouldQueryAlwaysUsePluralStyle() || !filter["id"];
