@@ -36,11 +36,11 @@ export default class QueryBuilder {
     filter: boolean = false,
     allowIdFields: boolean = false
   ): string {
-    const context = Context.getInstance();
-    model = context.getModel(model);
+    const { connectionMode, getModel, schema } = Context.getInstance();
+    model = getModel(model);
 
     name = name ? name : model.pluralName;
-    const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
+    const field = schema!.getMutation(name, true) || schema!.getQuery(name, true);
 
     let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field);
     path = path.length === 0 ? [model.singularName] : path;
@@ -53,7 +53,7 @@ export default class QueryBuilder {
     if (multiple) {
       const header: string = `${name}${params}`;
 
-      if (context.connectionMode === ConnectionMode.NODES) {
+      if (connectionMode === ConnectionMode.NODES) {
         return `
           ${header} {
             nodes {
@@ -61,7 +61,7 @@ export default class QueryBuilder {
             }
           }
         `;
-      } else if (context.connectionMode === ConnectionMode.EDGES) {
+      } else if (connectionMode === ConnectionMode.EDGES) {
         return `
           ${header} {
             edges {
@@ -71,7 +71,7 @@ export default class QueryBuilder {
             }
           }
         `;
-      } else if (context.connectionMode === ConnectionMode.ITEMS) {
+      } else if (connectionMode === ConnectionMode.ITEMS) {
         return `
           ${header} {
             items {
