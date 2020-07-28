@@ -391,14 +391,17 @@ export default class QueryBuilder {
 
   private static prepareArguments(args?: Arguments): Arguments {
     args = (args ? clone(args) : {}) as Arguments;
+    const { adapter } = Context.getInstance();
+    const isListArgMode = adapter.getArgumentMode() === ArgumentMode.LIST;
 
     for (const [key, value] of Object.entries(args)) {
       if (value && isPlainObject(value)) {
-        if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
-          Object.keys(value).forEach((k: string) => {
-            args![k] = value[k];
-          });
-          delete args![key];
+        if (isListArgMode) {
+          args = {
+            ...args,
+            ...Object.fromEntries(Object.keys(value).map(k => ([k, value[k]]))),
+            [key]: undefined,
+          };
         } else {
           args![key] = { __type: upcaseFirstLetter(key) };
         }
