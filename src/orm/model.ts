@@ -64,8 +64,8 @@ export default class Model {
     if (!field) return false;
 
     const context = Context.getInstance();
-
-    return field instanceof context.components.Number || field instanceof context.components.Uid;
+    const { components } = context;
+    return [components.Number, components.Uid].some(t => field instanceof t);
   }
 
   /**
@@ -76,13 +76,7 @@ export default class Model {
   public static isFieldAttribute(field: Field): boolean {
     const context = Context.getInstance();
     const { components } = context;
-    return (
-      field instanceof components.Uid ||
-      field instanceof components.Attr ||
-      field instanceof components.String ||
-      field instanceof components.Number ||
-      field instanceof components.Boolean
-    );
+    return [components.Uid, components.Attr, components.String, components.Number, components.Boolean].some(t => field instanceof t);
   }
 
   /**
@@ -94,12 +88,7 @@ export default class Model {
     const context = Context.getInstance();
 
     const { components } = context;
-    return !(
-      field instanceof components.BelongsTo ||
-      field instanceof components.HasOne ||
-      field instanceof components.MorphTo ||
-      field instanceof components.MorphOne
-    );
+    return [components.BelongsTo, components.HasOne, components.MorphTo, components.MorphOne].every(t => !(field instanceof t));
   }
 
   /**
@@ -124,25 +113,19 @@ export default class Model {
    */
   public static getRelatedModel(relation?: Relation) {
     if (relation === undefined) return null;
-
     const context: Context = Context.getInstance();
     const { components } = context;
-    if (
-      relation instanceof components.BelongsToMany ||
-      relation instanceof components.HasMany ||
-      relation instanceof components.HasManyThrough ||
-      relation instanceof components.MorphedByMany ||
-      relation instanceof components.MorphMany ||
-      relation instanceof components.MorphOne ||
-      relation instanceof components.MorphToMany ||
-      relation instanceof components.HasOne
-    ) {
-      return context.getModel(relation.related.entity, true);
+
+    if ([
+      components.BelongsToMany, components.HasMany, components.HasManyThrough, components.MorphedByMany,
+      components.MorphMany, components.MorphOne, components.MorphToMany, components.HasOne
+    ].some(t => relation instanceof t)) {
+      // well typescript is stupid enough not to deduce that "some" query will carry typeinfo
+      return context.getModel((relation as any).related.entity, true);
     } else if (
-      relation instanceof components.BelongsTo ||
-      relation instanceof components.HasManyBy
+      [components.BelongsTo, components.HasManyBy].some(t => relation instanceof t)
     ) {
-      return context.getModel(relation.parent.entity, true);
+      return context.getModel((relation as any).parent.entity, true);
     } else if (relation instanceof components.MorphTo) {
       return context.getModel(relation.type, true);
     } else {
@@ -203,17 +186,11 @@ export default class Model {
    */
   public isTypeFieldOfPolymorphicRelation(name: string): boolean {
     const { models, components } = Context.getInstance();
-    for (const [_, model] of models) {
-      for (const [_, relation] of model.getRelations()) {
-        if (
-          relation instanceof components.MorphMany ||
-          relation instanceof components.MorphedByMany ||
-          relation instanceof components.MorphOne ||
-          relation instanceof components.MorphTo ||
-          relation instanceof components.MorphToMany
-        ) {
+    for (const model of models.values()) {
+      for (const relation of model.getRelations().values()) {
+        if ([components.MorphMany, components.MorphedByMany, components.MorphOne, components.MorphTo, components.MorphToMany].some(t => relation instanceof t)) {
           // WARNING: MorphTo doesn't have 'related' entity to point to
-          if (relation.type === name && (relation as Field).related?.entity === this.baseModel.entity) {
+          if ((relation as any).type === name && (relation as Field).related?.entity === this.baseModel.entity) {
             return true;
           }
         }
@@ -251,25 +228,14 @@ export default class Model {
     relation: Relation,
     relatedModel: Model
   ): boolean {
-    const context = Context.getInstance();
-    const { components } = context;
-
-    // HasOne, BelongsTo and MorphOne are always eager loaded
-    if (
-      relation instanceof components.HasOne ||
-      relation instanceof components.BelongsTo ||
-      relation instanceof components.MorphOne
-    ) {
-      return true;
-    }
-
+    const { components } = Context.getInstance();
     // Check if the name of the related model or the fieldName is included in the eagerly loaded
     // list.
     const namesPred = [relatedModel.singularName, relatedModel.pluralName, fieldName];
-
-    return !!(
-      [...this.baseModel.eagerLoad ?? [], ...this.baseModel.eagerSync ?? []]
-        .find(n => namesPred.includes(n))
+    // HasOne, BelongsTo and MorphOne are always eager loaded
+    return (
+      [components.HasOne, components.BelongsTo, components.MorphOne].some(t => relation instanceof t) ||
+      [...this.baseModel.eagerLoad ?? [], ...this.baseModel.eagerSync ?? []].some(n => namesPred.includes(n))
     );
   }
 
@@ -287,22 +253,14 @@ export default class Model {
     relation: Relation,
     relatedModel: Model
   ): boolean {
-    const context = Context.getInstance();
-
+    const { components } = Context.getInstance();
+    // Check if the name of the related model or the fieldName is included in the eagerly saved
+    // list.
+    const namesPred = [relatedModel.singularName, relatedModel.pluralName, fieldName];
     // BelongsTo is always eager saved
-    if (relation instanceof context.components.BelongsTo) {
-      return true;
-    }
-
-    // Create a list of all relations that have to be eager saved
-    const eagerSaveList: Array<String> = this.baseModel.eagerSave || [];
-    Array.prototype.push.apply(eagerSaveList, this.baseModel.eagerSync || []);
-
-    // Check if the name of the related model or the fieldName is included in the eagerSaveList.
     return (
-      eagerSaveList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
-      }) !== undefined
+      [components.BelongsTo].some(t => relation instanceof t) ||
+      [...this.baseModel.eagerSave ?? [], ...this.baseModel.eagerSync ?? []].some(n => namesPred.includes(n))
     );
   }
 
