@@ -38,6 +38,7 @@ export default class Fetch extends Action {
     params?: ActionParams
   ): Promise<Data> {
     const context = Context.getInstance();
+    const { adapter, apollo } = context;
     const model = this.getModelFromState(state!);
 
     const mockReturnValue = model.$mockHook("fetch", {
@@ -70,7 +71,7 @@ export default class Fetch extends Action {
     const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
-    const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
+    const data = await apollo.request(model, query, filter, false, bypassCache as boolean);
 
     // Insert incoming data into the store
     return Store.insertData(data, dispatch!);

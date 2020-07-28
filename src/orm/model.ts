@@ -75,13 +75,13 @@ export default class Model {
    */
   public static isFieldAttribute(field: Field): boolean {
     const context = Context.getInstance();
-
+    const { components } = context;
     return (
-      field instanceof context.components.Uid ||
-      field instanceof context.components.Attr ||
-      field instanceof context.components.String ||
-      field instanceof context.components.Number ||
-      field instanceof context.components.Boolean
+      field instanceof components.Uid ||
+      field instanceof components.Attr ||
+      field instanceof components.String ||
+      field instanceof components.Number ||
+      field instanceof components.Boolean
     );
   }
 
@@ -125,24 +125,24 @@ export default class Model {
     if (relation === undefined) return null;
 
     const context: Context = Context.getInstance();
-
+    const { components } = context;
     if (
-      relation instanceof context.components.BelongsToMany ||
-      relation instanceof context.components.HasMany ||
-      relation instanceof context.components.HasManyThrough ||
-      relation instanceof context.components.MorphedByMany ||
-      relation instanceof context.components.MorphMany ||
-      relation instanceof context.components.MorphOne ||
-      relation instanceof context.components.MorphToMany ||
-      relation instanceof context.components.HasOne
+      relation instanceof components.BelongsToMany ||
+      relation instanceof components.HasMany ||
+      relation instanceof components.HasManyThrough ||
+      relation instanceof components.MorphedByMany ||
+      relation instanceof components.MorphMany ||
+      relation instanceof components.MorphOne ||
+      relation instanceof components.MorphToMany ||
+      relation instanceof components.HasOne
     ) {
       return context.getModel(relation.related.entity, true);
     } else if (
-      relation instanceof context.components.BelongsTo ||
-      relation instanceof context.components.HasManyBy
+      relation instanceof components.BelongsTo ||
+      relation instanceof components.HasManyBy
     ) {
       return context.getModel(relation.parent.entity, true);
-    } else if (relation instanceof context.components.MorphTo) {
+    } else if (relation instanceof components.MorphTo) {
       return context.getModel(relation.type, true);
     } else {
       console.warn("Failed relation", typeof relation, relation);
@@ -251,12 +251,13 @@ export default class Model {
     relatedModel: Model
   ): boolean {
     const context = Context.getInstance();
+    const { components } = context;
 
     // HasOne, BelongsTo and MorphOne are always eager loaded
     if (
-      relation instanceof context.components.HasOne ||
-      relation instanceof context.components.BelongsTo ||
-      relation instanceof context.components.MorphOne
+      relation instanceof components.HasOne ||
+      relation instanceof components.BelongsTo ||
+      relation instanceof components.MorphOne
     ) {
       return true;
     }

@@ -15,7 +15,7 @@ export default class Schema {
   private queries: Map<string, GraphQLField>;
 
   public constructor(schema: GraphQLSchema) {
-    const context = Context.getInstance();
+    const { adapter } = Context.getInstance();
 
     this.schema = schema;
     this.types = new Map<string, GraphQLType>();
@@ -51,11 +51,12 @@ export default class Schema {
       );
     }
 
-    if (connection!.fields!.find(f => f.name === "nodes")) {
+    const fields = connection!.fields!;
+    if (fields.find(f => f.name === "nodes")) {
       return ConnectionMode.NODES;
-    } else if (connection!.fields!.find(f => f.name === "edges")) {
+    } else if (fields.find(f => f.name === "edges")) {
       return ConnectionMode.EDGES;
-    } else if (connection!.fields!.find(f => f.name === "items")) {
+    } else if (fields.find(f => f.name === "items")) {
       return ConnectionMode.ITEMS;
     } else {
       return ConnectionMode.PLAIN;
