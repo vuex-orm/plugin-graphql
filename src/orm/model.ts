@@ -51,10 +51,7 @@ export default class Model {
     this.pluralName = pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
-    const fields = this.baseModel.fields();
-    Object.keys(fields).forEach((name: string) => {
-      this.fields.set(name, fields[name] as Field);
-    });
+    this.fields = new Map(Object.entries(this.baseModel.fields()) as [string, Field][]);
   }
 
   /**
@@ -159,15 +156,9 @@ export default class Model {
    * @returns {Array<string>} field names which should be queried
    */
   public getQueryFields(): Array<string> {
-    const fields: Array<string> = [];
-
-    this.fields.forEach((field: Field, name: string) => {
-      if (Model.isFieldAttribute(field) && !this.skipField(name)) {
-        fields.push(name);
-      }
-    });
-
-    return fields;
+    return [...this.fields.entries()]
+      .filter(([name,  field]) => Model.isFieldAttribute(field) && !this.skipField(name))
+      .map(([name, _]) => name);
   }
 
   /**
@@ -177,42 +168,30 @@ export default class Model {
    * @param {string} field
    * @returns {boolean}
    */
-  public skipField(field: string) {
+  public skipField(field: string): boolean {
     if (field.startsWith("$")) return true;
-    if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
+    if ((this.baseModel.skipFields?.indexOf(field) ?? -1) >= 0) return true;
 
     const context = Context.getInstance();
+    const { components } = context;
 
-    let shouldSkipField: boolean = false;
-
-    this.getRelations().forEach((relation: Relation) => {
-      if (
-        (relation instanceof context.components.BelongsTo ||
-          relation instanceof context.components.HasOne) &&
-        relation.foreignKey === field
-      ) {
-        shouldSkipField = true;
-        return false;
+    for (const [_, relation] of this.getRelations()) {
+      if ((relation instanceof components.BelongsTo || relation instanceof components.HasOne) && relation.foreignKey === field) {
+        return true;
       }
-      return true;
-    });
+    }
 
-    return shouldSkipField;
+    return false;
   }
 
   /**
    * @returns {Map<string, Relation>} all relations of the model.
    */
   public getRelations(): Map<string, Relation> {
-    const relations = new Map<string, Relation>();
-
-    this.fields.forEach((field: Field, name: string) => {
-      if (!Model.isFieldAttribute(field)) {
-        relations.set(name, field as Relation);
-      }
-    });
-
-    return relations;
+    return new Map(
+      [...this.fields.entries()]
+        .filter(([_, field]) => !Model.isFieldAttribute(field)) as [[string, Relation]]
+    );
   }
 
   /**
@@ -222,35 +201,25 @@ export default class Model {
    * @returns {boolean}
    */
   public isTypeFieldOfPolymorphicRelation(name: string): boolean {
-    const context = Context.getInstance();
-    let found: boolean = false;
-
-    context.models.forEach(model => {
-      if (found) return false;
-
-      model.getRelations().forEach(relation => {
+    const { models, components } = Context.getInstance();
+    for (const [_, model] of models) {
+      for (const [_, relation] of model.getRelations()) {
         if (
-          relation instanceof context.components.MorphMany ||
-          relation instanceof context.components.MorphedByMany ||
-          relation instanceof context.components.MorphOne ||
-          relation instanceof context.components.MorphTo ||
-          relation instanceof context.components.MorphToMany
+          relation instanceof components.MorphMany ||
+          relation instanceof components.MorphedByMany ||
+          relation instanceof components.MorphOne ||
+          relation instanceof components.MorphTo ||
+          relation instanceof components.MorphToMany
         ) {
-          const related = (relation as Field).related;
-
-          if (relation.type === name && related && related.entity === this.baseModel.entity) {
-            found = true;
-            return false; // break
+          // WARNING: MorphTo doesn't have 'related' entity to point to
+          if (relation.type === name && (relation as Field).related?.entity === this.baseModel.entity) {
+            return true;
           }
         }
+      }
+    }
 
-        return true;
-      });
-
-      return true;
-    });
-
-    return found;
+    return false;
   }
 
   /**
@@ -394,7 +363,7 @@ export default class Model {
 
     if (returnValue) {
       if (returnValue instanceof Array) {
-        returnValue.forEach(r => (r.$isPersisted = true));
+        for (const r of returnValue) { r.$isPersisted = true; }
       } else {
         returnValue.$isPersisted = true;
       }

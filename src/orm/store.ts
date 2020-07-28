@@ -19,12 +19,11 @@ export class Store {
       Object.keys(data).map(async key => {
         const value = data[key];
         Context.getInstance().logger.log("Inserting records", value);
-        const newData = await dispatch("insertOrUpdate", ({ data: value } as unknown) as Data);
+        const newData: Iterable<any>[] = await dispatch("insertOrUpdate", ({ data: value } as unknown) as Data);
 
-        Object.keys(newData).forEach(dataKey => {
-          if (!insertedData[dataKey]) insertedData[dataKey] = [];
-          insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
-        });
+        for (const [dataKey, data] of Object.entries(newData)) {
+          insertedData[dataKey] = [...(insertedData[dataKey] ?? []), ...data];
+        }
       })
     );
 

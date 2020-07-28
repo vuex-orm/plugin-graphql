@@ -182,7 +182,8 @@ export default class Context {
   }
 
   public processSchema() {
-    this.models.forEach((model: Model) => {
+
+    for (const [_, model] of this.models) {
       let type: GraphQLType;
 
       try {
@@ -192,7 +193,7 @@ export default class Context {
         return;
       }
 
-      model.fields.forEach((field: Field, fieldName: string) => {
+      for (const [fieldName, _] of model.fields) {
         if (!type.fields!.find(f => f.name === fieldName)) {
           this.logger.warn(
             `Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`
@@ -204,8 +205,8 @@ export default class Context {
             model.baseModel.skipFields.push(fieldName);
           }
         }
-      });
-    });
+      }
+    }
 
     if (this.connectionMode === ConnectionMode.AUTO) {
       this.connectionMode = this.schema!.determineQueryMode();
@@ -296,10 +297,10 @@ export default class Context {
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
   private collectModels() {
-    this.database.entities.forEach((entity: any) => {
+    for (const entity of this.database.entities) {
       const model: Model = new Model(entity.model as typeof ORMModel);
       this.models.set(model.singularName, model);
       Model.augment(model);
-    });
+    }
   }
 }

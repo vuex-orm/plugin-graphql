@@ -42,8 +42,8 @@ export default class Transformer {
     if (outgoingRecords === undefined) outgoingRecords = new Map<string, Array<string>>();
     if (recursiveCall === undefined) recursiveCall = false;
 
-    Object.keys(data).forEach(key => {
-      const value = data[key];
+    for (const [key, value] of Object.entries(data)) {
+      // const value = data[key];
 
       const isRelation = model.getRelations().has(key);
       let isRecursion = false;
@@ -110,7 +110,7 @@ export default class Transformer {
           returnValue[key] = value;
         }
       }
-    });
+    }
 
     return returnValue;
   }
@@ -141,53 +141,51 @@ export default class Transformer {
     if (Array.isArray(data)) {
       result = data.map((d: any) => this.transformIncomingData(d, model, mutation, true));
     } else {
-      Object.keys(data).forEach(key => {
-        if (data[key] !== undefined && data[key] !== null && key in data) {
-          if (isPlainObject(data[key])) {
-            const localModel: Model = context.getModel(key, true) || model;
+      for (const [key, value] of Object.entries(data).filter(([_, value]) => value != null)) {
+        if (isPlainObject(value)) {
+          const localModel: Model = context.getModel(key, true) || model;
 
-            if (data[key].nodes && context.connectionMode === ConnectionMode.NODES) {
-              result[pluralize(key)] = this.transformIncomingData(
-                data[key].nodes,
-                localModel,
-                mutation,
-                true
-              );
-            } else if (data[key].edges && context.connectionMode === ConnectionMode.EDGES) {
-              result[pluralize(key)] = this.transformIncomingData(
-                data[key].edges,
-                localModel,
-                mutation,
-                true
-              );
-            } else if (data["node"] && context.connectionMode === ConnectionMode.EDGES) {
-              result = this.transformIncomingData(data["node"], localModel, mutation, true);
-            } else if (data[key].items && context.connectionMode === ConnectionMode.ITEMS) {
-              result[pluralize(key)] = this.transformIncomingData(
-                data[key].items,
-                localModel,
-                mutation,
-                true
-              );
-            } else {
-              let newKey = key;
-
-              if (mutation && !recursiveCall) {
-                newKey = data[key].nodes ? localModel.pluralName : localModel.singularName;
-                newKey = downcaseFirstLetter(newKey);
-              }
-
-              result[newKey] = this.transformIncomingData(data[key], localModel, mutation, true);
-            }
-          } else if (Model.isFieldNumber(model.fields.get(key))) {
-            result[key] = parseFloat(data[key]);
-          } else if (key.endsWith("Type") && model.isTypeFieldOfPolymorphicRelation(key)) {
-            result[key] = pluralize(downcaseFirstLetter(data[key]));
+          if (value.nodes && context.connectionMode === ConnectionMode.NODES) {
+            result[pluralize(key)] = this.transformIncomingData(
+              value.nodes,
+              localModel,
+              mutation,
+              true
+            );
+          } else if (value.edges && context.connectionMode === ConnectionMode.EDGES) {
+            result[pluralize(key)] = this.transformIncomingData(
+              value.edges,
+              localModel,
+              mutation,
+              true
+            );
+          } else if (data['node'] && context.connectionMode === ConnectionMode.EDGES) {
+            result = this.transformIncomingData(data['node'], localModel, mutation, true);
+          } else if (value.items && context.connectionMode === ConnectionMode.ITEMS) {
+            result[pluralize(key)] = this.transformIncomingData(
+              value.items,
+              localModel,
+              mutation,
+              true
+            );
           } else {
-            result[key] = data[key];
+            let newKey = key;
+
+            if (mutation && !recursiveCall) {
+              newKey = value.nodes ? localModel.pluralName : localModel.singularName;
+              newKey = downcaseFirstLetter(newKey);
+            }
+
+            result[newKey] = this.transformIncomingData(value, localModel, mutation, true);
           }
+        } else if (Model.isFieldNumber(model.fields.get(key))) {
+          result[key] = parseFloat(value);
+        } else if (key.endsWith('Type') && model.isTypeFieldOfPolymorphicRelation(key)) {
+          result[key] = pluralize(downcaseFirstLetter(value));
+        } else {
+          result[key] = value;
         }
-      });
+      }
     }
 
     if (!recursiveCall) {

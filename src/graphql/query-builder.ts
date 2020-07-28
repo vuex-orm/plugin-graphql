@@ -352,7 +352,7 @@ export default class QueryBuilder {
     if (model === null) return "";
     const relationQueries: Array<string> = [];
 
-    model.getRelations().forEach((field: Relation, name: string) => {
+    for (const [name, field] of model.getRelations()) {
       let relatedModel: Model = Model.getRelatedModel(field)!;
 
       // We will ignore the field, when it's already in the path. Means: When it's already queried. However there are
@@ -384,7 +384,7 @@ export default class QueryBuilder {
           )
         );
       }
-    });
+    }
 
     return relationQueries.join("\n");
   }
@@ -392,9 +392,7 @@ export default class QueryBuilder {
   private static prepareArguments(args?: Arguments): Arguments {
     args = (args ? clone(args) : {}) as Arguments;
 
-    Object.keys(args).forEach((key: string) => {
-      const value = args![key];
-
+    for (const [key, value] of Object.entries(args)) {
       if (value && isPlainObject(value)) {
         if (Context.getInstance().adapter.getArgumentMode() === ArgumentMode.LIST) {
           Object.keys(value).forEach((k: string) => {
@@ -405,7 +403,7 @@ export default class QueryBuilder {
           args![key] = { __type: upcaseFirstLetter(key) };
         }
       }
-    });
+    }
 
     return args;
   }

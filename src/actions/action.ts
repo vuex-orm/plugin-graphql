@@ -118,12 +118,10 @@ export default class Action {
     const context = Context.getInstance();
     const { components, logger } = context;
 
-    Object.keys(args).forEach((key: string) => {
-      const value: Data = args[key];
-
+    for (const [key, value] of Object.entries(args)) {
       if (value instanceof components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false);
+        const transformedValue = Transformer.transformOutgoingData(model, value as Data, false);
 
         logger.log(
           "A",
@@ -135,7 +133,7 @@ export default class Action {
         );
         args[key] = transformedValue;
       }
-    });
+    }
 
     return args;
   }

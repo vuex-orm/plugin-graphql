@@ -22,27 +22,27 @@ export default class Schema {
     this.mutations = new Map<string, GraphQLField>();
     this.queries = new Map<string, GraphQLField>();
 
-    this.schema.types.forEach((t: GraphQLType) => this.types.set(t.name, t));
+    for (const t of this.schema.types) { this.types.set(t.name, t); }
 
-    this.getType(context.adapter.getRootQueryName())!.fields!.forEach(f =>
-      this.queries.set(f.name, f)
-    );
-    this.getType(context.adapter.getRootMutationName())!.fields!.forEach(f =>
-      this.mutations.set(f.name, f)
-    );
+    for (const f of this.getType(adapter.getRootQueryName())!.fields!) {
+      this.queries.set(f.name, f);
+    }
+
+    for (const f of this.getType(adapter.getRootMutationName())!.fields!) {
+      this.mutations.set(f.name, f);
+    }
   }
 
   public determineQueryMode(): ConnectionMode {
     let connection: GraphQLType | null = null;
 
-    this.queries.forEach(query => {
+    for (const [_, query] of this.queries) {
       const typeName = Schema.getTypeNameOfField(query);
       if (typeName.endsWith("Connection")) {
         connection = this.getType(typeName);
-        return false; // break
+        break;
       }
-      return true;
-    });
+    }
 
     /* istanbul ignore next */
     if (!connection) {
