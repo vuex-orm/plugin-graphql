@@ -1,15 +1,11 @@
-import { Data, GraphQLType } from "../support/interfaces";
-import Model from "../orm/model";
-import { Model as ORMModel, Relation } from "@vuex-orm/core";
-import Context from "../common/context";
+import { Model as ORMModel, Relation } from '@vuex-orm/core';
+import { ConnectionMode } from '../adapters/adapter';
+import Context from '../common/context';
+import Model from '../orm/model';
+import { Data, GraphQLType } from '../support/interfaces';
 import {
-  clone,
-  downcaseFirstLetter,
-  isPlainObject,
-  pluralize,
-  singularize
-} from "../support/utils";
-import { ConnectionMode } from "../adapters/adapter";
+  clone, downcaseFirstLetter, isPlainObject, pluralize, singularize
+} from '../support/utils';
 
 /**
  * This class provides methods to transform incoming data from GraphQL in to a format Vuex-ORM understands and
@@ -28,7 +24,7 @@ export default class Transformer {
    * @param {boolean} recursiveCall Tells if it's a recursive call.
    * @returns {Data}
    */
-  public static transformOutgoingData(
+  public static transformOutgoingData (
     model: Model,
     data: Data,
     read: boolean,
@@ -89,7 +85,7 @@ export default class Transformer {
             // Simple field, not a relation
             returnValue[key] = value;
           }
-        } else if (typeof value === "object" && value.$id !== undefined) {
+        } else if (typeof value === 'object' && value.$id !== undefined) {
           if (!relatedModel) {
             relatedModel = context.getModel((value as ORMModel).$self().entity);
           }
@@ -124,18 +120,18 @@ export default class Transformer {
    * @param {boolean} recursiveCall
    * @returns {Data}
    */
-  public static transformIncomingData(
+  public static transformIncomingData (
     data: Data | Array<Data>,
     model: Model,
-    mutation: boolean = false,
+    mutation: boolean      = false,
     recursiveCall: boolean = false
   ): Data {
     let result: Data | Array<Data> = {} as Data;
     const context = Context.getInstance();
 
     if (!recursiveCall) {
-      context.logger.group("Transforming incoming data");
-      context.logger.log("Raw data:", data);
+      context.logger.group('Transforming incoming data');
+      context.logger.log('Raw data:', data);
     }
 
     if (Array.isArray(data)) {
@@ -189,10 +185,10 @@ export default class Transformer {
     }
 
     if (!recursiveCall) {
-      context.logger.log("Transformed data:", result);
+      context.logger.log('Transformed data:', result);
       context.logger.groupEnd();
     } else {
-      result["$isPersisted"] = true;
+      result['$isPersisted'] = true;
     }
 
     // Make sure this is really a plain JS object. We had some issues in testing here.
@@ -208,7 +204,7 @@ export default class Transformer {
    * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
    * @returns {boolean}
    */
-  public static shouldIncludeOutgoingField(
+  public static shouldIncludeOutgoingField (
     forFilter: boolean,
     fieldName: string,
     value: any,
@@ -219,10 +215,10 @@ export default class Transformer {
     if (whitelist && whitelist.includes(fieldName)) return true;
 
     // Ignore internal fields
-    if (fieldName.startsWith("$")) return false;
+    if (fieldName.startsWith('$')) return false;
 
     // Ignore pivot objects
-    if (fieldName === "pivot") return false;
+    if (fieldName === 'pivot') return false;
 
     // Ignore empty fields
     if (value === null || value === undefined) return false;
@@ -252,7 +248,7 @@ export default class Transformer {
    * @param {Model} model
    * @param {string} fieldName
    */
-  private static inputTypeContainsField(model: Model, fieldName: string): boolean {
+  private static inputTypeContainsField (model: Model, fieldName: string): boolean {
     const inputTypeName = `${model.singularName}Input`;
     const inputType: GraphQLType | null = Context.getInstance().schema!.getType(
       inputTypeName,
@@ -269,20 +265,20 @@ export default class Transformer {
    * @param {Map<string, Array<string>>} records Map of IDs.
    * @param {ORMModel} record The record to register.
    */
-  private static addRecordForRecursionDetection(
+  private static addRecordForRecursionDetection (
     records: Map<string, Array<string>>,
     record: ORMModel
   ): void {
     const context: Context = Context.getInstance();
 
     if (!record) {
-      context.logger.warn("Trying to add invalid record", record, "to recursion detection");
+      context.logger.warn('Trying to add invalid record', record, 'to recursion detection');
       return;
     }
 
     if (!record.$self) {
       context.logger.warn(
-        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+        'Seems like you\'re using non-model classes with plugin graphql. You shouldn\'t do that.'
       );
       return;
     }
@@ -299,12 +295,12 @@ export default class Transformer {
    * @param {ORMModel} record The record to check.
    * @return {boolean} true when the record is already included in the records.
    */
-  private static isRecursion(records: Map<string, Array<string>>, record: ORMModel): boolean {
+  private static isRecursion (records: Map<string, Array<string>>, record: ORMModel): boolean {
     if (!record) return false;
 
     if (!record.$self) {
       Context.getInstance().logger.warn(
-        "Seems like you're using non-model classes with plugin graphql. You shouldn't do that."
+        'Seems like you\'re using non-model classes with plugin graphql. You shouldn\'t do that.'
       );
       return false;
     }
