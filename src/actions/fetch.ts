@@ -66,8 +66,8 @@ export default class Fetch extends Action {
     const bypassCache = params && params.bypassCache;
 
     // When the filter contains an id, we query in singular mode
-    const multiple: boolean = !filter["id"];
-    const name: string = context.adapter.getNameForFetch(model, multiple);
+    const multiple: boolean = adapter.shouldQueryAlwaysUsePluralStyle() || !filter["id"];
+    const name: string = adapter.getNameForFetch(model, multiple);
     const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
