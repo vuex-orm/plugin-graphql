@@ -35,4 +35,6 @@ export default interface Adapter {
 
   shouldQueryAlwaysUsePluralStyle(): boolean;
   shouldMutationAlwaysUsePluralStyle(): boolean;
+
+  shouldTryPluralNameIfSchemaNameNotFoundWithSingular(): boolean;
 }

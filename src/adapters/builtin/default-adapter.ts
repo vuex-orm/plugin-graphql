@@ -58,4 +58,8 @@ export default class DefaultAdapter implements Adapter {
   shouldMutationAlwaysUsePluralStyle(): boolean {
     return false;
   }
+
+  shouldTryPluralNameIfSchemaNameNotFoundWithSingular(): boolean {
+    return false;
+  }
 }

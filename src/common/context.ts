@@ -186,9 +186,23 @@ export default class Context {
     for (const [_, model] of this.models) {
       let type: GraphQLType;
 
+      let unableToResolveEntity = false;
+
       try {
         type = this.schema!.getType(model.singularName)!;
-      } catch (error) {
+      } catch {
+        if (this.adapter.shouldTryPluralNameIfSchemaNameNotFoundWithSingular()) {
+          try {
+            type = this.schema!.getType(model.pluralName)!;
+          } catch {
+            unableToResolveEntity = true;
+          }
+        } else {
+          unableToResolveEntity = true;
+        }
+      }
+
+      if (unableToResolveEntity) {
         this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
         return;
       }
