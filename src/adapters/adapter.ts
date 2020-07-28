@@ -32,4 +32,7 @@ export default interface Adapter {
   prepareSchemaTypeName(name: string): string;
 
   getNameForArgumentFilter(): string;
+
+  shouldQueryAlwaysUsePluralStyle(): boolean;
+  shouldMutationAlwaysUsePluralStyle(): boolean;
 }

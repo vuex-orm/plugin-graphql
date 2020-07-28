@@ -50,4 +50,12 @@ export default class DefaultAdapter implements Adapter {
   getNameForArgumentFilter(): string {
     return "filter";
   }
+
+  shouldQueryAlwaysUsePluralStyle(): boolean {
+    return false;
+  }
+
+  shouldMutationAlwaysUsePluralStyle(): boolean {
+    return false;
+  }
 }
