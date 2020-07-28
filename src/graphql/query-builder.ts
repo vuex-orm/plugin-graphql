@@ -180,71 +180,61 @@ export default class QueryBuilder {
     let returnValue: string = "";
     let first: boolean = true;
 
-    if (args) {
-      for (const [key, value] of Object.entries(args)) {
-        const isForeignKey = model.skipField(key);
-        const skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
+    for (const [key, value] of Object.entries(args)) {
+      const isForeignKey = model.skipField(key);
+      const skipFieldDueId = (key === "id" || isForeignKey) && !allowIdFields;
 
-        let schemaField: GraphQLField | undefined = this.findSchemaFieldForArgument(
-          key,
-          field,
-          model,
-          filter
-        );
+      const schemaField = this.findSchemaFieldForArgument(key, field, model, filter);
+      const schemaFieldTypeName = schemaField && Schema.getTypeNameOfField(schemaField);
 
-        const isConnectionField =
-          schemaField && Schema.getTypeNameOfField(schemaField).endsWith("Connection");
+      // Ignore null fields, ids and connections
+      if (value && !(skipFieldDueId || schemaFieldTypeName?.endsWith("Connection"))) {
+        let typeOrValue: any = "";
 
-        // Ignore null fields, ids and connections
-        if (value && !(skipFieldDueId || isConnectionField)) {
-          let typeOrValue: any = "";
+        if (signature) {
+          if (isPlainObject(value) && value.__type) {
+            // Case 2 (User!)
+            typeOrValue = adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+          } else if (value instanceof Array && field) {
+            const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
-          if (signature) {
-            if (isPlainObject(value) && value.__type) {
-              // Case 2 (User!)
-              typeOrValue = adapter.getInputTypeName(context.getModel(value.__type)) + "!";
-            } else if (value instanceof Array && field) {
-              const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
-
-              /* istanbul ignore next */
-              if (!arg) {
-                throw new Error(
-                  `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${field.name}`
-                );
-              }
-
-              typeOrValue = Schema.getTypeNameOfField(arg) + "!";
-            } else if (schemaField && Schema.getTypeNameOfField(schemaField)) {
-              // Case 1, 3 and 4
-              typeOrValue = Schema.getTypeNameOfField(schemaField) + "!";
-            } else if (key === "id" || isForeignKey) {
-              // Case 1 (ID!)
-              typeOrValue = "ID!";
-            } else {
-              // Case 1 (String!)
-              typeOrValue = this.determineAttributeType(model, key, value, field || undefined);
-              typeOrValue = typeOrValue + "!";
+            /* istanbul ignore next */
+            if (!arg) {
+              throw new Error(
+                `The argument ${key} is of type array but it's not possible to determine the type, because it's not in the field ${field.name}`
+              );
             }
+
+            typeOrValue = Schema.getTypeNameOfField(arg) + "!";
+          } else if (schemaFieldTypeName) {
+            // Case 1, 3 and 4
+            typeOrValue = schemaFieldTypeName + "!";
+          } else if (key === "id" || isForeignKey) {
+            // Case 1 (ID!)
+            typeOrValue = "ID!";
           } else {
-            // Case 3 or 4
-            typeOrValue = `$${key}`;
+            // Case 1 (String!)
+            typeOrValue = this.determineAttributeType(model, key, value, field || undefined);
+            typeOrValue = typeOrValue + "!";
           }
-
-          returnValue = `${returnValue}${first ? "" : ", "}${
-            signature ? "$" : ""
-          }${key}: ${typeOrValue}`;
-
-          first = false;
-        }
-      }
-
-      if (!first) {
-        if (!signature && filter && adapter.getArgumentMode() === ArgumentMode.TYPE) {
-          returnValue = `${adapter.getNameForArgumentFilter()}: { ${returnValue} }`;
+        } else {
+          // Case 3 or 4
+          typeOrValue = `$${key}`;
         }
 
-        returnValue = `(${returnValue})`;
+        returnValue = `${returnValue}${first ? "" : ", "}${
+          signature ? "$" : ""
+        }${key}: ${typeOrValue}`;
+
+        first = false;
       }
+    }
+    if (!first) {
+      if (!signature && filter && adapter.getArgumentMode() === ArgumentMode.TYPE) {
+        returnValue = `${adapter.getNameForArgumentFilter()}: { ${returnValue} }`;
+      }
+
+      returnValue = `(${returnValue})`;
     }
 
     return returnValue;
