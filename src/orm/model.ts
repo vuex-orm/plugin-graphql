@@ -93,11 +93,12 @@ export default class Model {
   public static isConnection(field: Field): boolean {
     const context = Context.getInstance();
 
+    const { components } = context;
     return !(
-      field instanceof context.components.BelongsTo ||
-      field instanceof context.components.HasOne ||
-      field instanceof context.components.MorphTo ||
-      field instanceof context.components.MorphOne
+      field instanceof components.BelongsTo ||
+      field instanceof components.HasOne ||
+      field instanceof components.MorphTo ||
+      field instanceof components.MorphOne
     );
   }
 
@@ -262,15 +263,13 @@ export default class Model {
       return true;
     }
 
-    // Create a list of all relations that have to be eager loaded
-    const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
-    Array.prototype.push.apply(eagerLoadList, this.baseModel.eagerSync || []);
+    // Check if the name of the related model or the fieldName is included in the eagerly loaded
+    // list.
+    const namesPred = [relatedModel.singularName, relatedModel.pluralName, fieldName];
 
-    // Check if the name of the related model or the fieldName is included in the eagerLoadList.
-    return (
-      eagerLoadList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
-      }) !== undefined
+    return !!(
+      [...this.baseModel.eagerLoad ?? [], ...this.baseModel.eagerSync ?? []]
+        .find(n => namesPred.includes(n))
     );
   }
 
