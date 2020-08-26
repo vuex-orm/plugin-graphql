@@ -35,6 +35,7 @@ export default class Push extends Action {
     if (data) {
       const model = this.getModelFromState(state!);
       const mutationName = Context.getInstance().adapter.getNameForPush(model);
+      const action = 'push'
 
       const mockReturnValue = model.$mockHook("push", {
         data,
@@ -48,10 +49,10 @@ export default class Push extends Action {
       // Arguments
       await Context.getInstance().loadSchema();
       args = this.prepareArgs(args, data.id);
-      this.addRecordToArgs(args, model, data);
+      this.addRecordToArgs(args, model, data, action);
 
       // Send the mutation
-      return Action.mutation(mutationName, args as Data, dispatch!, model);
+      return Action.mutation(mutationName, args as Data, dispatch!, model, action);
     } else {
       /* istanbul ignore next */
       throw new Error("The persist action requires the 'data' to be set");

@@ -37,6 +37,7 @@ export default class Persist extends Action {
       const model = this.getModelFromState(state!);
       const mutationName = Context.getInstance().adapter.getNameForPersist(model);
       const oldRecord = model.getRecordWithId(id)!;
+      const action = 'persist'
 
       const mockReturnValue = model.$mockHook("persist", {
         id: toNumber(id),
@@ -52,10 +53,10 @@ export default class Persist extends Action {
       // Arguments
       await Context.getInstance().loadSchema();
       args = this.prepareArgs(args);
-      this.addRecordToArgs(args, model, oldRecord);
+      this.addRecordToArgs(args, model, oldRecord, action);
 
       // Send mutation
-      const newRecord = await Action.mutation(mutationName, args as Data, dispatch!, model);
+      const newRecord = await Action.mutation(mutationName, args as Data, dispatch!, model, action);
 
       // Delete the old record if necessary
       await this.deleteObsoleteRecord(model, newRecord, oldRecord);

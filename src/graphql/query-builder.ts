@@ -15,6 +15,7 @@ export default class QueryBuilder {
    * Builds a field for the GraphQL query and a specific model
    *
    * @param {Model|string} model The model to use
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
    * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
    * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
@@ -29,6 +30,7 @@ export default class QueryBuilder {
    */
   public static buildField(
     model: Model | string,
+    action: string,
     multiple: boolean = true,
     args?: Arguments,
     path: Array<string> = [],
@@ -42,12 +44,12 @@ export default class QueryBuilder {
     name = name ? name : model.pluralName;
     const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
 
-    let params: string = this.buildArguments(model, args, false, filter, allowIdFields, field);
+    let params: string = this.buildArguments(model, action, args, false, filter, allowIdFields, field);
     path = path.length === 0 ? [model.singularName] : path;
 
     const fields = `
       ${model.getQueryFields().join(" ")}
-      ${this.buildRelationsQuery(model, path)}
+      ${this.buildRelationsQuery(model, path, action)}
     `;
 
     if (multiple) {
@@ -100,6 +102,7 @@ export default class QueryBuilder {
    * Currently only one root field for the query is possible.
    * @param {string} type 'mutation' or 'query'
    * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
    * @param {Arguments} args Arguments for the query
    * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
@@ -109,6 +112,7 @@ export default class QueryBuilder {
   public static buildQuery(
     type: string,
     model: Model | string,
+    action: string,
     name?: string,
     args?: Arguments,
     multiple?: boolean,
@@ -135,13 +139,14 @@ export default class QueryBuilder {
     const query: string =
       `${type} ${upcaseFirstLetter(name)}${this.buildArguments(
         model,
+        action,
         args,
         true,
         filter,
         true,
         field
       )} {\n` +
-      `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
+      `  ${this.buildField(model, action, multiple, args, [], name, filter, true)}\n` +
       `}`;
 
     return gql(query);
@@ -165,6 +170,7 @@ export default class QueryBuilder {
    *      => 'users(filter: { active: $active })'
    *
    * @param model
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @param {Arguments | undefined} args
    * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
    * @param filter
@@ -174,6 +180,7 @@ export default class QueryBuilder {
    */
   public static buildArguments(
     model: Model,
+    action: string,
     args?: Arguments,
     signature: boolean = false,
     filter: boolean = false,
@@ -210,7 +217,7 @@ export default class QueryBuilder {
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
             } else if (value instanceof Array && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
@@ -358,9 +365,10 @@ export default class QueryBuilder {
    *
    * @param {Model} model
    * @param {Array<Model>} path
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @returns {string}
    */
-  static buildRelationsQuery(model: null | Model, path: Array<string> = []): string {
+  static buildRelationsQuery(model: null | Model, path: Array<string> = [], action: string): string {
     if (model === null) return "";
 
     const context = Context.getInstance();
@@ -390,6 +398,7 @@ export default class QueryBuilder {
         relationQueries.push(
           this.buildField(
             relatedModel,
+            action,
             Model.isConnection(field as Field),
             undefined,
             newPath,

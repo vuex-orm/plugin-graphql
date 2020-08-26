@@ -41,6 +41,7 @@ export default class Destroy extends Action {
     if (id) {
       const model = this.getModelFromState(state!);
       const mutationName = Context.getInstance().adapter.getNameForDestroy(model);
+      const action = 'destroy'
 
       const mockReturnValue = model.$mockHook("destroy", { id });
 
@@ -51,7 +52,7 @@ export default class Destroy extends Action {
 
       args = this.prepareArgs(args, id);
 
-      await Action.mutation(mutationName, args as Data, dispatch!, model);
+      await Action.mutation(mutationName, args as Data, dispatch!, model, action);
       return true;
     } else {
       /* istanbul ignore next */

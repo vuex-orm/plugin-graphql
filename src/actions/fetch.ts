@@ -39,6 +39,7 @@ export default class Fetch extends Action {
   ): Promise<Data> {
     const context = Context.getInstance();
     const model = this.getModelFromState(state!);
+    const action = 'fetch'
 
     const mockReturnValue = model.$mockHook("fetch", {
       filter: params ? params.filter || {} : {}
@@ -58,6 +59,7 @@ export default class Fetch extends Action {
         model,
         params.filter as Data,
         true,
+        action,
         Object.keys(params.filter)
       );
     }
@@ -67,7 +69,7 @@ export default class Fetch extends Action {
     // When the filter contains an id, we query in singular mode
     const multiple: boolean = !filter["id"];
     const name: string = context.adapter.getNameForFetch(model, multiple);
-    const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
+    const query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
     const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
