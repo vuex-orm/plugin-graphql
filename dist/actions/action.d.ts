@@ -12,10 +12,11 @@ export default class Action {
      * @param {Data | undefined} variables Variables to send with the mutation
      * @param {Function} dispatch Vuex Dispatch method for the model
      * @param {Model} model The model this mutation affects.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    protected static mutation(name: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model): Promise<any>;
+    protected static mutation(name: string, variables: Data | undefined, dispatch: DispatchFunction, model: Model, action: string): Promise<any>;
     /**
      * Convenience method to get the model from the state.
      * @param {RootState} state Vuex state
@@ -37,13 +38,15 @@ export default class Action {
      * @param {Arguments} args
      * @param {Model} model
      * @param {Data} data
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments;
+    static addRecordToArgs(args: Arguments, model: Model, data: Data, action: string): Arguments;
     /**
      * Transforms each field of the args which contains a model.
      * @param {Arguments} args
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    protected static transformArgs(args: Arguments): Arguments;
+    protected static transformArgs(args: Arguments, action: string): Arguments;
 }

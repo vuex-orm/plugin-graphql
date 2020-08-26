@@ -14098,13 +14098,14 @@ class Transformer {
      * @param {Model} model Base model of the mutation/query
      * @param {Data} data Data to transform
      * @param {boolean} read Tells if this is a write or a read action. read is fetch, write is push and persist.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Array<String>} whitelist of fields
      * @param {Map<string, Array<string>>} outgoingRecords List of record IDs that are already added to the
      *                                                     outgoing data in order to detect recursion.
      * @param {boolean} recursiveCall Tells if it's a recursive call.
      * @returns {Data}
      */
-    static transformOutgoingData(model, data, read, whitelist, outgoingRecords, recursiveCall) {
+    static transformOutgoingData(model, data, read, action, whitelist, outgoingRecords, recursiveCall) {
         const context = Context.getInstance();
         const relations = model.getRelations();
         const returnValue = {};
@@ -14126,7 +14127,7 @@ class Transformer {
             // we want to include any relation, so we have to make sure it's false. In the recursive calls
             // it should be true when we transform the outgoing data for fetch (and false for the others)
             if (!isRecursion &&
-                this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, whitelist)) {
+                this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, whitelist)) {
                 let relatedModel = Model.getRelatedModel(relations.get(key));
                 if (value instanceof Array) {
                     // Either this is a hasMany field or a .attr() field which contains an array.
@@ -14134,7 +14135,7 @@ class Transformer {
                     if (arrayModel) {
                         this.addRecordForRecursionDetection(outgoingRecords, value[0]);
                         returnValue[key] = value.map(v => {
-                            return this.transformOutgoingData(arrayModel || model, v, read, undefined, outgoingRecords, true);
+                            return this.transformOutgoingData(arrayModel || model, v, read, action, undefined, outgoingRecords, true);
                         });
                     }
                     else {
@@ -14148,7 +14149,7 @@ class Transformer {
                     }
                     this.addRecordForRecursionDetection(outgoingRecords, value);
                     // Value is a record, transform that too
-                    returnValue[key] = this.transformOutgoingData(relatedModel, value, read, undefined, outgoingRecords, true);
+                    returnValue[key] = this.transformOutgoingData(relatedModel, value, read, action, undefined, outgoingRecords, true);
                 }
                 else {
                     // In any other case just let the value be what ever it is
@@ -14231,10 +14232,11 @@ class Transformer {
      * @param {string} fieldName Name of the field to check.
      * @param {any} value Value of the field.
      * @param {Model} model Model class which contains the field.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
      * @returns {boolean}
      */
-    static shouldIncludeOutgoingField(forFilter, fieldName, value, model, whitelist) {
+    static shouldIncludeOutgoingField(forFilter, fieldName, value, model, action, whitelist) {
         // Always add fields on the whitelist.
         if (whitelist && whitelist.includes(fieldName))
             return true;
@@ -14248,7 +14250,7 @@ class Transformer {
         if (value === null || value === undefined)
             return false;
         // Ignore fields that don't exist in the input type
-        if (!this.inputTypeContainsField(model, fieldName))
+        if (!this.inputTypeContainsField(model, fieldName, action))
             return false;
         // Include all eager save connections
         if (model.getRelations().has(fieldName)) {
@@ -14269,10 +14271,12 @@ class Transformer {
      * Tells whether a field is in the input type.
      * @param {Model} model
      * @param {string} fieldName
+     * @param {string} action Name of the current action like 'persist' or 'push'
      */
-    static inputTypeContainsField(model, fieldName) {
-        const inputTypeName = `${model.singularName}Input`;
-        const inputType = Context.getInstance().schema.getType(inputTypeName, false);
+    static inputTypeContainsField(model, fieldName, action) {
+        const context = Context.getInstance();
+        const inputTypeName = context.adapter.getInputTypeName(model, action);
+        const inputType = context.schema.getType(inputTypeName, false);
         if (inputType === null)
             throw new Error(`Type ${inputType} doesn't exist.`);
         return inputType.inputFields.find(f => f.name === fieldName) !== undefined;
@@ -14997,6 +15001,7 @@ class QueryBuilder {
      * Builds a field for the GraphQL query and a specific model
      *
      * @param {Model|string} model The model to use
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
      * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
      * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
@@ -15009,16 +15014,16 @@ class QueryBuilder {
      *
      * @todo Do we need the allowIdFields param?
      */
-    static buildField(model, multiple = true, args, path = [], name, filter = false, allowIdFields = false) {
+    static buildField(model, action, multiple = true, args, path = [], name, filter = false, allowIdFields = false) {
         const context = Context.getInstance();
         model = context.getModel(model);
         name = name ? name : model.pluralName;
         const field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
-        let params = this.buildArguments(model, args, false, filter, allowIdFields, field);
+        let params = this.buildArguments(model, action, args, false, filter, allowIdFields, field);
         path = path.length === 0 ? [model.singularName] : path;
         const fields = `
       ${model.getQueryFields().join(" ")}
-      ${this.buildRelationsQuery(model, path)}
+      ${this.buildRelationsQuery(model, path, action)}
     `;
         if (multiple) {
             const header = `${name}${params}`;
@@ -15072,13 +15077,14 @@ class QueryBuilder {
      * Currently only one root field for the query is possible.
      * @param {string} type 'mutation' or 'query'
      * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
      * @param {Arguments} args Arguments for the query
      * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
      * @param {boolean} filter When true the query arguments are passed via a filter object.
      * @returns {any} Whatever gql() returns
      */
-    static buildQuery(type, model, name, args, multiple, filter) {
+    static buildQuery(type, model, action, name, args, multiple, filter) {
         const context = Context.getInstance();
         // model
         model = context.getModel(model);
@@ -15092,8 +15098,8 @@ class QueryBuilder {
         // field
         const field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
         // build query
-        const query = `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, args, true, filter, true, field)} {\n` +
-            `  ${this.buildField(model, multiple, args, [], name, filter, true)}\n` +
+        const query = `${type} ${upcaseFirstLetter(name)}${this.buildArguments(model, action, args, true, filter, true, field)} {\n` +
+            `  ${this.buildField(model, action, multiple, args, [], name, filter, true)}\n` +
             `}`;
         return src(query);
     }
@@ -15115,6 +15121,7 @@ class QueryBuilder {
      *      => 'users(filter: { active: $active })'
      *
      * @param model
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Arguments | undefined} args
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
      * @param filter
@@ -15122,7 +15129,7 @@ class QueryBuilder {
      * @param {GraphQLField} field Optional. The GraphQL mutation or query field
      * @returns {String}
      */
-    static buildArguments(model, args, signature = false, filter = false, allowIdFields = true, field = null) {
+    static buildArguments(model, action, args, signature = false, filter = false, allowIdFields = true, field = null) {
         const context = Context.getInstance();
         if (args === undefined)
             return "";
@@ -15141,7 +15148,7 @@ class QueryBuilder {
                     if (signature) {
                         if (isPlainObject(value) && value.__type) {
                             // Case 2 (User!)
-                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
                         }
                         else if (value instanceof Array && field) {
                             const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
@@ -15260,9 +15267,10 @@ class QueryBuilder {
      *
      * @param {Model} model
      * @param {Array<Model>} path
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {string}
      */
-    static buildRelationsQuery(model, path = []) {
+    static buildRelationsQuery(model, path = [], action) {
         if (model === null)
             return "";
         const context = Context.getInstance();
@@ -15281,7 +15289,7 @@ class QueryBuilder {
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 const newPath = path.slice(0);
                 newPath.push(relatedModel.singularName);
-                relationQueries.push(this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
+                relationQueries.push(this.buildField(relatedModel, action, Model.isConnection(field), undefined, newPath, name, false));
             }
         });
         return relationQueries.join("\n");
@@ -15344,15 +15352,16 @@ class Action {
      * @param {Data | undefined} variables Variables to send with the mutation
      * @param {Function} dispatch Vuex Dispatch method for the model
      * @param {Model} model The model this mutation affects.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    static async mutation(name, variables, dispatch, model) {
+    static async mutation(name, variables, dispatch, model, action) {
         if (variables) {
             const context = Context.getInstance();
             const schema = await context.loadSchema();
             const multiple = Schema.returnsConnection(schema.getMutation(name));
-            const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
+            const query = QueryBuilder.buildQuery("mutation", model, action, name, variables, multiple);
             // Send GraphQL Mutation
             let newData = await context.apollo.request(model, query, variables, true);
             // When this was not a destroy action, we get new data, which we should insert in the store
@@ -15403,24 +15412,26 @@ class Action {
      * @param {Arguments} args
      * @param {Model} model
      * @param {Data} data
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    static addRecordToArgs(args, model, data) {
-        args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
+    static addRecordToArgs(args, model, data, action) {
+        args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action);
         return args;
     }
     /**
      * Transforms each field of the args which contains a model.
      * @param {Arguments} args
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    static transformArgs(args) {
+    static transformArgs(args, action) {
         const context = Context.getInstance();
         Object.keys(args).forEach((key) => {
             const value = args[key];
             if (value instanceof context.components.Model) {
                 const model = context.getModel(singularize(value.$self().entity));
-                const transformedValue = Transformer.transformOutgoingData(model, value, false);
+                const transformedValue = Transformer.transformOutgoingData(model, value, false, action);
                 context.logger.log("A", key, "model was found within the variables and will be transformed from", value, "to", transformedValue);
                 args[key] = transformedValue;
             }
@@ -15459,13 +15470,14 @@ class Destroy extends Action {
         if (id) {
             const model = this.getModelFromState(state);
             const mutationName = Context.getInstance().adapter.getNameForDestroy(model);
+            const action = 'destroy';
             const mockReturnValue = model.$mockHook("destroy", { id });
             if (mockReturnValue) {
                 await Store.insertData(mockReturnValue, dispatch);
                 return true;
             }
             args = this.prepareArgs(args, id);
-            await Action.mutation(mutationName, args, dispatch, model);
+            await Action.mutation(mutationName, args, dispatch, model, action);
             return true;
         }
         else {
@@ -15502,6 +15514,7 @@ class Fetch extends Action {
     static async call({ state, dispatch }, params) {
         const context = Context.getInstance();
         const model = this.getModelFromState(state);
+        const action = 'fetch';
         const mockReturnValue = model.$mockHook("fetch", {
             filter: params ? params.filter || {} : {}
         });
@@ -15512,13 +15525,13 @@ class Fetch extends Action {
         // Filter
         let filter = {};
         if (params && params.filter) {
-            filter = Transformer.transformOutgoingData(model, params.filter, true, Object.keys(params.filter));
+            filter = Transformer.transformOutgoingData(model, params.filter, true, action, Object.keys(params.filter));
         }
         const bypassCache = params && params.bypassCache;
         // When the filter contains an id, we query in singular mode
         const multiple = !filter["id"];
         const name = context.adapter.getNameForFetch(model, multiple);
-        const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
+        const query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, multiple);
         // Send the request to the GraphQL API
         const data = await context.apollo.request(model, query, filter, false, bypassCache);
         // Insert incoming data into the store
@@ -15560,6 +15573,7 @@ class Mutate extends Action {
         if (name) {
             const context = Context.getInstance();
             const model = this.getModelFromState(state);
+            const action = 'mutate';
             const mockReturnValue = model.$mockHook("mutate", {
                 name,
                 args: args || {}
@@ -15571,9 +15585,9 @@ class Mutate extends Action {
             args = this.prepareArgs(args);
             // There could be anything in the args, but we have to be sure that all records are gone through
             // transformOutgoingData()
-            this.transformArgs(args);
+            this.transformArgs(args, action);
             // Send the mutation
-            return Action.mutation(name, args, dispatch, model);
+            return Action.mutation(name, args, dispatch, model, action);
         }
         else {
             /* istanbul ignore next */
@@ -15608,6 +15622,7 @@ class Persist extends Action {
             const model = this.getModelFromState(state);
             const mutationName = Context.getInstance().adapter.getNameForPersist(model);
             const oldRecord = model.getRecordWithId(id);
+            const action = 'persist';
             const mockReturnValue = model.$mockHook("persist", {
                 id: toNumber(id),
                 args: args || {}
@@ -15620,9 +15635,9 @@ class Persist extends Action {
             // Arguments
             await Context.getInstance().loadSchema();
             args = this.prepareArgs(args);
-            this.addRecordToArgs(args, model, oldRecord);
+            this.addRecordToArgs(args, model, oldRecord, action);
             // Send mutation
-            const newRecord = await Action.mutation(mutationName, args, dispatch, model);
+            const newRecord = await Action.mutation(mutationName, args, dispatch, model, action);
             // Delete the old record if necessary
             await this.deleteObsoleteRecord(model, newRecord, oldRecord);
             return newRecord;
@@ -15675,6 +15690,7 @@ class Push extends Action {
         if (data) {
             const model = this.getModelFromState(state);
             const mutationName = Context.getInstance().adapter.getNameForPush(model);
+            const action = 'push';
             const mockReturnValue = model.$mockHook("push", {
                 data,
                 args: args || {}
@@ -15685,9 +15701,9 @@ class Push extends Action {
             // Arguments
             await Context.getInstance().loadSchema();
             args = this.prepareArgs(args, data.id);
-            this.addRecordToArgs(args, model, data);
+            this.addRecordToArgs(args, model, data, action);
             // Send the mutation
-            return Action.mutation(mutationName, args, dispatch, model);
+            return Action.mutation(mutationName, args, dispatch, model, action);
         }
         else {
             /* istanbul ignore next */
@@ -15732,6 +15748,7 @@ class Query extends Action {
         if (name) {
             const context = Context.getInstance();
             const model = this.getModelFromState(state);
+            const action = 'query';
             const mockReturnValue = model.$mockHook("query", {
                 name,
                 filter: filter || {}
@@ -15741,11 +15758,11 @@ class Query extends Action {
             }
             const schema = await context.loadSchema();
             // Filter
-            filter = filter ? Transformer.transformOutgoingData(model, filter, true) : {};
+            filter = filter ? Transformer.transformOutgoingData(model, filter, true, action) : {};
             // Multiple?
             const multiple = Schema.returnsConnection(schema.getQuery(name));
             // Build query
-            const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, false);
+            const query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, false);
             // Send the request to the GraphQL API
             const data = await context.apollo.request(model, query, filter, false, bypassCache);
             // Insert incoming data into the store

@@ -14120,13 +14120,14 @@ var Transformer = /** @class */ (function () {
      * @param {Model} model Base model of the mutation/query
      * @param {Data} data Data to transform
      * @param {boolean} read Tells if this is a write or a read action. read is fetch, write is push and persist.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Array<String>} whitelist of fields
      * @param {Map<string, Array<string>>} outgoingRecords List of record IDs that are already added to the
      *                                                     outgoing data in order to detect recursion.
      * @param {boolean} recursiveCall Tells if it's a recursive call.
      * @returns {Data}
      */
-    Transformer.transformOutgoingData = function (model, data, read, whitelist, outgoingRecords, recursiveCall) {
+    Transformer.transformOutgoingData = function (model, data, read, action, whitelist, outgoingRecords, recursiveCall) {
         var _this = this;
         var context = Context.getInstance();
         var relations = model.getRelations();
@@ -14149,7 +14150,7 @@ var Transformer = /** @class */ (function () {
             // we want to include any relation, so we have to make sure it's false. In the recursive calls
             // it should be true when we transform the outgoing data for fetch (and false for the others)
             if (!isRecursion &&
-                _this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, whitelist)) {
+                _this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, whitelist)) {
                 var relatedModel = Model.getRelatedModel(relations.get(key));
                 if (value instanceof Array) {
                     // Either this is a hasMany field or a .attr() field which contains an array.
@@ -14157,7 +14158,7 @@ var Transformer = /** @class */ (function () {
                     if (arrayModel_1) {
                         _this.addRecordForRecursionDetection(outgoingRecords, value[0]);
                         returnValue[key] = value.map(function (v) {
-                            return _this.transformOutgoingData(arrayModel_1 || model, v, read, undefined, outgoingRecords, true);
+                            return _this.transformOutgoingData(arrayModel_1 || model, v, read, action, undefined, outgoingRecords, true);
                         });
                     }
                     else {
@@ -14171,7 +14172,7 @@ var Transformer = /** @class */ (function () {
                     }
                     _this.addRecordForRecursionDetection(outgoingRecords, value);
                     // Value is a record, transform that too
-                    returnValue[key] = _this.transformOutgoingData(relatedModel, value, read, undefined, outgoingRecords, true);
+                    returnValue[key] = _this.transformOutgoingData(relatedModel, value, read, action, undefined, outgoingRecords, true);
                 }
                 else {
                     // In any other case just let the value be what ever it is
@@ -14257,10 +14258,11 @@ var Transformer = /** @class */ (function () {
      * @param {string} fieldName Name of the field to check.
      * @param {any} value Value of the field.
      * @param {Model} model Model class which contains the field.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
      * @returns {boolean}
      */
-    Transformer.shouldIncludeOutgoingField = function (forFilter, fieldName, value, model, whitelist) {
+    Transformer.shouldIncludeOutgoingField = function (forFilter, fieldName, value, model, action, whitelist) {
         // Always add fields on the whitelist.
         if (whitelist && whitelist.includes(fieldName))
             return true;
@@ -14274,7 +14276,7 @@ var Transformer = /** @class */ (function () {
         if (value === null || value === undefined)
             return false;
         // Ignore fields that don't exist in the input type
-        if (!this.inputTypeContainsField(model, fieldName))
+        if (!this.inputTypeContainsField(model, fieldName, action))
             return false;
         // Include all eager save connections
         if (model.getRelations().has(fieldName)) {
@@ -14295,10 +14297,12 @@ var Transformer = /** @class */ (function () {
      * Tells whether a field is in the input type.
      * @param {Model} model
      * @param {string} fieldName
+     * @param {string} action Name of the current action like 'persist' or 'push'
      */
-    Transformer.inputTypeContainsField = function (model, fieldName) {
-        var inputTypeName = model.singularName + "Input";
-        var inputType = Context.getInstance().schema.getType(inputTypeName, false);
+    Transformer.inputTypeContainsField = function (model, fieldName, action) {
+        var context = Context.getInstance();
+        var inputTypeName = context.adapter.getInputTypeName(model, action);
+        var inputType = context.schema.getType(inputTypeName, false);
         if (inputType === null)
             throw new Error("Type " + inputType + " doesn't exist.");
         return inputType.inputFields.find(function (f) { return f.name === fieldName; }) !== undefined;
@@ -15000,6 +15004,7 @@ var QueryBuilder = /** @class */ (function () {
      * Builds a field for the GraphQL query and a specific model
      *
      * @param {Model|string} model The model to use
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {boolean} multiple Determines whether plural/nodes syntax or singular syntax is used.
      * @param {Arguments} args The args that will be passed to the query field ( user(role: $role) )
      * @param {Array<Model>} path The relations in this list are ignored (while traversing relations).
@@ -15012,7 +15017,7 @@ var QueryBuilder = /** @class */ (function () {
      *
      * @todo Do we need the allowIdFields param?
      */
-    QueryBuilder.buildField = function (model, multiple, args, path, name, filter, allowIdFields) {
+    QueryBuilder.buildField = function (model, action, multiple, args, path, name, filter, allowIdFields) {
         if (multiple === void 0) { multiple = true; }
         if (path === void 0) { path = []; }
         if (filter === void 0) { filter = false; }
@@ -15021,9 +15026,9 @@ var QueryBuilder = /** @class */ (function () {
         model = context.getModel(model);
         name = name ? name : model.pluralName;
         var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
-        var params = this.buildArguments(model, args, false, filter, allowIdFields, field);
+        var params = this.buildArguments(model, action, args, false, filter, allowIdFields, field);
         path = path.length === 0 ? [model.singularName] : path;
-        var fields = "\n      " + model.getQueryFields().join(" ") + "\n      " + this.buildRelationsQuery(model, path) + "\n    ";
+        var fields = "\n      " + model.getQueryFields().join(" ") + "\n      " + this.buildRelationsQuery(model, path, action) + "\n    ";
         if (multiple) {
             var header = "" + name + params;
             if (context.connectionMode === exports.ConnectionMode.NODES) {
@@ -15048,13 +15053,14 @@ var QueryBuilder = /** @class */ (function () {
      * Currently only one root field for the query is possible.
      * @param {string} type 'mutation' or 'query'
      * @param {Model | string} model The model this query or mutation affects. This mainly determines the query fields.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {string} name Optional name of the query/mutation. Will overwrite the name from the model.
      * @param {Arguments} args Arguments for the query
      * @param {boolean} multiple Determines if the root query field is a connection or not (will be passed to buildField)
      * @param {boolean} filter When true the query arguments are passed via a filter object.
      * @returns {any} Whatever gql() returns
      */
-    QueryBuilder.buildQuery = function (type, model, name, args, multiple, filter) {
+    QueryBuilder.buildQuery = function (type, model, action, name, args, multiple, filter) {
         var context = Context.getInstance();
         // model
         model = context.getModel(model);
@@ -15068,8 +15074,8 @@ var QueryBuilder = /** @class */ (function () {
         // field
         var field = context.schema.getMutation(name, true) || context.schema.getQuery(name, true);
         // build query
-        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, args, true, filter, true, field) + " {\n" +
-            ("  " + this.buildField(model, multiple, args, [], name, filter, true) + "\n") +
+        var query = type + " " + upcaseFirstLetter(name) + this.buildArguments(model, action, args, true, filter, true, field) + " {\n" +
+            ("  " + this.buildField(model, action, multiple, args, [], name, filter, true) + "\n") +
             "}";
         return src(query);
     };
@@ -15091,6 +15097,7 @@ var QueryBuilder = /** @class */ (function () {
      *      => 'users(filter: { active: $active })'
      *
      * @param model
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {Arguments | undefined} args
      * @param {boolean} signature When true, then this method generates a query signature instead of key/value pairs
      * @param filter
@@ -15098,7 +15105,7 @@ var QueryBuilder = /** @class */ (function () {
      * @param {GraphQLField} field Optional. The GraphQL mutation or query field
      * @returns {String}
      */
-    QueryBuilder.buildArguments = function (model, args, signature, filter, allowIdFields, field) {
+    QueryBuilder.buildArguments = function (model, action, args, signature, filter, allowIdFields, field) {
         var _this = this;
         if (signature === void 0) { signature = false; }
         if (filter === void 0) { filter = false; }
@@ -15122,7 +15129,7 @@ var QueryBuilder = /** @class */ (function () {
                     if (signature) {
                         if (isPlainObject(value) && value.__type) {
                             // Case 2 (User!)
-                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type)) + "!";
+                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
                         }
                         else if (value instanceof Array && field) {
                             var arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
@@ -15241,9 +15248,10 @@ var QueryBuilder = /** @class */ (function () {
      *
      * @param {Model} model
      * @param {Array<Model>} path
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {string}
      */
-    QueryBuilder.buildRelationsQuery = function (model, path) {
+    QueryBuilder.buildRelationsQuery = function (model, path, action) {
         var _this = this;
         if (path === void 0) { path = []; }
         if (model === null)
@@ -15264,7 +15272,7 @@ var QueryBuilder = /** @class */ (function () {
             if (model.shouldEagerLoadRelation(name, field, relatedModel) && !ignore) {
                 var newPath = path.slice(0);
                 newPath.push(relatedModel.singularName);
-                relationQueries.push(_this.buildField(relatedModel, Model.isConnection(field), undefined, newPath, name, false));
+                relationQueries.push(_this.buildField(relatedModel, action, Model.isConnection(field), undefined, newPath, name, false));
             }
         });
         return relationQueries.join("\n");
@@ -15353,10 +15361,11 @@ var Action = /** @class */ (function () {
      * @param {Data | undefined} variables Variables to send with the mutation
      * @param {Function} dispatch Vuex Dispatch method for the model
      * @param {Model} model The model this mutation affects.
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @param {boolean} multiple Tells if we're requesting a single record or multiple.
      * @returns {Promise<any>}
      */
-    Action.mutation = function (name, variables, dispatch, model) {
+    Action.mutation = function (name, variables, dispatch, model, action) {
         return __awaiter(this, void 0, void 0, function () {
             var context, schema, multiple, query, newData, insertedData, records, newRecord;
             var _a;
@@ -15369,7 +15378,7 @@ var Action = /** @class */ (function () {
                     case 1:
                         schema = _b.sent();
                         multiple = Schema.returnsConnection(schema.getMutation(name));
-                        query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
+                        query = QueryBuilder.buildQuery("mutation", model, action, name, variables, multiple);
                         return [4 /*yield*/, context.apollo.request(model, query, variables, true)];
                     case 2:
                         newData = _b.sent();
@@ -15423,24 +15432,26 @@ var Action = /** @class */ (function () {
      * @param {Arguments} args
      * @param {Model} model
      * @param {Data} data
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    Action.addRecordToArgs = function (args, model, data) {
-        args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
+    Action.addRecordToArgs = function (args, model, data, action) {
+        args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action);
         return args;
     };
     /**
      * Transforms each field of the args which contains a model.
      * @param {Arguments} args
+     * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    Action.transformArgs = function (args) {
+    Action.transformArgs = function (args, action) {
         var context = Context.getInstance();
         Object.keys(args).forEach(function (key) {
             var value = args[key];
             if (value instanceof context.components.Model) {
                 var model = context.getModel(singularize(value.$self().entity));
-                var transformedValue = Transformer.transformOutgoingData(model, value, false);
+                var transformedValue = Transformer.transformOutgoingData(model, value, false, action);
                 context.logger.log("A", key, "model was found within the variables and will be transformed from", value, "to", transformedValue);
                 args[key] = transformedValue;
             }
@@ -15496,13 +15507,14 @@ var Destroy = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, mutationName, mockReturnValue;
+            var model, mutationName, action, mockReturnValue;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!id) return [3 /*break*/, 4];
                         model = this.getModelFromState(state);
                         mutationName = Context.getInstance().adapter.getNameForDestroy(model);
+                        action = 'destroy';
                         mockReturnValue = model.$mockHook("destroy", { id: id });
                         if (!mockReturnValue) return [3 /*break*/, 2];
                         return [4 /*yield*/, Store.insertData(mockReturnValue, dispatch)];
@@ -15511,7 +15523,7 @@ var Destroy = /** @class */ (function (_super) {
                         return [2 /*return*/, true];
                     case 2:
                         args = this.prepareArgs(args, id);
-                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
+                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model, action)];
                     case 3:
                         _c.sent();
                         return [2 /*return*/, true];
@@ -15562,12 +15574,13 @@ var Fetch = /** @class */ (function (_super) {
     Fetch.call = function (_a, params) {
         var state = _a.state, dispatch = _a.dispatch;
         return __awaiter(this, void 0, void 0, function () {
-            var context, model, mockReturnValue, filter, bypassCache, multiple, name, query, data;
+            var context, model, action, mockReturnValue, filter, bypassCache, multiple, name, query, data;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         context = Context.getInstance();
                         model = this.getModelFromState(state);
+                        action = 'fetch';
                         mockReturnValue = model.$mockHook("fetch", {
                             filter: params ? params.filter || {} : {}
                         });
@@ -15579,12 +15592,12 @@ var Fetch = /** @class */ (function (_super) {
                         _b.sent();
                         filter = {};
                         if (params && params.filter) {
-                            filter = Transformer.transformOutgoingData(model, params.filter, true, Object.keys(params.filter));
+                            filter = Transformer.transformOutgoingData(model, params.filter, true, action, Object.keys(params.filter));
                         }
                         bypassCache = params && params.bypassCache;
                         multiple = !filter["id"];
                         name = context.adapter.getNameForFetch(model, multiple);
-                        query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
+                        query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, multiple);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 2:
                         data = _b.sent();
@@ -15644,13 +15657,14 @@ var Mutate = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var args = _b.args, name = _b.name;
         return __awaiter(this, void 0, void 0, function () {
-            var context, model, mockReturnValue;
+            var context, model, action, mockReturnValue;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!name) return [3 /*break*/, 2];
                         context = Context.getInstance();
                         model = this.getModelFromState(state);
+                        action = 'mutate';
                         mockReturnValue = model.$mockHook("mutate", {
                             name: name,
                             args: args || {}
@@ -15664,9 +15678,9 @@ var Mutate = /** @class */ (function (_super) {
                         args = this.prepareArgs(args);
                         // There could be anything in the args, but we have to be sure that all records are gone through
                         // transformOutgoingData()
-                        this.transformArgs(args);
+                        this.transformArgs(args, action);
                         // Send the mutation
-                        return [2 /*return*/, Action.mutation(name, args, dispatch, model)];
+                        return [2 /*return*/, Action.mutation(name, args, dispatch, model, action)];
                     case 2: 
                     /* istanbul ignore next */
                     throw new Error("The mutate action requires the mutation name ('mutation') to be set");
@@ -15710,7 +15724,7 @@ var Persist = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var id = _b.id, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, mutationName, oldRecord, mockReturnValue, newRecord_1, newRecord;
+            var model, mutationName, oldRecord, action, mockReturnValue, newRecord_1, newRecord;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -15718,6 +15732,7 @@ var Persist = /** @class */ (function (_super) {
                         model = this.getModelFromState(state);
                         mutationName = Context.getInstance().adapter.getNameForPersist(model);
                         oldRecord = model.getRecordWithId(id);
+                        action = 'persist';
                         mockReturnValue = model.$mockHook("persist", {
                             id: toNumber(id),
                             args: args || {}
@@ -15737,8 +15752,8 @@ var Persist = /** @class */ (function (_super) {
                         // Arguments
                         _c.sent();
                         args = this.prepareArgs(args);
-                        this.addRecordToArgs(args, model, oldRecord);
-                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model)];
+                        this.addRecordToArgs(args, model, oldRecord, action);
+                        return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model, action)];
                     case 5:
                         newRecord = _c.sent();
                         // Delete the old record if necessary
@@ -15810,13 +15825,14 @@ var Push = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var data = _b.data, args = _b.args;
         return __awaiter(this, void 0, void 0, function () {
-            var model, mutationName, mockReturnValue;
+            var model, mutationName, action, mockReturnValue;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!data) return [3 /*break*/, 2];
                         model = this.getModelFromState(state);
                         mutationName = Context.getInstance().adapter.getNameForPush(model);
+                        action = 'push';
                         mockReturnValue = model.$mockHook("push", {
                             data: data,
                             args: args || {}
@@ -15830,9 +15846,9 @@ var Push = /** @class */ (function (_super) {
                         // Arguments
                         _c.sent();
                         args = this.prepareArgs(args, data.id);
-                        this.addRecordToArgs(args, model, data);
+                        this.addRecordToArgs(args, model, data, action);
                         // Send the mutation
-                        return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model)];
+                        return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model, action)];
                     case 2: 
                     /* istanbul ignore next */
                     throw new Error("The persist action requires the 'data' to be set");
@@ -15893,13 +15909,14 @@ var Query = /** @class */ (function (_super) {
         var state = _a.state, dispatch = _a.dispatch;
         var name = _b.name, filter = _b.filter, bypassCache = _b.bypassCache;
         return __awaiter(this, void 0, void 0, function () {
-            var context, model, mockReturnValue, schema, multiple, query, data;
+            var context, model, action, mockReturnValue, schema, multiple, query, data;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         if (!name) return [3 /*break*/, 3];
                         context = Context.getInstance();
                         model = this.getModelFromState(state);
+                        action = 'query';
                         mockReturnValue = model.$mockHook("query", {
                             name: name,
                             filter: filter || {}
@@ -15911,9 +15928,9 @@ var Query = /** @class */ (function (_super) {
                     case 1:
                         schema = _c.sent();
                         // Filter
-                        filter = filter ? Transformer.transformOutgoingData(model, filter, true) : {};
+                        filter = filter ? Transformer.transformOutgoingData(model, filter, true, action) : {};
                         multiple = Schema.returnsConnection(schema.getQuery(name));
-                        query = QueryBuilder.buildQuery("query", model, name, filter, multiple, false);
+                        query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, false);
                         return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];
                     case 2:
                         data = _c.sent();
