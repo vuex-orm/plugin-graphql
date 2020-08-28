@@ -14120,13 +14120,14 @@ var VuexORMGraphQLPlugin = (function (exports) {
          * @param {Data} data Data to transform
          * @param {boolean} read Tells if this is a write or a read action. read is fetch, write is push and persist.
          * @param {string} action Name of the current action like 'persist' or 'push'
+         * @param {string} mutationName Name of the current mutation like 'ceatePost'
          * @param {Array<String>} whitelist of fields
          * @param {Map<string, Array<string>>} outgoingRecords List of record IDs that are already added to the
          *                                                     outgoing data in order to detect recursion.
          * @param {boolean} recursiveCall Tells if it's a recursive call.
          * @returns {Data}
          */
-        Transformer.transformOutgoingData = function (model, data, read, action, whitelist, outgoingRecords, recursiveCall) {
+        Transformer.transformOutgoingData = function (model, data, read, action, mutationName, whitelist, outgoingRecords, recursiveCall) {
             var _this = this;
             var context = Context.getInstance();
             var relations = model.getRelations();
@@ -14149,7 +14150,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                 // we want to include any relation, so we have to make sure it's false. In the recursive calls
                 // it should be true when we transform the outgoing data for fetch (and false for the others)
                 if (!isRecursion &&
-                    _this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, whitelist)) {
+                    _this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, mutationName, whitelist)) {
                     var relatedModel = Model.getRelatedModel(relations.get(key));
                     if (value instanceof Array) {
                         // Either this is a hasMany field or a .attr() field which contains an array.
@@ -14157,7 +14158,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                         if (arrayModel_1) {
                             _this.addRecordForRecursionDetection(outgoingRecords, value[0]);
                             returnValue[key] = value.map(function (v) {
-                                return _this.transformOutgoingData(arrayModel_1 || model, v, read, action, undefined, outgoingRecords, true);
+                                return _this.transformOutgoingData(arrayModel_1 || model, v, read, action, mutationName, undefined, outgoingRecords, true);
                             });
                         }
                         else {
@@ -14171,7 +14172,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                         }
                         _this.addRecordForRecursionDetection(outgoingRecords, value);
                         // Value is a record, transform that too
-                        returnValue[key] = _this.transformOutgoingData(relatedModel, value, read, action, undefined, outgoingRecords, true);
+                        returnValue[key] = _this.transformOutgoingData(relatedModel, value, read, action, mutationName, undefined, outgoingRecords, true);
                     }
                     else {
                         // In any other case just let the value be what ever it is
@@ -14258,10 +14259,11 @@ var VuexORMGraphQLPlugin = (function (exports) {
          * @param {any} value Value of the field.
          * @param {Model} model Model class which contains the field.
          * @param {string} action Name of the current action like 'persist' or 'push'
+         * @param {string} mutationName Name of the current mutation like 'createPost'
          * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
          * @returns {boolean}
          */
-        Transformer.shouldIncludeOutgoingField = function (forFilter, fieldName, value, model, action, whitelist) {
+        Transformer.shouldIncludeOutgoingField = function (forFilter, fieldName, value, model, action, mutationName, whitelist) {
             // Always add fields on the whitelist.
             if (whitelist && whitelist.includes(fieldName))
                 return true;
@@ -14274,8 +14276,9 @@ var VuexORMGraphQLPlugin = (function (exports) {
             // Ignore empty fields
             if (value === null || value === undefined)
                 return false;
+            //1
             // Ignore fields that don't exist in the input type
-            if (!this.inputTypeContainsField(model, fieldName, action))
+            if (!this.inputTypeContainsField(model, fieldName, action, mutationName))
                 return false;
             // Include all eager save connections
             if (model.getRelations().has(fieldName)) {
@@ -14298,9 +14301,11 @@ var VuexORMGraphQLPlugin = (function (exports) {
          * @param {string} fieldName
          * @param {string} action Name of the current action like 'persist' or 'push'
          */
-        Transformer.inputTypeContainsField = function (model, fieldName, action) {
+        Transformer.inputTypeContainsField = function (model, fieldName, action, mutationName) {
             var context = Context.getInstance();
-            var inputTypeName = context.adapter.getInputTypeName(model, action);
+            // console.log('fieldName: ' + fieldName)
+            // console.log('model: ', model)
+            var inputTypeName = context.adapter.getInputTypeName(model, action, mutationName); //1
             var inputType = context.schema.getType(inputTypeName, false);
             if (inputType === null)
                 throw new Error("Type " + inputType + " doesn't exist.");
@@ -14753,7 +14758,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
         DefaultAdapter.prototype.getFilterTypeName = function (model) {
             return upcaseFirstLetter(model.singularName) + "Filter";
         };
-        DefaultAdapter.prototype.getInputTypeName = function (model, action) {
+        DefaultAdapter.prototype.getInputTypeName = function (model, action, mutation) {
             return upcaseFirstLetter(model.singularName) + "Input";
         };
         DefaultAdapter.prototype.getNameForDestroy = function (model) {
@@ -15128,7 +15133,8 @@ var VuexORMGraphQLPlugin = (function (exports) {
                         if (signature) {
                             if (isPlainObject(value) && value.__type) {
                                 // Case 2 (User!)
-                                typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
+                                // console.log('field: ', field)
+                                typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action, field === null || field === void 0 ? void 0 : field.name) + "!"; //1
                             }
                             else if (value instanceof Array && field) {
                                 var arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
@@ -15434,8 +15440,9 @@ var VuexORMGraphQLPlugin = (function (exports) {
          * @param {string} action Name of the current action like 'persist' or 'push'
          * @returns {Arguments}
          */
-        Action.addRecordToArgs = function (args, model, data, action) {
-            args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action);
+        Action.addRecordToArgs = function (args, model, data, action, mutationName) {
+            // console.log('addRecordToArgs')
+            args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action, mutationName);
             return args;
         };
         /**
@@ -15450,7 +15457,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                 var value = args[key];
                 if (value instanceof context.components.Model) {
                     var model = context.getModel(singularize(value.$self().entity));
-                    var transformedValue = Transformer.transformOutgoingData(model, value, false, action);
+                    var transformedValue = Transformer.transformOutgoingData(model, value, false, action, '');
                     context.logger.log("A", key, "model was found within the variables and will be transformed from", value, "to", transformedValue);
                     args[key] = transformedValue;
                 }
@@ -15591,7 +15598,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                             _b.sent();
                             filter = {};
                             if (params && params.filter) {
-                                filter = Transformer.transformOutgoingData(model, params.filter, true, action, Object.keys(params.filter));
+                                filter = Transformer.transformOutgoingData(model, params.filter, true, action, '', Object.keys(params.filter));
                             }
                             bypassCache = params && params.bypassCache;
                             multiple = !filter["id"];
@@ -15751,7 +15758,8 @@ var VuexORMGraphQLPlugin = (function (exports) {
                             // Arguments
                             _c.sent();
                             args = this.prepareArgs(args);
-                            this.addRecordToArgs(args, model, oldRecord, action);
+                            // console.log('mutationName: ' + mutationName)
+                            this.addRecordToArgs(args, model, oldRecord, action, mutationName);
                             return [4 /*yield*/, Action.mutation(mutationName, args, dispatch, model, action)];
                         case 5:
                             newRecord = _c.sent();
@@ -15845,7 +15853,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                             // Arguments
                             _c.sent();
                             args = this.prepareArgs(args, data.id);
-                            this.addRecordToArgs(args, model, data, action);
+                            this.addRecordToArgs(args, model, data, action, mutationName);
                             // Send the mutation
                             return [2 /*return*/, Action.mutation(mutationName, args, dispatch, model, action)];
                         case 2: 
@@ -15927,7 +15935,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
                         case 1:
                             schema = _c.sent();
                             // Filter
-                            filter = filter ? Transformer.transformOutgoingData(model, filter, true, action) : {};
+                            filter = filter ? Transformer.transformOutgoingData(model, filter, true, action, '') : {};
                             multiple = Schema.returnsConnection(schema.getQuery(name));
                             query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, false);
                             return [4 /*yield*/, context.apollo.request(model, query, filter, false, bypassCache)];

@@ -106,8 +106,21 @@ export default class Action {
    * @param {string} action Name of the current action like 'persist' or 'push'
    * @returns {Arguments}
    */
-  static addRecordToArgs(args: Arguments, model: Model, data: Data, action: string): Arguments {
-    args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action);
+  static addRecordToArgs(
+    args: Arguments,
+    model: Model,
+    data: Data,
+    action: string,
+    mutationName: string
+  ): Arguments {
+    // console.log('addRecordToArgs')
+    args[model.singularName] = Transformer.transformOutgoingData(
+      model,
+      data,
+      false,
+      action,
+      mutationName
+    );
     return args;
   }
 
@@ -125,7 +138,7 @@ export default class Action {
 
       if (value instanceof context.components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false, action);
+        const transformedValue = Transformer.transformOutgoingData(model, value, false, action, "");
         context.logger.log(
           "A",
           key,

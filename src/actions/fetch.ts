@@ -39,7 +39,7 @@ export default class Fetch extends Action {
   ): Promise<Data> {
     const context = Context.getInstance();
     const model = this.getModelFromState(state!);
-    const action = 'fetch'
+    const action = "fetch";
 
     const mockReturnValue = model.$mockHook("fetch", {
       filter: params ? params.filter || {} : {}
@@ -60,6 +60,7 @@ export default class Fetch extends Action {
         params.filter as Data,
         true,
         action,
+        "",
         Object.keys(params.filter)
       );
     }

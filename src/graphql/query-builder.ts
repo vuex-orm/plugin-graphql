@@ -44,7 +44,15 @@ export default class QueryBuilder {
     name = name ? name : model.pluralName;
     const field = context.schema!.getMutation(name, true) || context.schema!.getQuery(name, true);
 
-    let params: string = this.buildArguments(model, action, args, false, filter, allowIdFields, field);
+    let params: string = this.buildArguments(
+      model,
+      action,
+      args,
+      false,
+      filter,
+      allowIdFields,
+      field
+    );
     path = path.length === 0 ? [model.singularName] : path;
 
     const fields = `
@@ -217,7 +225,13 @@ export default class QueryBuilder {
           if (signature) {
             if (isPlainObject(value) && value.__type) {
               // Case 2 (User!)
-              typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
+              // console.log('field: ', field)
+              typeOrValue =
+                context.adapter.getInputTypeName(
+                  context.getModel(value.__type),
+                  action,
+                  field?.name
+                ) + "!"; //1
             } else if (value instanceof Array && field) {
               const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
 
@@ -368,7 +382,11 @@ export default class QueryBuilder {
    * @param {string} action Name of the current action like 'persist' or 'push'
    * @returns {string}
    */
-  static buildRelationsQuery(model: null | Model, path: Array<string> = [], action: string): string {
+  static buildRelationsQuery(
+    model: null | Model,
+    path: Array<string> = [],
+    action: string
+  ): string {
     if (model === null) return "";
 
     const context = Context.getInstance();

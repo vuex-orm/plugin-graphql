@@ -23,7 +23,7 @@ export default class DefaultAdapter implements Adapter {
     return `${upcaseFirstLetter(model.singularName)}Filter`;
   }
 
-  getInputTypeName(model: Model, action?: string): string {
+  getInputTypeName(model: Model, action?: string, mutation?: string): string {
     return `${upcaseFirstLetter(model.singularName)}Input`;
   }
 

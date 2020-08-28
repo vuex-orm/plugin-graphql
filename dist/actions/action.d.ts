@@ -41,7 +41,7 @@ export default class Action {
      * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    static addRecordToArgs(args: Arguments, model: Model, data: Data, action: string): Arguments;
+    static addRecordToArgs(args: Arguments, model: Model, data: Data, action: string, mutationName: string): Arguments;
     /**
      * Transforms each field of the args which contains a model.
      * @param {Arguments} args

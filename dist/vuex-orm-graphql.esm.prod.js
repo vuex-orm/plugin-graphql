@@ -14099,13 +14099,14 @@ class Transformer {
      * @param {Data} data Data to transform
      * @param {boolean} read Tells if this is a write or a read action. read is fetch, write is push and persist.
      * @param {string} action Name of the current action like 'persist' or 'push'
+     * @param {string} mutationName Name of the current mutation like 'ceatePost'
      * @param {Array<String>} whitelist of fields
      * @param {Map<string, Array<string>>} outgoingRecords List of record IDs that are already added to the
      *                                                     outgoing data in order to detect recursion.
      * @param {boolean} recursiveCall Tells if it's a recursive call.
      * @returns {Data}
      */
-    static transformOutgoingData(model, data, read, action, whitelist, outgoingRecords, recursiveCall) {
+    static transformOutgoingData(model, data, read, action, mutationName, whitelist, outgoingRecords, recursiveCall) {
         const context = Context.getInstance();
         const relations = model.getRelations();
         const returnValue = {};
@@ -14127,7 +14128,7 @@ class Transformer {
             // we want to include any relation, so we have to make sure it's false. In the recursive calls
             // it should be true when we transform the outgoing data for fetch (and false for the others)
             if (!isRecursion &&
-                this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, whitelist)) {
+                this.shouldIncludeOutgoingField(recursiveCall && read, key, value, model, action, mutationName, whitelist)) {
                 let relatedModel = Model.getRelatedModel(relations.get(key));
                 if (value instanceof Array) {
                     // Either this is a hasMany field or a .attr() field which contains an array.
@@ -14135,7 +14136,7 @@ class Transformer {
                     if (arrayModel) {
                         this.addRecordForRecursionDetection(outgoingRecords, value[0]);
                         returnValue[key] = value.map(v => {
-                            return this.transformOutgoingData(arrayModel || model, v, read, action, undefined, outgoingRecords, true);
+                            return this.transformOutgoingData(arrayModel || model, v, read, action, mutationName, undefined, outgoingRecords, true);
                         });
                     }
                     else {
@@ -14149,7 +14150,7 @@ class Transformer {
                     }
                     this.addRecordForRecursionDetection(outgoingRecords, value);
                     // Value is a record, transform that too
-                    returnValue[key] = this.transformOutgoingData(relatedModel, value, read, action, undefined, outgoingRecords, true);
+                    returnValue[key] = this.transformOutgoingData(relatedModel, value, read, action, mutationName, undefined, outgoingRecords, true);
                 }
                 else {
                     // In any other case just let the value be what ever it is
@@ -14233,10 +14234,11 @@ class Transformer {
      * @param {any} value Value of the field.
      * @param {Model} model Model class which contains the field.
      * @param {string} action Name of the current action like 'persist' or 'push'
+     * @param {string} mutationName Name of the current mutation like 'createPost'
      * @param {Array<String>|undefined} whitelist Contains a list of fields which should always be included.
      * @returns {boolean}
      */
-    static shouldIncludeOutgoingField(forFilter, fieldName, value, model, action, whitelist) {
+    static shouldIncludeOutgoingField(forFilter, fieldName, value, model, action, mutationName, whitelist) {
         // Always add fields on the whitelist.
         if (whitelist && whitelist.includes(fieldName))
             return true;
@@ -14249,8 +14251,9 @@ class Transformer {
         // Ignore empty fields
         if (value === null || value === undefined)
             return false;
+        //1
         // Ignore fields that don't exist in the input type
-        if (!this.inputTypeContainsField(model, fieldName, action))
+        if (!this.inputTypeContainsField(model, fieldName, action, mutationName))
             return false;
         // Include all eager save connections
         if (model.getRelations().has(fieldName)) {
@@ -14273,9 +14276,11 @@ class Transformer {
      * @param {string} fieldName
      * @param {string} action Name of the current action like 'persist' or 'push'
      */
-    static inputTypeContainsField(model, fieldName, action) {
+    static inputTypeContainsField(model, fieldName, action, mutationName) {
         const context = Context.getInstance();
-        const inputTypeName = context.adapter.getInputTypeName(model, action);
+        // console.log('fieldName: ' + fieldName)
+        // console.log('model: ', model)
+        const inputTypeName = context.adapter.getInputTypeName(model, action, mutationName); //1
         const inputType = context.schema.getType(inputTypeName, false);
         if (inputType === null)
             throw new Error(`Type ${inputType} doesn't exist.`);
@@ -14691,7 +14696,7 @@ class DefaultAdapter {
     getFilterTypeName(model) {
         return `${upcaseFirstLetter(model.singularName)}Filter`;
     }
-    getInputTypeName(model, action) {
+    getInputTypeName(model, action, mutation) {
         return `${upcaseFirstLetter(model.singularName)}Input`;
     }
     getNameForDestroy(model) {
@@ -15148,7 +15153,8 @@ class QueryBuilder {
                     if (signature) {
                         if (isPlainObject(value) && value.__type) {
                             // Case 2 (User!)
-                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action) + "!";
+                            // console.log('field: ', field)
+                            typeOrValue = context.adapter.getInputTypeName(context.getModel(value.__type), action, field === null || field === void 0 ? void 0 : field.name) + "!"; //1
                         }
                         else if (value instanceof Array && field) {
                             const arg = QueryBuilder.findSchemaFieldForArgument(key, field, model, filter);
@@ -15415,8 +15421,9 @@ class Action {
      * @param {string} action Name of the current action like 'persist' or 'push'
      * @returns {Arguments}
      */
-    static addRecordToArgs(args, model, data, action) {
-        args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action);
+    static addRecordToArgs(args, model, data, action, mutationName) {
+        // console.log('addRecordToArgs')
+        args[model.singularName] = Transformer.transformOutgoingData(model, data, false, action, mutationName);
         return args;
     }
     /**
@@ -15431,7 +15438,7 @@ class Action {
             const value = args[key];
             if (value instanceof context.components.Model) {
                 const model = context.getModel(singularize(value.$self().entity));
-                const transformedValue = Transformer.transformOutgoingData(model, value, false, action);
+                const transformedValue = Transformer.transformOutgoingData(model, value, false, action, '');
                 context.logger.log("A", key, "model was found within the variables and will be transformed from", value, "to", transformedValue);
                 args[key] = transformedValue;
             }
@@ -15525,7 +15532,7 @@ class Fetch extends Action {
         // Filter
         let filter = {};
         if (params && params.filter) {
-            filter = Transformer.transformOutgoingData(model, params.filter, true, action, Object.keys(params.filter));
+            filter = Transformer.transformOutgoingData(model, params.filter, true, action, '', Object.keys(params.filter));
         }
         const bypassCache = params && params.bypassCache;
         // When the filter contains an id, we query in singular mode
@@ -15635,7 +15642,8 @@ class Persist extends Action {
             // Arguments
             await Context.getInstance().loadSchema();
             args = this.prepareArgs(args);
-            this.addRecordToArgs(args, model, oldRecord, action);
+            // console.log('mutationName: ' + mutationName)
+            this.addRecordToArgs(args, model, oldRecord, action, mutationName);
             // Send mutation
             const newRecord = await Action.mutation(mutationName, args, dispatch, model, action);
             // Delete the old record if necessary
@@ -15701,7 +15709,7 @@ class Push extends Action {
             // Arguments
             await Context.getInstance().loadSchema();
             args = this.prepareArgs(args, data.id);
-            this.addRecordToArgs(args, model, data, action);
+            this.addRecordToArgs(args, model, data, action, mutationName);
             // Send the mutation
             return Action.mutation(mutationName, args, dispatch, model, action);
         }
@@ -15758,7 +15766,7 @@ class Query extends Action {
             }
             const schema = await context.loadSchema();
             // Filter
-            filter = filter ? Transformer.transformOutgoingData(model, filter, true, action) : {};
+            filter = filter ? Transformer.transformOutgoingData(model, filter, true, action, '') : {};
             // Multiple?
             const multiple = Schema.returnsConnection(schema.getQuery(name));
             // Build query

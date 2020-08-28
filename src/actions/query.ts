@@ -50,7 +50,7 @@ export default class Query extends Action {
     if (name) {
       const context: Context = Context.getInstance();
       const model = this.getModelFromState(state!);
-      const action = 'query'
+      const action = "query";
 
       const mockReturnValue = model.$mockHook("query", {
         name,
@@ -64,7 +64,9 @@ export default class Query extends Action {
       const schema: Schema = await context.loadSchema();
 
       // Filter
-      filter = filter ? Transformer.transformOutgoingData(model, filter as Data, true, action) : {};
+      filter = filter
+        ? Transformer.transformOutgoingData(model, filter as Data, true, action, "")
+        : {};
 
       // Multiple?
       const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
