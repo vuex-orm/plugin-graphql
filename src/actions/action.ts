@@ -19,6 +19,7 @@ export default class Action {
    * @param {Data | undefined} variables Variables to send with the mutation
    * @param {Function} dispatch Vuex Dispatch method for the model
    * @param {Model} model The model this mutation affects.
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @param {boolean} multiple Tells if we're requesting a single record or multiple.
    * @returns {Promise<any>}
    */
@@ -26,14 +27,15 @@ export default class Action {
     name: string,
     variables: Data | undefined,
     dispatch: DispatchFunction,
-    model: Model
+    model: Model,
+    action: string
   ): Promise<any> {
     if (variables) {
       const context: Context = Context.getInstance();
       const schema: Schema = await context.loadSchema();
 
       const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!);
-      const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
+      const query = QueryBuilder.buildQuery("mutation", model, action, name, variables, multiple);
 
       // Send GraphQL Mutation
       let newData = await context.apollo.request(model, query, variables, true);
@@ -101,19 +103,34 @@ export default class Action {
    * @param {Arguments} args
    * @param {Model} model
    * @param {Data} data
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @returns {Arguments}
    */
-  static addRecordToArgs(args: Arguments, model: Model, data: Data): Arguments {
-    args[model.singularName] = Transformer.transformOutgoingData(model, data, false);
+  static addRecordToArgs(
+    args: Arguments,
+    model: Model,
+    data: Data,
+    action: string,
+    mutationName: string
+  ): Arguments {
+    // console.log('addRecordToArgs')
+    args[model.singularName] = Transformer.transformOutgoingData(
+      model,
+      data,
+      false,
+      action,
+      mutationName
+    );
     return args;
   }
 
   /**
    * Transforms each field of the args which contains a model.
    * @param {Arguments} args
+   * @param {string} action Name of the current action like 'persist' or 'push'
    * @returns {Arguments}
    */
-  protected static transformArgs(args: Arguments): Arguments {
+  protected static transformArgs(args: Arguments, action: string): Arguments {
     const context = Context.getInstance();
 
     Object.keys(args).forEach((key: string) => {
@@ -121,7 +138,7 @@ export default class Action {
 
       if (value instanceof context.components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false);
+        const transformedValue = Transformer.transformOutgoingData(model, value, false, action, "");
         context.logger.log(
           "A",
           key,

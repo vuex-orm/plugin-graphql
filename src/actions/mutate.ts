@@ -46,6 +46,7 @@ export default class Mutate extends Action {
     if (name) {
       const context: Context = Context.getInstance();
       const model = this.getModelFromState(state!);
+      const action = 'mutate'
 
       const mockReturnValue = model.$mockHook("mutate", {
         name,
@@ -61,10 +62,10 @@ export default class Mutate extends Action {
 
       // There could be anything in the args, but we have to be sure that all records are gone through
       // transformOutgoingData()
-      this.transformArgs(args);
+      this.transformArgs(args, action);
 
       // Send the mutation
-      return Action.mutation(name, args as Data, dispatch!, model);
+      return Action.mutation(name, args as Data, dispatch!, model, action);
     } else {
       /* istanbul ignore next */
       throw new Error("The mutate action requires the mutation name ('mutation') to be set");

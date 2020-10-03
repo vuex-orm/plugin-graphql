@@ -50,6 +50,7 @@ export default class Query extends Action {
     if (name) {
       const context: Context = Context.getInstance();
       const model = this.getModelFromState(state!);
+      const action = "query";
 
       const mockReturnValue = model.$mockHook("query", {
         name,
@@ -63,13 +64,15 @@ export default class Query extends Action {
       const schema: Schema = await context.loadSchema();
 
       // Filter
-      filter = filter ? Transformer.transformOutgoingData(model, filter as Data, true) : {};
+      filter = filter
+        ? Transformer.transformOutgoingData(model, filter as Data, true, action, "")
+        : {};
 
       // Multiple?
       const multiple: boolean = Schema.returnsConnection(schema.getQuery(name)!);
 
       // Build query
-      const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, false);
+      const query = QueryBuilder.buildQuery("query", model, action, name, filter, multiple, false);
 
       // Send the request to the GraphQL API
       const data = await context.apollo.request(
