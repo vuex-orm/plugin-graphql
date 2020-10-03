@@ -15,18 +15,13 @@ export class Store {
   public static async insertData(data: Data, dispatch: DispatchFunction): Promise<Data> {
     let insertedData: Data = {} as Data;
 
-    await Promise.all(
-      Object.keys(data).map(async key => {
-        const value = data[key];
-        Context.getInstance().logger.log("Inserting records", value);
-        const newData = await dispatch("insertOrUpdate", ({ data: value } as unknown) as Data);
-
-        Object.keys(newData).forEach(dataKey => {
-          if (!insertedData[dataKey]) insertedData[dataKey] = [];
-          insertedData[dataKey] = insertedData[dataKey].concat(newData[dataKey]);
-        });
-      })
-    );
+    for (const [_, value] of Object.entries(data)) {
+      Context.getInstance().logger.log("Inserting records", value);
+      const newData: Iterable<any>[] = await dispatch("insertOrUpdate", ({ data: value } as unknown) as Data);
+      for (const [dataKey, data] of Object.entries(newData)) {
+        insertedData[dataKey] = [...(insertedData[dataKey] ?? []), ...data];
+      }
+    }
 
     return insertedData;
   }

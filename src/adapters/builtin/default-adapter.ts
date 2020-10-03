@@ -46,4 +46,20 @@ export default class DefaultAdapter implements Adapter {
   prepareSchemaTypeName(name: string): string {
     return upcaseFirstLetter(name);
   }
+
+  getNameForArgumentFilter(): string {
+    return "filter";
+  }
+
+  shouldQueryAlwaysUsePluralStyle(): boolean {
+    return false;
+  }
+
+  shouldMutationAlwaysUsePluralStyle(): boolean {
+    return false;
+  }
+
+  shouldTryPluralNameIfSchemaNameNotFoundWithSingular(): boolean {
+    return false;
+  }
 }

@@ -38,6 +38,7 @@ export default class Fetch extends Action {
     params?: ActionParams
   ): Promise<Data> {
     const context = Context.getInstance();
+    const { adapter, apollo } = context;
     const model = this.getModelFromState(state!);
 
     const mockReturnValue = model.$mockHook("fetch", {
@@ -53,7 +54,7 @@ export default class Fetch extends Action {
     // Filter
     let filter = {};
 
-    if (params && params.filter) {
+    if (params?.filter) {
       filter = Transformer.transformOutgoingData(
         model,
         params.filter as Data,
@@ -62,15 +63,15 @@ export default class Fetch extends Action {
       );
     }
 
-    const bypassCache = params && params.bypassCache;
+    const bypassCache = params?.bypassCache;
 
     // When the filter contains an id, we query in singular mode
-    const multiple: boolean = !filter["id"];
-    const name: string = context.adapter.getNameForFetch(model, multiple);
+    const multiple: boolean = adapter.shouldQueryAlwaysUsePluralStyle() || !filter["id"];
+    const name: string = adapter.getNameForFetch(model, multiple);
     const query = QueryBuilder.buildQuery("query", model, name, filter, multiple, multiple);
 
     // Send the request to the GraphQL API
-    const data = await context.apollo.request(model, query, filter, false, bypassCache as boolean);
+    const data = await apollo.request(model, query, filter, false, bypassCache as boolean);
 
     // Insert incoming data into the store
     return Store.insertData(data, dispatch!);

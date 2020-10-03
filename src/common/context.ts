@@ -182,30 +182,45 @@ export default class Context {
   }
 
   public processSchema() {
-    this.models.forEach((model: Model) => {
+
+    for (const [_, model] of this.models) {
       let type: GraphQLType;
+
+      let unableToResolveEntity = false;
 
       try {
         type = this.schema!.getType(model.singularName)!;
-      } catch (error) {
+      } catch {
+        if (this.adapter.shouldTryPluralNameIfSchemaNameNotFoundWithSingular()) {
+          try {
+            type = this.schema!.getType(model.pluralName)!;
+          } catch {
+            unableToResolveEntity = true;
+          }
+        } else {
+          unableToResolveEntity = true;
+        }
+      }
+
+      if (unableToResolveEntity) {
         this.logger.warn(`Ignoring entity ${model.singularName} because it's not in the schema.`);
         return;
       }
 
-      model.fields.forEach((field: Field, fieldName: string) => {
-        if (!type.fields!.find(f => f.name === fieldName)) {
+      for (const [fieldName, _] of model.fields) {
+        if (!type!.fields!.find(f => f.name === fieldName)) {
           this.logger.warn(
             `Ignoring field ${model.singularName}.${fieldName} because it's not in the schema.`
           );
 
           // TODO: Move skipFields to the model
-          model.baseModel.skipFields = model.baseModel.skipFields ? model.baseModel.skipFields : [];
+          model.baseModel.skipFields = model.baseModel.skipFields ?? [];
           if (!model.baseModel.skipFields.includes(fieldName)) {
             model.baseModel.skipFields.push(fieldName);
           }
         }
-      });
-    });
+      }
+    }
 
     if (this.connectionMode === ConnectionMode.AUTO) {
       this.connectionMode = this.schema!.determineQueryMode();
@@ -296,10 +311,10 @@ export default class Context {
    * Wraps all Vuex-ORM entities in a Model object and saves them into this.models
    */
   private collectModels() {
-    this.database.entities.forEach((entity: any) => {
+    for (const entity of this.database.entities) {
       const model: Model = new Model(entity.model as typeof ORMModel);
       this.models.set(model.singularName, model);
       Model.augment(model);
-    });
+    }
   }
 }

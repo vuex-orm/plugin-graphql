@@ -29,17 +29,18 @@ export default class Action {
     model: Model
   ): Promise<any> {
     if (variables) {
-      const context: Context = Context.getInstance();
-      const schema: Schema = await context.loadSchema();
+      const context = Context.getInstance();
+      const { adapter, apollo, logger } = context;
+      const schema = await context.loadSchema();
 
       const multiple: boolean = Schema.returnsConnection(schema.getMutation(name)!);
       const query = QueryBuilder.buildQuery("mutation", model, name, variables, multiple);
 
       // Send GraphQL Mutation
-      let newData = await context.apollo.request(model, query, variables, true);
+      let newData = await apollo.request(model, query, variables, true);
 
       // When this was not a destroy action, we get new data, which we should insert in the store
-      if (name !== context.adapter.getNameForDestroy(model)) {
+      if (name !== adapter.getNameForDestroy(model)) {
         newData = newData[Object.keys(newData)[0]];
 
         // IDs as String cause terrible issues, so we convert them to integers.
@@ -56,7 +57,7 @@ export default class Action {
         if (newRecord) {
           return newRecord;
         } else {
-          Context.getInstance().logger.log(
+          logger.log(
             "Couldn't find the record of type '",
             model.pluralName,
             "' within",
@@ -115,14 +116,14 @@ export default class Action {
    */
   protected static transformArgs(args: Arguments): Arguments {
     const context = Context.getInstance();
+    const { components, logger } = context;
 
-    Object.keys(args).forEach((key: string) => {
-      const value: Data = args[key];
-
-      if (value instanceof context.components.Model) {
+    for (const [key, value] of Object.entries(args)) {
+      if (value instanceof components.Model) {
         const model = context.getModel(singularize(value.$self().entity));
-        const transformedValue = Transformer.transformOutgoingData(model, value, false);
-        context.logger.log(
+        const transformedValue = Transformer.transformOutgoingData(model, value as Data, false);
+
+        logger.log(
           "A",
           key,
           "model was found within the variables and will be transformed from",
@@ -132,7 +133,7 @@ export default class Action {
         );
         args[key] = transformedValue;
       }
-    });
+    }
 
     return args;
   }

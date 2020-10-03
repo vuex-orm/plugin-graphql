@@ -30,4 +30,11 @@ export default interface Adapter {
   getInputTypeName(model: Model, action?: string): string;
 
   prepareSchemaTypeName(name: string): string;
+
+  getNameForArgumentFilter(): string;
+
+  shouldQueryAlwaysUsePluralStyle(): boolean;
+  shouldMutationAlwaysUsePluralStyle(): boolean;
+
+  shouldTryPluralNameIfSchemaNameNotFoundWithSingular(): boolean;
 }

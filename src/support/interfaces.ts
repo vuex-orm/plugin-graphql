@@ -82,10 +82,10 @@ export interface Field {
 }
 
 export class PatchedModel extends ORMModel {
-  static eagerLoad?: Array<String>;
-  static eagerSave?: Array<String>;
-  static eagerSync?: Array<String>;
-  static skipFields?: Array<String>;
+  static eagerLoad?: Array<string>;
+  static eagerSave?: Array<string>;
+  static eagerSync?: Array<string>;
+  static skipFields?: Array<string>;
 
   $isPersisted: boolean = false;
 

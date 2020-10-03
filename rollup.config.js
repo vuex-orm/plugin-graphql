@@ -48,6 +48,7 @@ function createEntry(config) {
     check: config.format === 'es' && config.browser && config.env === 'development',
     tsconfig: path.resolve(__dirname, 'tsconfig.json'),
     cacheRoot: path.resolve(__dirname, 'node_modules/.rts2_cache'),
+    useTsconfigDeclarationDir: true,
     tsconfigOverride: {
       compilerOptions: {
         declaration: config.format === 'es' && config.browser && config.env === 'development',

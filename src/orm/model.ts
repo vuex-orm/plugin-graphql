@@ -51,10 +51,7 @@ export default class Model {
     this.pluralName = pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
-    const fields = this.baseModel.fields();
-    Object.keys(fields).forEach((name: string) => {
-      this.fields.set(name, fields[name] as Field);
-    });
+    this.fields = new Map(Object.entries(this.baseModel.fields()) as [string, Field][]);
   }
 
   /**
@@ -67,8 +64,8 @@ export default class Model {
     if (!field) return false;
 
     const context = Context.getInstance();
-
-    return field instanceof context.components.Number || field instanceof context.components.Uid;
+    const { components } = context;
+    return [components.Number, components.Uid].some(t => field instanceof t);
   }
 
   /**
@@ -78,14 +75,8 @@ export default class Model {
    */
   public static isFieldAttribute(field: Field): boolean {
     const context = Context.getInstance();
-
-    return (
-      field instanceof context.components.Uid ||
-      field instanceof context.components.Attr ||
-      field instanceof context.components.String ||
-      field instanceof context.components.Number ||
-      field instanceof context.components.Boolean
-    );
+    const { components } = context;
+    return [components.Uid, components.Attr, components.String, components.Number, components.Boolean].some(t => field instanceof t);
   }
 
   /**
@@ -96,12 +87,8 @@ export default class Model {
   public static isConnection(field: Field): boolean {
     const context = Context.getInstance();
 
-    return !(
-      field instanceof context.components.BelongsTo ||
-      field instanceof context.components.HasOne ||
-      field instanceof context.components.MorphTo ||
-      field instanceof context.components.MorphOne
-    );
+    const { components } = context;
+    return [components.BelongsTo, components.HasOne, components.MorphTo, components.MorphOne].every(t => !(field instanceof t));
   }
 
   /**
@@ -126,26 +113,20 @@ export default class Model {
    */
   public static getRelatedModel(relation?: Relation) {
     if (relation === undefined) return null;
-
     const context: Context = Context.getInstance();
+    const { components } = context;
 
-    if (
-      relation instanceof context.components.BelongsToMany ||
-      relation instanceof context.components.HasMany ||
-      relation instanceof context.components.HasManyThrough ||
-      relation instanceof context.components.MorphedByMany ||
-      relation instanceof context.components.MorphMany ||
-      relation instanceof context.components.MorphOne ||
-      relation instanceof context.components.MorphToMany ||
-      relation instanceof context.components.HasOne
-    ) {
-      return context.getModel(relation.related.entity, true);
+    if ([
+      components.BelongsToMany, components.HasMany, components.HasManyThrough, components.MorphedByMany,
+      components.MorphMany, components.MorphOne, components.MorphToMany, components.HasOne
+    ].some(t => relation instanceof t)) {
+      // well typescript is stupid enough not to deduce that "some" query will carry typeinfo
+      return context.getModel((relation as any).related.entity, true);
     } else if (
-      relation instanceof context.components.BelongsTo ||
-      relation instanceof context.components.HasManyBy
+      [components.BelongsTo, components.HasManyBy].some(t => relation instanceof t)
     ) {
-      return context.getModel(relation.parent.entity, true);
-    } else if (relation instanceof context.components.MorphTo) {
+      return context.getModel((relation as any).parent.entity, true);
+    } else if (relation instanceof components.MorphTo) {
       return context.getModel(relation.type, true);
     } else {
       console.warn("Failed relation", typeof relation, relation);
@@ -159,15 +140,9 @@ export default class Model {
    * @returns {Array<string>} field names which should be queried
    */
   public getQueryFields(): Array<string> {
-    const fields: Array<string> = [];
-
-    this.fields.forEach((field: Field, name: string) => {
-      if (Model.isFieldAttribute(field) && !this.skipField(name)) {
-        fields.push(name);
-      }
-    });
-
-    return fields;
+    return [...this.fields.entries()]
+      .filter(([name,  field]) => Model.isFieldAttribute(field) && !this.skipField(name))
+      .map(([name, _]) => name);
   }
 
   /**
@@ -177,42 +152,30 @@ export default class Model {
    * @param {string} field
    * @returns {boolean}
    */
-  public skipField(field: string) {
+  public skipField(field: string): boolean {
     if (field.startsWith("$")) return true;
-    if (this.baseModel.skipFields && this.baseModel.skipFields.indexOf(field) >= 0) return true;
+    if ((this.baseModel.skipFields?.indexOf(field) ?? -1) >= 0) return true;
 
     const context = Context.getInstance();
+    const { components } = context;
 
-    let shouldSkipField: boolean = false;
-
-    this.getRelations().forEach((relation: Relation) => {
-      if (
-        (relation instanceof context.components.BelongsTo ||
-          relation instanceof context.components.HasOne) &&
-        relation.foreignKey === field
-      ) {
-        shouldSkipField = true;
-        return false;
+    for (const [_, relation] of this.getRelations()) {
+      if ((relation instanceof components.BelongsTo || relation instanceof components.HasOne) && relation.foreignKey === field) {
+        return true;
       }
-      return true;
-    });
+    }
 
-    return shouldSkipField;
+    return false;
   }
 
   /**
    * @returns {Map<string, Relation>} all relations of the model.
    */
   public getRelations(): Map<string, Relation> {
-    const relations = new Map<string, Relation>();
-
-    this.fields.forEach((field: Field, name: string) => {
-      if (!Model.isFieldAttribute(field)) {
-        relations.set(name, field as Relation);
-      }
-    });
-
-    return relations;
+    return new Map(
+      [...this.fields.entries()]
+        .filter(([_, field]) => !Model.isFieldAttribute(field)) as [[string, Relation]]
+    );
   }
 
   /**
@@ -222,35 +185,19 @@ export default class Model {
    * @returns {boolean}
    */
   public isTypeFieldOfPolymorphicRelation(name: string): boolean {
-    const context = Context.getInstance();
-    let found: boolean = false;
-
-    context.models.forEach(model => {
-      if (found) return false;
-
-      model.getRelations().forEach(relation => {
-        if (
-          relation instanceof context.components.MorphMany ||
-          relation instanceof context.components.MorphedByMany ||
-          relation instanceof context.components.MorphOne ||
-          relation instanceof context.components.MorphTo ||
-          relation instanceof context.components.MorphToMany
-        ) {
-          const related = (relation as Field).related;
-
-          if (relation.type === name && related && related.entity === this.baseModel.entity) {
-            found = true;
-            return false; // break
+    const { models, components } = Context.getInstance();
+    for (const model of models.values()) {
+      for (const relation of model.getRelations().values()) {
+        if ([components.MorphMany, components.MorphedByMany, components.MorphOne, components.MorphTo, components.MorphToMany].some(t => relation instanceof t)) {
+          // WARNING: MorphTo doesn't have 'related' entity to point to
+          if ((relation as any).type === name && (relation as Field).related?.entity === this.baseModel.entity) {
+            return true;
           }
         }
+      }
+    }
 
-        return true;
-      });
-
-      return true;
-    });
-
-    return found;
+    return false;
   }
 
   /**
@@ -281,26 +228,14 @@ export default class Model {
     relation: Relation,
     relatedModel: Model
   ): boolean {
-    const context = Context.getInstance();
-
+    const { components } = Context.getInstance();
+    // Check if the name of the related model or the fieldName is included in the eagerly loaded
+    // list.
+    const namesPred = [relatedModel.singularName, relatedModel.pluralName, fieldName];
     // HasOne, BelongsTo and MorphOne are always eager loaded
-    if (
-      relation instanceof context.components.HasOne ||
-      relation instanceof context.components.BelongsTo ||
-      relation instanceof context.components.MorphOne
-    ) {
-      return true;
-    }
-
-    // Create a list of all relations that have to be eager loaded
-    const eagerLoadList: Array<String> = this.baseModel.eagerLoad || [];
-    Array.prototype.push.apply(eagerLoadList, this.baseModel.eagerSync || []);
-
-    // Check if the name of the related model or the fieldName is included in the eagerLoadList.
     return (
-      eagerLoadList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
-      }) !== undefined
+      [components.HasOne, components.BelongsTo, components.MorphOne].some(t => relation instanceof t) ||
+      [...this.baseModel.eagerLoad ?? [], ...this.baseModel.eagerSync ?? []].some(n => namesPred.includes(n))
     );
   }
 
@@ -318,22 +253,14 @@ export default class Model {
     relation: Relation,
     relatedModel: Model
   ): boolean {
-    const context = Context.getInstance();
-
+    const { components } = Context.getInstance();
+    // Check if the name of the related model or the fieldName is included in the eagerly saved
+    // list.
+    const namesPred = [relatedModel.singularName, relatedModel.pluralName, fieldName];
     // BelongsTo is always eager saved
-    if (relation instanceof context.components.BelongsTo) {
-      return true;
-    }
-
-    // Create a list of all relations that have to be eager saved
-    const eagerSaveList: Array<String> = this.baseModel.eagerSave || [];
-    Array.prototype.push.apply(eagerSaveList, this.baseModel.eagerSync || []);
-
-    // Check if the name of the related model or the fieldName is included in the eagerSaveList.
     return (
-      eagerSaveList.find(n => {
-        return n === relatedModel.singularName || n === relatedModel.pluralName || n === fieldName;
-      }) !== undefined
+      [components.BelongsTo].some(t => relation instanceof t) ||
+      [...this.baseModel.eagerSave ?? [], ...this.baseModel.eagerSync ?? []].some(n => namesPred.includes(n))
     );
   }
 
@@ -394,7 +321,7 @@ export default class Model {
 
     if (returnValue) {
       if (returnValue instanceof Array) {
-        returnValue.forEach(r => (r.$isPersisted = true));
+        for (const r of returnValue) { r.$isPersisted = true; }
       } else {
         returnValue.$isPersisted = true;
       }
