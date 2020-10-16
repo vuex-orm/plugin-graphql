@@ -16159,6 +16159,7 @@ function mock(action, options) {
 
 exports.DefaultAdapter = DefaultAdapter;
 exports.Mock = Mock;
+exports.Model = Model;
 exports.clearORMStore = clearORMStore;
 exports.default = VuexORMGraphQLPlugin;
 exports.mock = mock;

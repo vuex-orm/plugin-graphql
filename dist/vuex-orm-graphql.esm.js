@@ -15942,4 +15942,4 @@ function mock(action, options) {
 }
 
 export default VuexORMGraphQLPlugin;
-export { ArgumentMode, ConnectionMode, DefaultAdapter, Mock, clearORMStore, mock, setupTestUtils };
+export { ArgumentMode, ConnectionMode, DefaultAdapter, Mock, Model, clearORMStore, mock, setupTestUtils };

@@ -6,7 +6,7 @@
   "browser": "dist/vuex-orm-graphql.esm.js",
   "module": "dist/vuex-orm-graphql.esm-bundler.js",
   "unpkg": "dist/vuex-orm-graphql.global.js",
-  "typings": "dist/types/index.d.ts",
+  "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],

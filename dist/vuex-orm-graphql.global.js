@@ -16158,6 +16158,7 @@ var VuexORMGraphQLPlugin = (function (exports) {
 
     exports.DefaultAdapter = DefaultAdapter;
     exports.Mock = Mock;
+    exports.Model = Model;
     exports.clearORMStore = clearORMStore;
     exports.default = VuexORMGraphQLPlugin;
     exports.mock = mock;
