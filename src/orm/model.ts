@@ -47,8 +47,8 @@ export default class Model {
     this.baseModel = baseModel as typeof PatchedModel;
 
     // Generate name variants
-    this.singularName = singularize(this.baseModel.entity);
-    this.pluralName = pluralize(this.baseModel.entity);
+    this.singularName = this.baseModel["singularName"] || singularize(this.baseModel.entity);
+    this.pluralName = this.baseModel["pluralName"] || pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
