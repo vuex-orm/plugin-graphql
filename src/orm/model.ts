@@ -2,7 +2,7 @@ import { Model as ORMModel, Relation } from "@vuex-orm/core";
 import { Field, PatchedModel } from "../support/interfaces";
 import Context from "../common/context";
 import { Mock, MockOptions } from "../test-utils";
-import { pluralize, singularize, pick, isEqual, toNumber } from "../support/utils";
+import { pluralize, singularize, pick, isEqual, toPrimaryKey } from "../support/utils";
 
 /**
  * Wrapper around a Vuex-ORM model with some useful methods.
@@ -262,7 +262,7 @@ export default class Model {
     return this.baseModel
       .query()
       .withAllRecursive()
-      .where("id", toNumber(id))
+      .where("id", toPrimaryKey(id))
       .first();
   }
 

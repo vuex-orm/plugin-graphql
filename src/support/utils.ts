@@ -130,12 +130,18 @@ export function removeSymbols(input: any) {
 /**
  * Converts the argument into a number.
  */
-export function toNumber(input: string | number | null): number | string {
+export function toPrimaryKey(input: string | number | null): number | string {
   if (input === null) return 0;
 
-  if (typeof input === "string" && input.startsWith("$uid")) {
+  if (typeof input === "string" && (input.startsWith("$uid") || isGuid(input))) {
     return input;
   }
 
   return parseInt(input.toString(), 10);
+}
+
+export function isGuid(value: string) {
+  const regex = /[a-f0-9]{8}(?:-?[a-f0-9]{4}){3}-?[a-f0-9]{12}/i;
+  const match = regex.exec(value);
+  return match != null;
 }

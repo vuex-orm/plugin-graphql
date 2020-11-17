@@ -55,4 +55,5 @@ export declare function removeSymbols(input: any): any;
 /**
  * Converts the argument into a number.
  */
-export declare function toNumber(input: string | number | null): number | string;
+export declare function toPrimaryKey(input: string | number | null): number | string;
+export declare function isGuid(value: string): boolean;
