@@ -140,7 +140,7 @@ export function toPrimaryKey(input: string | number | null): number | string {
   return parseInt(input.toString(), 10);
 }
 
-export function isGuid(value: string) {
+export function isGuid(value: string): boolean {
   const regex = /[a-f0-9]{8}(?:-?[a-f0-9]{4}){3}-?[a-f0-9]{12}/i;
   const match = regex.exec(value);
   return match != null;

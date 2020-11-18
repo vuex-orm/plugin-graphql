@@ -1,4 +1,11 @@
-import { prettify, downcaseFirstLetter, upcaseFirstLetter, pick } from "../../src/support/utils";
+import {
+  prettify,
+  downcaseFirstLetter,
+  upcaseFirstLetter,
+  pick,
+  isGuid,
+  toPrimaryKey
+} from "../../src/support/utils";
 
 describe("capitalizeFirstLetter", () => {
   test("capitalizes the first letter of a string", () => {
@@ -55,5 +62,59 @@ describe("pick", () => {
 
     expect(pick(input, ["bar", "hello"])).toEqual(expectedOutput);
     expect(pick(0, ["bar", "hello"])).toEqual({});
+  });
+});
+
+describe("toPrimaryKey", () => {
+  test("should return 0 for null", () => {
+    const input = null;
+    const expectedOutput = 0;
+
+    expect(toPrimaryKey(input)).toEqual(expectedOutput);
+  });
+
+  test("return GUID for string GUIDs", () => {
+    const input = "149ae8b4-cc84-49f5-bf97-b6ce6c09c8e2";
+    const expectedOutput = "149ae8b4-cc84-49f5-bf97-b6ce6c09c8e2";
+
+    expect(toPrimaryKey(input)).toEqual(expectedOutput);
+  });
+
+  test("return $uid for string $uids", () => {
+    const input = "$uid:1";
+    const expectedOutput = "$uid:1";
+
+    expect(toPrimaryKey(input)).toEqual(expectedOutput);
+  });
+
+  test("return int for string numbers", () => {
+    const input = "100";
+    const expectedOutput = 100;
+
+    expect(toPrimaryKey(input)).toEqual(expectedOutput);
+  });
+
+  test("return int for int numbers", () => {
+    const input = 100;
+    const expectedOutput = 100;
+
+    expect(toPrimaryKey(input)).toEqual(expectedOutput);
+  });
+});
+
+describe("isGuid", () => {
+  test("returns true if it's a GUID", () => {
+    const input = "149ae8b4-cc84-49f5-bf97-b6ce6c09c8e2";
+    const expectedOutput = true;
+
+    expect(isGuid(input)).toEqual(expectedOutput);
+  });
+
+  test("returns false if it's not a GUID", () => {
+    const input = "this-is-not-a-guid";
+
+    const expectedOutput = false;
+
+    expect(isGuid(input)).toEqual(expectedOutput);
   });
 });
