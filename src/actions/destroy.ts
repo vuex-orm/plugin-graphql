@@ -2,7 +2,7 @@ import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
 import { Store } from "../orm/store";
 import Context from "../common/context";
-import { toNumber } from "../support/utils";
+import { toPrimaryKey } from "../support/utils";
 
 /**
  * Destroy action for sending a delete mutation. Will be used for record.$destroy().
@@ -19,7 +19,7 @@ export default class Destroy extends Action {
     context.components.Actions.destroy = Destroy.call.bind(Destroy);
 
     record.$destroy = async function() {
-      return this.$dispatch("destroy", { id: toNumber(this.$id) });
+      return this.$dispatch("destroy", { id: toPrimaryKey(this.$id) });
     };
 
     record.$deleteAndDestroy = async function() {

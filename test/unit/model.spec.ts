@@ -1,5 +1,5 @@
 import Model from "../../src/orm/model";
-import { setupMockData, User, Post } from "../support/mock-data";
+import { setupMockData, User, Post, Media } from "../support/mock-data";
 import Context from "../../src/common/context";
 import { Relation } from "@vuex-orm/core";
 
@@ -20,11 +20,21 @@ describe("Model", () => {
     test("returns the singular name of the entity", () => {
       expect(model.singularName).toEqual("user");
     });
+
+    test("allows singularName to be overridden in model itself", () => {
+      const media = context.getModel("media");
+      expect(media.singularName).toEqual(Media.singularName);
+    });
   });
 
   describe(".pluralName", () => {
     test("returns the plural name of the entity", () => {
       expect(model.pluralName).toEqual("users");
+    });
+
+    test("allows pluralName to be overridden in model itself", () => {
+      const media = context.getModel("media");
+      expect(media.pluralName).toEqual(Media.pluralName);
     });
   });
 
@@ -125,7 +135,7 @@ describe("Model", () => {
   });
 
   describe(".getRecordWithId", () => {
-    test("returns the record with the id of the model type", () => {
+    test("returns the record with the id of the model type for int primary keys", () => {
       const model = context.getModel("post");
       const expectedRecord = model.baseModel
         .query()
@@ -133,6 +143,16 @@ describe("Model", () => {
         .where("id", 2)
         .first();
       expect(model.getRecordWithId("2")).toEqual(expectedRecord);
+    });
+
+    test("returns the record with the id of the model type for GUID primary keys", () => {
+      const model = context.getModel("tariff");
+      const expectedRecord = model.baseModel
+        .query()
+        .withAllRecursive()
+        .where("id", "0D32575B-B15A-4949-95A0-73E6BDD75F8F")
+        .first();
+      expect(model.getRecordWithId("0D32575B-B15A-4949-95A0-73E6BDD75F8F")).toEqual(expectedRecord);
     });
   });
 

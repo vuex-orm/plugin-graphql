@@ -182,6 +182,18 @@ export class Tag extends ORMModel {
   }
 }
 
+export class Media extends ORMModel {
+  static entity = "media";
+  static singularName = "media";
+  static pluralName = "media";
+
+  static fields(): Fields {
+    return {
+      id: this.uid()
+    };
+  }
+}
+
 export async function setupMockData(headers?: any, adapter?: Adapter) {
   let store;
   let vuexOrmGraphQL;
@@ -200,7 +212,8 @@ export async function setupMockData(headers?: any, adapter?: Adapter) {
       { model: TariffTariffOption },
       { model: Category },
       { model: Taggable },
-      { model: Tag }
+      { model: Tag },
+      { model: Media }
     ],
     headers,
     adapter

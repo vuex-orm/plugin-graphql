@@ -5,7 +5,7 @@ import Transformer from "../graphql/transformer";
 import { ActionParams, Data, PatchedModel } from "../support/interfaces";
 import Action from "./action";
 import Schema from "../graphql/schema";
-import { toNumber } from "../support/utils";
+import { toPrimaryKey } from "../support/utils";
 
 /**
  * Query action for sending a custom query. Will be used for Model.customQuery() and record.$customQuery.
@@ -28,7 +28,7 @@ export default class Query extends Action {
 
     record.$customQuery = async function({ name, filter, multiple, bypassCache }: ActionParams) {
       filter = filter || {};
-      if (!filter["id"]) filter["id"] = toNumber(this.$id);
+      if (!filter["id"]) filter["id"] = toPrimaryKey(this.$id);
 
       return this.$dispatch("query", { name, filter, multiple, bypassCache });
     };

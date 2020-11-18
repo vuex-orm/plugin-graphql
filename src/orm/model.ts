@@ -2,7 +2,7 @@ import { Model as ORMModel, Relation } from "@vuex-orm/core";
 import { Field, PatchedModel } from "../support/interfaces";
 import Context from "../common/context";
 import { Mock, MockOptions } from "../test-utils";
-import { pluralize, singularize, pick, isEqual, toNumber } from "../support/utils";
+import { pluralize, singularize, pick, isEqual, toPrimaryKey } from "../support/utils";
 
 /**
  * Wrapper around a Vuex-ORM model with some useful methods.
@@ -47,8 +47,8 @@ export default class Model {
     this.baseModel = baseModel as typeof PatchedModel;
 
     // Generate name variants
-    this.singularName = singularize(this.baseModel.entity);
-    this.pluralName = pluralize(this.baseModel.entity);
+    this.singularName = this.baseModel["singularName"] || singularize(this.baseModel.entity);
+    this.pluralName = this.baseModel["pluralName"] || pluralize(this.baseModel.entity);
 
     // Cache the fields of the model in this.fields
     const fields = this.baseModel.fields();
@@ -262,7 +262,7 @@ export default class Model {
     return this.baseModel
       .query()
       .withAllRecursive()
-      .where("id", toNumber(id))
+      .where("id", toPrimaryKey(id))
       .first();
   }
 

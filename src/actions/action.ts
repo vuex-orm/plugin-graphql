@@ -6,7 +6,7 @@ import Model from "../orm/model";
 import RootState from "@vuex-orm/core/lib/modules/contracts/RootState";
 import Transformer from "../graphql/transformer";
 import Schema from "../graphql/schema";
-import { singularize, toNumber } from "../support/utils";
+import { singularize, toPrimaryKey } from "../support/utils";
 
 /**
  * Base class for all Vuex actions. Contains some utility and convenience methods.
@@ -43,7 +43,7 @@ export default class Action {
         newData = newData[Object.keys(newData)[0]];
 
         // IDs as String cause terrible issues, so we convert them to integers.
-        newData.id = toNumber(newData.id);
+        newData.id = toPrimaryKey(newData.id);
 
         const insertedData: Data = await Store.insertData(
           { [model.pluralName]: newData } as Data,

@@ -7750,13 +7750,18 @@ function removeSymbols(input) {
 /**
  * Converts the argument into a number.
  */
-function toNumber(input) {
+function toPrimaryKey(input) {
     if (input === null)
         return 0;
-    if (typeof input === "string" && input.startsWith("$uid")) {
+    if (typeof input === "string" && (input.startsWith("$uid") || isGuid(input))) {
         return input;
     }
     return parseInt(input.toString(), 10);
+}
+function isGuid(value) {
+    var regex = /[a-f0-9]{8}(?:-?[a-f0-9]{4}){3}-?[a-f0-9]{12}/i;
+    var match = regex.exec(value);
+    return match != null;
 }
 
 /**
@@ -7894,8 +7899,8 @@ var Model = /** @class */ (function () {
         this.mocks = {};
         this.baseModel = baseModel;
         // Generate name variants
-        this.singularName = singularize(this.baseModel.entity);
-        this.pluralName = pluralize$1(this.baseModel.entity);
+        this.singularName = this.baseModel["singularName"] || singularize(this.baseModel.entity);
+        this.pluralName = this.baseModel["pluralName"] || pluralize$1(this.baseModel.entity);
         // Cache the fields of the model in this.fields
         var fields = this.baseModel.fields();
         Object.keys(fields).forEach(function (name) {
@@ -8075,7 +8080,7 @@ var Model = /** @class */ (function () {
         return this.baseModel
             .query()
             .withAllRecursive()
-            .where("id", toNumber(id))
+            .where("id", toPrimaryKey(id))
             .first();
     };
     /**
@@ -15376,7 +15381,7 @@ var Action = /** @class */ (function () {
                         if (!(name !== context.adapter.getNameForDestroy(model))) return [3 /*break*/, 4];
                         newData = newData[Object.keys(newData)[0]];
                         // IDs as String cause terrible issues, so we convert them to integers.
-                        newData.id = toNumber(newData.id);
+                        newData.id = toPrimaryKey(newData.id);
                         return [4 /*yield*/, Store.insertData((_a = {}, _a[model.pluralName] = newData, _a), dispatch)];
                     case 3:
                         insertedData = _b.sent();
@@ -15469,7 +15474,7 @@ var Destroy = /** @class */ (function (_super) {
         record.$destroy = function () {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
-                    return [2 /*return*/, this.$dispatch("destroy", { id: toNumber(this.$id) })];
+                    return [2 /*return*/, this.$dispatch("destroy", { id: toPrimaryKey(this.$id) })];
                 });
             });
         };
@@ -15626,7 +15631,7 @@ var Mutate = /** @class */ (function (_super) {
                 return __generator(this, function (_b) {
                     args = args || {};
                     if (!args["id"])
-                        args["id"] = toNumber(this.$id);
+                        args["id"] = toPrimaryKey(this.$id);
                     return [2 /*return*/, this.$dispatch("mutate", { name: name, args: args, multiple: multiple })];
                 });
             });
@@ -15719,7 +15724,7 @@ var Persist = /** @class */ (function (_super) {
                         mutationName = Context.getInstance().adapter.getNameForPersist(model);
                         oldRecord = model.getRecordWithId(id);
                         mockReturnValue = model.$mockHook("persist", {
-                            id: toNumber(id),
+                            id: toPrimaryKey(id),
                             args: args || {}
                         });
                         if (!mockReturnValue) return [3 /*break*/, 3];
@@ -15874,7 +15879,7 @@ var Query = /** @class */ (function (_super) {
                 return __generator(this, function (_b) {
                     filter = filter || {};
                     if (!filter["id"])
-                        filter["id"] = toNumber(this.$id);
+                        filter["id"] = toPrimaryKey(this.$id);
                     return [2 /*return*/, this.$dispatch("query", { name: name, filter: filter, multiple: multiple, bypassCache: bypassCache })];
                 });
             });
@@ -16159,6 +16164,7 @@ function mock(action, options) {
 
 exports.DefaultAdapter = DefaultAdapter;
 exports.Mock = Mock;
+exports.Model = Model;
 exports.clearORMStore = clearORMStore;
 exports.default = VuexORMGraphQLPlugin;
 exports.mock = mock;

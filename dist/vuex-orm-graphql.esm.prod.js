@@ -7648,13 +7648,18 @@ function removeSymbols(input) {
 /**
  * Converts the argument into a number.
  */
-function toNumber(input) {
+function toPrimaryKey(input) {
     if (input === null)
         return 0;
-    if (typeof input === "string" && input.startsWith("$uid")) {
+    if (typeof input === "string" && (input.startsWith("$uid") || isGuid(input))) {
         return input;
     }
     return parseInt(input.toString(), 10);
+}
+function isGuid(value) {
+    const regex = /[a-f0-9]{8}(?:-?[a-f0-9]{4}){3}-?[a-f0-9]{12}/i;
+    const match = regex.exec(value);
+    return match != null;
 }
 
 /**
@@ -7778,8 +7783,8 @@ class Model {
         this.mocks = {};
         this.baseModel = baseModel;
         // Generate name variants
-        this.singularName = singularize(this.baseModel.entity);
-        this.pluralName = pluralize$1(this.baseModel.entity);
+        this.singularName = this.baseModel["singularName"] || singularize(this.baseModel.entity);
+        this.pluralName = this.baseModel["pluralName"] || pluralize$1(this.baseModel.entity);
         // Cache the fields of the model in this.fields
         const fields = this.baseModel.fields();
         Object.keys(fields).forEach((name) => {
@@ -7957,7 +7962,7 @@ class Model {
         return this.baseModel
             .query()
             .withAllRecursive()
-            .where("id", toNumber(id))
+            .where("id", toPrimaryKey(id))
             .first();
     }
     /**
@@ -15359,7 +15364,7 @@ class Action {
             if (name !== context.adapter.getNameForDestroy(model)) {
                 newData = newData[Object.keys(newData)[0]];
                 // IDs as String cause terrible issues, so we convert them to integers.
-                newData.id = toNumber(newData.id);
+                newData.id = toPrimaryKey(newData.id);
                 const insertedData = await Store.insertData({ [model.pluralName]: newData }, dispatch);
                 // Try to find the record to return
                 const records = insertedData[model.pluralName];
@@ -15442,7 +15447,7 @@ class Destroy extends Action {
         const record = context.components.Model.prototype;
         context.components.Actions.destroy = Destroy.call.bind(Destroy);
         record.$destroy = async function () {
-            return this.$dispatch("destroy", { id: toNumber(this.$id) });
+            return this.$dispatch("destroy", { id: toPrimaryKey(this.$id) });
         };
         record.$deleteAndDestroy = async function () {
             await this.$delete();
@@ -15544,7 +15549,7 @@ class Mutate extends Action {
         record.$mutate = async function ({ name, args, multiple }) {
             args = args || {};
             if (!args["id"])
-                args["id"] = toNumber(this.$id);
+                args["id"] = toPrimaryKey(this.$id);
             return this.$dispatch("mutate", { name, args, multiple });
         };
     }
@@ -15609,7 +15614,7 @@ class Persist extends Action {
             const mutationName = Context.getInstance().adapter.getNameForPersist(model);
             const oldRecord = model.getRecordWithId(id);
             const mockReturnValue = model.$mockHook("persist", {
-                id: toNumber(id),
+                id: toPrimaryKey(id),
                 args: args || {}
             });
             if (mockReturnValue) {
@@ -15715,7 +15720,7 @@ class Query extends Action {
         record.$customQuery = async function ({ name, filter, multiple, bypassCache }) {
             filter = filter || {};
             if (!filter["id"])
-                filter["id"] = toNumber(this.$id);
+                filter["id"] = toPrimaryKey(this.$id);
             return this.$dispatch("query", { name, filter, multiple, bypassCache });
         };
     }
@@ -15942,4 +15947,4 @@ function mock(action, options) {
 }
 
 export default VuexORMGraphQLPlugin;
-export { ArgumentMode, ConnectionMode, DefaultAdapter, Mock, clearORMStore, mock, setupTestUtils };
+export { ArgumentMode, ConnectionMode, DefaultAdapter, Mock, Model, clearORMStore, mock, setupTestUtils };
