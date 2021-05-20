@@ -21,7 +21,7 @@ way. This might be changed in the future, when we find a better solution.
 ## Model related custom query
 
 You may sometimes want to send custom GraphQL query. We support this via the `query` action. However please notice that
-the convenienceMethods here are named `customMutation` and `$customMutation` due to a name conflict with the `query()`
+the convenienceMethods here are named `customQuery` and `$customQuery` due to a name conflict with the `query()`
 method Vuex-ORM.
 
 ```javascript
