@@ -433,7 +433,7 @@ query Posts {
 See the [Many To Many Polymorphic Relations section](https://vuex-orm.github.io/vuex-orm/guide/relationships/defining-relationships.html#many-to-many-polymorphic-relations) in the Vuex-ORM documentation.
 :::
 
-Eager loading behaves the same as in a normal Many To Many: Nothing is eager loaded automatically. So we add a
+Eager loading behaves the same as in a normal Many To Many: nothing is eager loaded automatically. So we add a
 `eagerLoad` field to make sure the tags are loaded automatically with the post or video.
 
 **Models:**

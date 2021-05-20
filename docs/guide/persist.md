@@ -63,7 +63,7 @@ Like when pushing, all records which are returned replace the respective existin
 
 ## Additional variables
 
-You can pass a object like this: `$perist({ captchaToken: 'asdfasdf' })`. All fields in the object will be passed as
+You can pass a object like this: `$persist({ captchaToken: 'foo' })`. All fields in the object will be passed as
 variables to the mutation.
 
 

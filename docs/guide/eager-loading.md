@@ -30,7 +30,7 @@ class User extends Model {
 ## Eager Saving
 
 Similar to the eager loading there is a "eager saving". When saving (via `$persist` or `$push`) a
-record will automatically sends all `belongsTo` related records too to the server.
+record will automatically send all `belongsTo` related records too to the server.
 
 All other related records have to be added to a static field in the model called `eagerSave` to
 have them eagerly saved with persist and push.
