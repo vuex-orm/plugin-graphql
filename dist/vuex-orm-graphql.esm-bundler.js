@@ -14866,19 +14866,24 @@ class Context {
     async loadSchema() {
         if (!this.schemaWillBeLoaded) {
             this.schemaWillBeLoaded = new Promise(async (resolve, reject) => {
-                this.logger.log("Fetching GraphQL Schema initially ...");
-                this.connectionMode = this.adapter.getConnectionMode();
-                // We send a custom header along with the request. This is required for our test suite to mock the schema request.
-                const context = {
-                    headers: { "X-GraphQL-Introspection-Query": "true" }
-                };
-                const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
-                this.schema = new Schema(result.data.__schema);
-                this.logger.log("GraphQL Schema successful fetched", result);
-                this.logger.log("Starting to process the schema ...");
-                this.processSchema();
-                this.logger.log("Schema procession done!");
-                resolve(this.schema);
+                try {
+                    this.logger.log("Fetching GraphQL Schema initially ...");
+                    this.connectionMode = this.adapter.getConnectionMode();
+                    // We send a custom header along with the request. This is required for our test suite to mock the schema request.
+                    const context = {
+                        headers: { "X-GraphQL-Introspection-Query": "true" }
+                    };
+                    const result = await this.apollo.simpleQuery(introspectionQuery, {}, true, context);
+                    this.schema = new Schema(result.data.__schema);
+                    this.logger.log("GraphQL Schema successful fetched", result);
+                    this.logger.log("Starting to process the schema ...");
+                    this.processSchema();
+                    this.logger.log("Schema procession done!");
+                    resolve(this.schema);
+                }
+                catch (e) {
+                    reject(e);
+                }
             });
         }
         return this.schemaWillBeLoaded;

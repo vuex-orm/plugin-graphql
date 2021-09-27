@@ -14853,10 +14853,11 @@ var Context = /** @class */ (function () {
             return __generator(this, function (_a) {
                 if (!this.schemaWillBeLoaded) {
                     this.schemaWillBeLoaded = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var context, result;
+                        var context, result, e_1;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
+                                    _a.trys.push([0, 2, , 3]);
                                     this.logger.log("Fetching GraphQL Schema initially ...");
                                     this.connectionMode = this.adapter.getConnectionMode();
                                     context = {
@@ -14871,7 +14872,12 @@ var Context = /** @class */ (function () {
                                     this.processSchema();
                                     this.logger.log("Schema procession done!");
                                     resolve(this.schema);
-                                    return [2 /*return*/];
+                                    return [3 /*break*/, 3];
+                                case 2:
+                                    e_1 = _a.sent();
+                                    reject(e_1);
+                                    return [3 /*break*/, 3];
+                                case 3: return [2 /*return*/];
                             }
                         });
                     }); });
